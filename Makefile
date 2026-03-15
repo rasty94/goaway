@@ -4,21 +4,24 @@ DNS_PORT ?= 53
 WEBSITE_PORT ?= 8080
 LATEST_VERSION = $(shell git describe --tags --abbrev=0 | sed 's/^v//')
 
+GHCR_REPO ?= ghcr.io/rasty94/goaway
+
 publish:
-	docker buildx create --name multiarch-builder --use
+	docker buildx create --name multiarch-builder --use || true
 
 	docker buildx build \
 	--platform linux/amd64,linux/arm64/v8,linux/arm/v7 \
-	--tag pommee/goaway:${LATEST_VERSION} \
-	--tag pommee/goaway:latest \
-	--build-arg GOAWAY_VERSION=${LATEST_VERSION} \
+	--file Dockerfile.multi \
+	--tag ${GHCR_REPO}:${LATEST_VERSION} \
+	--tag ${GHCR_REPO}:latest \
 	--push \
 	.
 
-	docker buildx rm multiarch-builder
+	docker buildx rm multiarch-builder || true
 
 ghcr-publish:
 	./.agents/skills/ghcr-publish/scripts/publish.sh
+
 
 build: ; pnpm -C client install && pnpm -C client build
 start: ; docker compose up -d
