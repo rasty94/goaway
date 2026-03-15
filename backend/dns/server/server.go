@@ -7,6 +7,7 @@ import (
 	"goaway/backend/audit"
 	"goaway/backend/blacklist"
 	model "goaway/backend/dns/server/models"
+	"goaway/backend/group"
 	"goaway/backend/logging"
 	"goaway/backend/mac"
 	"goaway/backend/notification"
@@ -71,6 +72,7 @@ type DNSServer struct {
 	ResolutionService   *resolution.Service
 	NotificationService *notification.Service
 	BlacklistService    *blacklist.Service
+	GroupService        *group.Service
 	WhitelistService    *whitelist.Service
 }
 
@@ -107,13 +109,13 @@ func NewDNSServer(config *settings.Config, dbconn *gorm.DB, cert tls.Certificate
 	}
 
 	server := &DNSServer{
-		Config:              config,
-		dbConn:              dbconn,
-		logEntryChannel:     make(chan model.RequestLogEntry, 1000),
-		dnsClient:           &client,
-		DomainCache:         sync.Map{},
-		WSQueries:           make(map[*websocket.Conn]bool),
-		WSCommunication:     make(map[*websocket.Conn]bool),
+		Config:          config,
+		dbConn:          dbconn,
+		logEntryChannel: make(chan model.RequestLogEntry, 1000),
+		dnsClient:       &client,
+		DomainCache:     sync.Map{},
+		WSQueries:       make(map[*websocket.Conn]bool),
+		WSCommunication: make(map[*websocket.Conn]bool),
 	}
 
 	return server, nil

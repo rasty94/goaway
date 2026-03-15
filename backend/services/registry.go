@@ -6,6 +6,7 @@ import (
 	"goaway/backend/api"
 	"goaway/backend/api/key"
 	"goaway/backend/blacklist"
+	"goaway/backend/group"
 	"goaway/backend/logging"
 	"goaway/backend/notification"
 	"goaway/backend/prefetch"
@@ -47,6 +48,7 @@ type ServiceRegistry struct {
 	KeyService          *key.Service
 	NotificationService *notification.Service
 	BlacklistService    *blacklist.Service
+	GroupService        *group.Service
 	WhitelistService    *whitelist.Service
 }
 
@@ -125,15 +127,15 @@ func (r *ServiceRegistry) setupSecureServers() error {
 
 func (r *ServiceRegistry) setupAPIServer() {
 	r.APIServer = &api.API{
-		DNS:             r.Context.DNSServer,
-		Authentication:  r.Context.Config.API.Authentication,
-		Config:          r.Context.Config,
-		DNSPort:         r.Context.Config.DNS.Ports.TCPUDP,
-		Version:         r.version,
-		Commit:          r.commit,
-		Date:            r.date,
-		DNSServer:       r.Context.DNSServer,
-		DBConn:          r.Context.DBConn,
+		DNS:            r.Context.DNSServer,
+		Authentication: r.Context.Config.API.Authentication,
+		Config:         r.Context.Config,
+		DNSPort:        r.Context.Config.DNS.Ports.TCPUDP,
+		Version:        r.version,
+		Commit:         r.commit,
+		Date:           r.date,
+		DNSServer:      r.Context.DNSServer,
+		DBConn:         r.Context.DBConn,
 
 		ResolutionService:   r.ResolutionService,
 		RequestService:      r.RequestService,
@@ -142,6 +144,7 @@ func (r *ServiceRegistry) setupAPIServer() {
 		UserService:         r.UserService,
 		KeyService:          r.KeyService,
 		BlacklistService:    r.BlacklistService,
+		GroupService:        r.GroupService,
 		WhitelistService:    r.WhitelistService,
 	}
 }

@@ -44,6 +44,25 @@ var migrations = []dbMigration{
 			return nil
 		},
 	},
+	{
+		ID:          "000003_group_management_indexes",
+		Description: "Add explicit indexes for group management tables",
+		Up: func(tx *gorm.DB) error {
+			if err := tx.Exec("CREATE INDEX IF NOT EXISTS idx_client_group_assignment_lookup ON client_group_assignments(identifier_type, identifier)").Error; err != nil {
+				return err
+			}
+			if err := tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_client_groups_default_unique ON client_groups(is_default) WHERE is_default = 1").Error; err != nil {
+				return err
+			}
+			if err := tx.Exec("CREATE INDEX IF NOT EXISTS idx_group_blocked_domains_group_id ON group_blocked_domains(group_id)").Error; err != nil {
+				return err
+			}
+			if err := tx.Exec("CREATE INDEX IF NOT EXISTS idx_group_allowed_domains_group_id ON group_allowed_domains(group_id)").Error; err != nil {
+				return err
+			}
+			return nil
+		},
+	},
 }
 
 func RunMigrations(db *gorm.DB) error {

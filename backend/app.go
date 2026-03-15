@@ -8,6 +8,7 @@ import (
 	"goaway/backend/api/key"
 	"goaway/backend/audit"
 	"goaway/backend/blacklist"
+	"goaway/backend/group"
 	"goaway/backend/lifecycle"
 	"goaway/backend/logging"
 	"goaway/backend/mac"
@@ -148,6 +149,7 @@ func (a *Application) Start() error {
 	alertService := alert.NewService(alert.NewRepository(dbConn))
 	auditService := audit.NewService(audit.NewRepository(dbConn))
 	blacklistService := blacklist.NewService(blacklist.NewRepository(dbConn))
+	groupService := group.NewService(group.NewRepository(dbConn))
 	keyService := key.NewService(key.NewRepository(dbConn))
 	macService := mac.NewService(mac.NewRepository(dbConn))
 	notificationService := notification.NewService(notification.NewRepository(dbConn))
@@ -160,6 +162,7 @@ func (a *Application) Start() error {
 	a.context.DNSServer.AlertService = alertService
 	a.context.DNSServer.AuditService = auditService
 	a.context.DNSServer.BlacklistService = blacklistService
+	a.context.DNSServer.GroupService = groupService
 	a.context.DNSServer.MACService = macService
 	a.context.DNSServer.NotificationService = notificationService
 	a.context.DNSServer.RequestService = requestService
@@ -172,6 +175,7 @@ func (a *Application) Start() error {
 	a.services = services.NewServiceRegistry(a.context, a.version, a.commit, a.date, a.content)
 	a.services.ResolutionService = resolutionService
 	a.services.BlacklistService = blacklistService
+	a.services.GroupService = groupService
 	a.services.NotificationService = notificationService
 	a.services.PrefetchService = prefetchService
 	a.services.RequestService = requestService

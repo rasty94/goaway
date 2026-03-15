@@ -53,7 +53,7 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 ### Advanced Security
 - [ ] **DNSSEC Validation**: Add support for rigorous DNSSEC validation for outgoing upstream queries to ensure cryptographically secure resolutions.
 - [ ] **Rate Limiting & Throttling**: Add advanced rate-limiting logic per client IP to mitigate DNS amplification or DoS attacks.
-- [ ] **Group Management (Per-Client Blocking)**: Introduce a multi-group system (default vs. custom) where blocklists, allowlists, and specific domains can be selectively applied to different clients/IPs/MACs across the network (similar to Pi-hole V5+).
+- [x] **Group Management (Per-Client Blocking)**: Multi-group backend implemented (default + custom groups) with per-client IP/MAC assignments, group-scoped block/allow domains, and DNS policy enforcement integrated into runtime resolution.
 
 ### Platform & Scaling
 - [ ] **High Availability / Synchronization**: Enable running multiple instances of `goaway` on the same network that can sync blocklists, DHCP leases, allowlists, and local DNS automatically for redundancy (Primary/Secondary setup).

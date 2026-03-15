@@ -118,3 +118,36 @@ type Alert struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
+
+type ClientGroup struct {
+	ID                uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name              string    `gorm:"uniqueIndex;not null" json:"name" validate:"required,min=1,max=64"`
+	Description       string    `gorm:"type:text" json:"description"`
+	UseGlobalPolicies bool      `gorm:"default:false" json:"useGlobalPolicies"`
+	IsDefault         bool      `gorm:"index;default:false" json:"isDefault"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
+}
+
+type ClientGroupAssignment struct {
+	ID             uint        `gorm:"primaryKey;autoIncrement" json:"id"`
+	Identifier     string      `gorm:"type:varchar(255);not null;index:idx_client_group_identifier" json:"identifier" validate:"required"`
+	IdentifierType string      `gorm:"type:varchar(16);not null;index:idx_client_group_identifier" json:"identifierType" validate:"required,oneof=ip mac"`
+	GroupID        uint        `gorm:"not null;index:idx_client_group_identifier" json:"groupID" validate:"required"`
+	Group          ClientGroup `gorm:"foreignKey:GroupID;constraint:OnDelete:CASCADE" json:"group"`
+	CreatedAt      time.Time   `json:"createdAt"`
+}
+
+type GroupBlockedDomain struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	GroupID   uint      `gorm:"not null;index:idx_group_blocked_domain,unique" json:"groupID" validate:"required"`
+	Domain    string    `gorm:"type:varchar(255);not null;index:idx_group_blocked_domain,unique" json:"domain" validate:"required"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type GroupAllowedDomain struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	GroupID   uint      `gorm:"not null;index:idx_group_allowed_domain,unique" json:"groupID" validate:"required"`
+	Domain    string    `gorm:"type:varchar(255);not null;index:idx_group_allowed_domain,unique" json:"domain" validate:"required"`
+	CreatedAt time.Time `json:"createdAt"`
+}

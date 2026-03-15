@@ -11,6 +11,7 @@ import (
 	"goaway/backend/blacklist"
 	"goaway/backend/dns/server"
 	_ "goaway/backend/docs"
+	"goaway/backend/group"
 	"goaway/backend/logging"
 	"goaway/backend/notification"
 
@@ -77,6 +78,7 @@ type API struct {
 	ResolutionService   *resolution.Service
 	NotificationService *notification.Service
 	BlacklistService    *blacklist.Service
+	GroupService        *group.Service
 	WhitelistService    *whitelist.Service
 
 	server         *http.Server
@@ -173,6 +175,7 @@ func (api *API) setupRoutes() {
 	api.registerAuthRoutes()
 	api.registerBlacklistRoutes()
 	api.registerWhitelistRoutes()
+	api.registerGroupRoutes()
 	api.registerClientRoutes()
 	api.registerAuditRoutes()
 	api.registerDNSRoutes()

@@ -53,9 +53,27 @@ func (s *DNSServer) shouldBlockQuery(client *model.Client, domainName, fullName 
 		return false
 	}
 
+	globalBlocked := s.BlacklistService.IsBlacklisted(domainName)
+	globalWhitelisted := s.WhitelistService.IsWhitelisted(fullName)
+
+	if s.GroupService != nil {
+		if s.Config.DNS.Status.Paused {
+			return false
+		}
+
+		return s.GroupService.ShouldBlock(
+			client.IP,
+			client.Mac,
+			domainName,
+			fullName,
+			globalBlocked,
+			globalWhitelisted,
+		)
+	}
+
 	return !s.Config.DNS.Status.Paused &&
-		s.BlacklistService.IsBlacklisted(domainName) &&
-		!s.WhitelistService.IsWhitelisted(fullName)
+		globalBlocked &&
+		!globalWhitelisted
 }
 
 func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {

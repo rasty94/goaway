@@ -48,5 +48,9 @@ func AutoMigrate(db *gorm.DB) error {
 		&Prefetch{},
 		&Audit{},
 		&Alert{},
+		&ClientGroup{},
+		&ClientGroupAssignment{},
+		&GroupBlockedDomain{},
+		&GroupAllowedDomain{},
 	)
 }
