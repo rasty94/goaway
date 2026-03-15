@@ -7,6 +7,7 @@ import { XIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { ClientDetails } from "./details";
 
 interface ClientEntry {
@@ -99,6 +100,7 @@ function groupClientsBySubnet(
 }
 
 export default function DNSServerVisualizer() {
+  const { t } = useTranslation();
   const [clients, setClients] = useState<ClientEntry[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientEntry | null>(
     null
@@ -221,9 +223,9 @@ export default function DNSServerVisualizer() {
         setClients(response);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to fetch clients"
+          err instanceof Error ? err.message : t("networkMap.fetchError")
         );
-        toast.warning("Error fetching clients", { description: `${err}` });
+        toast.warning(t("networkMap.fetchError"), { description: `${err}` });
       }
     };
 
@@ -307,14 +309,14 @@ export default function DNSServerVisualizer() {
     const nodes: NetworkNode[] = [
       {
         id: "dns-server",
-        name: "DNS Server",
+        name: t("networkMap.dnsServer"),
         type: "server",
         color: "cornflowerblue",
         size: viewSettings.maxNodeSize
       },
       {
         id: "upstream",
-        name: "Upstream",
+        name: t("networkMap.upstream"),
         type: "server",
         color: "teal",
         size: viewSettings.maxNodeSize
@@ -463,16 +465,16 @@ export default function DNSServerVisualizer() {
   if (error) {
     return (
       <div className="p-4 min-h-screen">
-        <div className="text-center">
-          <h1 className="text-xl font-bold mb-4">DNS Server Network Map</h1>
-          <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 max-w-md mx-auto">
-            <p className="text-red-400 mb-2">Failed to connect to API:</p>
-            <p className="text-sm text-gray-300">{error}</p>
-            <p className="text-xs text-gray-400 mt-2">
-              Could not load network map!
-            </p>
-          </div>
+      <div className="text-center">
+        <h1 className="text-xl font-bold mb-4">{t("sidebar.home")}</h1>
+        <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 max-w-md mx-auto">
+          <p className="text-red-400 mb-2">{t("networkMap.failedConnect")}:</p>
+          <p className="text-sm text-gray-300">{error}</p>
+          <p className="text-xs text-gray-400 mt-2">
+            {t("networkMap.couldNotLoad")}
+          </p>
         </div>
+      </div>
       </div>
     );
   }
@@ -483,12 +485,12 @@ export default function DNSServerVisualizer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">
-              Search Clients
+              {t("networkMap.searchLabel")}
             </label>
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, IP, or vendor..."
+              placeholder={t("networkMap.searchPlaceholder")}
             />
           </div>
 
@@ -504,7 +506,7 @@ export default function DNSServerVisualizer() {
                 }
                 className="mr-2"
               />
-              <span className="text-sm">Cluster by subnet</span>
+              <span className="text-sm">{t("networkMap.clusterBySubnet")}</span>
             </label>
 
             <label className="flex items-center">
@@ -518,13 +520,13 @@ export default function DNSServerVisualizer() {
                 }
                 className="mr-2"
               />
-              <span className="text-sm">Hide inactive clients</span>
+              <span className="text-sm">{t("networkMap.hideInactiveClients")}</span>
             </label>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">
-              Activity threshold (minutes)
+              {t("networkMap.activityThreshold")}
             </label>
             <Slider
               className="mb-1"
@@ -539,7 +541,7 @@ export default function DNSServerVisualizer() {
               }
             />
             <div className="text-xs text-muted-foreground">
-              {viewSettings.activityThresholdMinutes} minutes
+              {viewSettings.activityThresholdMinutes} {t("networkMap.minutes")}
             </div>
           </div>
         </div>
@@ -552,19 +554,19 @@ export default function DNSServerVisualizer() {
         <div className="grid grid-cols-4 gap-2 text-sm mb-4">
           {[
             {
-              label: "total client",
-              plural: "total clients",
+              label: t("networkMap.totalClients"),
+              plural: t("networkMap.totalClients"),
               value: clients.length
             },
             {
-              label: "visible client",
-              plural: "visible clients",
+              label: t("networkMap.visibleClients"),
+              plural: t("networkMap.visibleClients"),
               value: filteredClients.length
             },
-            { label: "node", plural: "nodes", value: networkData.nodes.length },
+            { label: t("networkMap.nodes"), plural: t("networkMap.nodes"), value: networkData.nodes.length },
             {
-              label: "active",
-              plural: "active",
+              label: t("networkMap.active"),
+              plural: t("networkMap.active"),
               value: filteredClients.filter((c) =>
                 isClientActive(
                   c.lastSeen,
@@ -583,18 +585,17 @@ export default function DNSServerVisualizer() {
         </div>
 
         <div className="mb-4 text-sm text-muted-foreground space-y-1">
-          <p>Click nodes for details • Drag to move • Mouse wheel to zoom</p>
+          <p>{t("networkMap.nodeInstruction")}</p>
           <p>
-            Green nodes are active • Gray nodes are inactive • Larger nodes =
-            more clients
+            {t("networkMap.legendGreen")} • {t("networkMap.legendGray")} • {t("networkMap.legendSize")}
           </p>
         </div>
 
         {networkData.nodes.length > 0 && (
           <div className="rounded-md cursor-move overflow-hidden">
             <ForceGraph2D
-              ref={fgRef}
-              graphData={networkData}
+              ref={fgRef as any}
+              graphData={networkData as any}
               width={dimensions.width}
               height={dimensions.height}
               nodeColor={(node: NetworkNode) => node.color || "#ffffff"}
@@ -652,7 +653,7 @@ export default function DNSServerVisualizer() {
         )}
 
         <p className="text-right text-xs text-muted-foreground italic mt-2">
-          Showing {filteredClients.length} of {clients.length} clients
+          {t("networkMap.showing", { count: filteredClients.length, total: clients.length })}
         </p>
       </div>
 
@@ -677,7 +678,7 @@ export default function DNSServerVisualizer() {
           <ScrollArea>
             <div className="flex">
               <h3 className="font-semibold">
-                Subnet Cluster ({selectedCluster.length} clients)
+                {t("networkMap.subnetCluster", { count: selectedCluster.length })}
               </h3>
               <XIcon
                 className="mt-0.5 ml-2 text-xl text-red-500 cursor-pointer"
@@ -687,7 +688,7 @@ export default function DNSServerVisualizer() {
           </ScrollArea>
           <div className="space-y-1 mt-2 cursor-pointer">
             {selectedCluster
-              .sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen))
+              .sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime())
               .map((client) => (
                 <div
                   onClick={() => {

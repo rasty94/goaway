@@ -20,5 +20,174 @@
     "error": "Error",
     "save": "Guardar",
     "cancel": "Cancelar"
+  },
+  "home": {
+    "metrics": {
+      "total": "Consultas Totales",
+      "blocked": "Consultas Bloqueadas",
+      "percentage": "Porcentaje Bloqueado",
+      "cached": "Consultas en Caché"
+    },
+    "charts": {
+      "timeline": "Línea de Tiempo",
+      "requestTypes": "Tipos de Consulta",
+      "blockedDomains": "Dominios más Bloqueados",
+      "topBlockedClients": "Clientes más Bloqueados",
+      "responseSizes": "Tamaños de Respuesta",
+      "total": "Total",
+      "avg": "Promedio",
+      "max": "Máximo",
+      "min": "Mínimo",
+      "hits": "Impactos",
+      "requests": "Peticiones",
+      "frequency": "Frecuencia",
+      "noBlockedDomains": "No se ha bloqueado ningún dominio",
+      "noBlockedClients": "No hay datos de clientes para mostrar",
+      "radarChart": "Gráfico de Radar",
+      "pieChart": "Gráfico de Pastel",
+      "chartType": "Tipo de Gráfico",
+      "noQueryTypes": "No se han identificado tipos de consulta",
+      "blocked": "Bloqueado",
+      "allowed": "Permitido",
+      "cached": "En Caché",
+      "resetZoom": "Restablecer Zoom",
+      "refresh": "Actualizar",
+      "dragZoom": "Arrastra para zoom: Selecciona un área en el gráfico para ampliar",
+      "noData": "No hay datos disponibles",
+      "updated": "Actualizado"
+    },
+    "audit": {
+      "title": "Auditoría del Sistema",
+      "never": "Nunca",
+      "loading": "Cargando...",
+      "noAudits": "No hay auditorías creadas"
+    }
+  },
+  "logs": {
+    "flowSummary": "Resumen de Flujo",
+    "topDestinations": "Principales Destinos",
+    "topClients": "Principales Clientes",
+    "noDestinations": "No se han solicitado destinos",
+    "noClients": "No se han visto clientes",
+    "filterDomain": "Filtrar dominio...",
+    "filterClient": "Filtrar cliente...",
+    "clear": "Limpiar",
+    "columns": "Columnas",
+    "confirmClearTitle": "Confirmar Limpieza de Logs",
+    "confirmClearMessage": "¿Estás seguro de que quieres limpiar todos los logs?",
+    "irreversible": "irreversible",
+    "yesClear": "Sí, limpiar logs",
+    "cancel": "Cancelar",
+    "filtered": "Filtrado",
+    "loading": "Cargando...",
+    "help": "Ayuda",
+    "clearSuccess": "¡Logs limpiados con éxito!"
+  },
+  "clients": {
+    "loading": "Cargando mapa de red...",
+    "noClients": "Ningún cliente ha enviado peticiones todavía. La información del cliente aparecerá aquí cuando esté disponible.",
+    "fetchError": "Error al obtener los clientes"
+  },
+  "networkMap": {
+    "searchPlaceholder": "Buscar por nombre, IP o vendedor...",
+    "searchLabel": "Buscar Clientes",
+    "clusterBySubnet": "Agrupar por subred",
+    "hideInactiveClients": "Ocultar clientes inactivos",
+    "activityThreshold": "Umbral de actividad (minutos)",
+    "minutes": "minutos",
+    "totalClients": "clientes totales",
+    "visibleClients": "clientes visibles",
+    "nodes": "nodos",
+    "active": "activo",
+    "nodeInstruction": "Haz clic en los nodos para ver detalles • Arrastra para mover • Rueda del mouse para zoom",
+    "legendGreen": "Los nodos verdes están activos",
+    "legendGray": "Los nodos grises están inactivos",
+    "legendSize": "Nodos más grandes = más clientes",
+    "showing": "Mostrando {{count}} de {{total}} clientes",
+    "subnetCluster": "Clúster de Subred ({{count}} clientes)",
+    "dnsServer": "Servidor DNS",
+    "upstream": "Upstream",
+    "failedConnect": "Error al conectar con la API",
+    "couldNotLoad": "¡No se pudo cargar el mapa de red!"
+  },
+  "lists": {
+    "totalLists": "Listas Totales",
+    "active": "Activas",
+    "inactive": "Inactivas",
+    "blockedDomains": "Dominios Bloqueados",
+    "editLists": "Editar Listas",
+    "exitEditMode": "Salir del Modo Edición",
+    "removeSelected": "Eliminar Seleccionadas",
+    "updateSelected": "Actualizar Seleccionadas",
+    "listsUpdated": "{{count}} lista(s) actualizada(s)",
+    "fetchError": "No se pudieron obtener las listas",
+    "whitelist": "Lista Blanca",
+    "blacklist": "Lista Negra",
+    "noEntries": "No se encontraron entradas"
+  },
+  "whitelist": {
+    "title": "Lista blanca de dominios",
+    "description": "Los dominios en lista blanca superarán a los de lista negra. Puede ser útil si una lista bloquea <strong>example.com</strong>, pero quieres que siempre resuelva.",
+    "newEntry": "Nuevo dominio en lista blanca",
+    "domainNameLabel": "Nombre de dominio",
+    "domainPlaceholder": "example.com",
+    "fqdnHint": "Ingresa el dominio que quieres poner en lista blanca. Asegúrate de que sea un <fqdnLink>FQDN</fqdnLink>",
+    "add": "Añadir",
+    "adding": "Añadiendo...",
+    "searchPlaceholder": "Buscar dominios...",
+    "domainColumn": "Dominio",
+    "actionColumn": "Acción",
+    "delete": "Eliminar",
+    "noMatch": "No hay entradas que coincidan con tu búsqueda",
+    "emptyState": "Añade un dominio en lista blanca para empezar",
+    "successAdd": "¡{{domain}} está ahora en la lista blanca!",
+    "successDelete": "¡{{domain}} ya no está en la lista blanca!",
+    "fetchError": "No se pudieron obtener los dominios en lista blanca",
+    "deleteError": "Error al eliminar {{domain}}",
+    "domainRequired": "El dominio es obligatorio",
+    "entry": "Entrada",
+    "entries": "Entradas"
+  },
+  "settings": {
+    "title": "Configuración",
+    "restartRequired": "Los ajustes marcados con un asterisco (*) requieren un reinicio para aplicarse.",
+    "unsavedChanges": "Cambios sin guardar",
+    "unsavedDescription": "Tienes cambios pendientes",
+    "save": "Guardar",
+    "settingsSaved": "Configuración guardada",
+    "loadError": "Error al cargar la configuración",
+    "saveError": "Error al guardar la configuración",
+    "loading": "Cargando...",
+    "sections": {
+      "security": {
+        "title": "Seguridad",
+        "description": "Estado de la API y ajustes de autenticación"
+      },
+      "database": {
+        "title": "Base de datos",
+        "description": "Importar/Exportar y gestión de base de datos"
+      },
+      "logging": {
+        "title": "Registro",
+        "description": "Registros de aplicación y retención de estadísticas"
+      },
+      "alerts": {
+        "title": "Alertas",
+        "description": "Configurar notificaciones externas y alertas"
+      }
+    },
+    "password": {
+      "updated": "Contraseña actualizada",
+      "updateError": "Error al actualizar la contraseña",
+      "fetchError": "Error al actualizar la contraseña",
+      "currentRequired": "Se requiere la contraseña actual",
+      "newRequired": "Se requiere la nueva contraseña",
+      "mismatch": "Las contraseñas no coinciden"
+    },
+    "import": {
+      "success": "Base de datos importada",
+      "backup": "Copia de seguridad: {{name}}",
+      "error": "Error al importar"
+    }
   }
 }

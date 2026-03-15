@@ -64,6 +64,7 @@ import {
   VisibilityState
 } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ClientEntry } from "./clients";
 import { DNSMetrics } from "@/app/home/metrics-card";
@@ -85,6 +86,7 @@ interface QueryDetail {
   blocked: boolean;
   cached: boolean;
   client: ClientEntry;
+  protocol: string;
 }
 
 interface QueryResponse {
@@ -132,11 +134,7 @@ async function fetchQueries(
     if (response?.queries && Array.isArray(response.queries)) {
       return {
         queries: response.queries.map(
-          (item: {
-            client: { ip?: string; name?: string; mac?: string };
-            ip?: { ip?: string; rtype?: string }[];
-            [key: string]: string;
-          }) => ({
+          (item: any) => ({
             ...item,
             client: {
               ip: item.client?.ip || "",
@@ -144,7 +142,7 @@ async function fetchQueries(
               mac: item.client?.mac || ""
             },
             ip: Array.isArray(item.ip)
-              ? item.ip.map((entry) => ({
+              ? item.ip.map((entry: any) => ({
                   ip: String(entry?.ip || ""),
                   rtype: String(entry?.rtype || "")
                 }))
@@ -185,6 +183,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function Logs() {
+  const { t } = useTranslation();
   const [queries, setQueries] = useState<Queries[]>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(() => {
@@ -371,11 +370,11 @@ export function Logs() {
       if (column.id === "client") {
         return {
           ...column,
-          cell: ({ row }) => {
+          cell: ({ row }: { row: { original: Queries } }) => {
             const client = row.original.client;
             return (
               <div
-                onClick={() => showClientDetails(client)}
+                onClick={() => showClientDetails(client as any)}
                 className="cursor-pointer text-blue-300 hover:text-blue-500 transition-colors"
               >
                 {client.name} | {client.ip}
@@ -415,7 +414,7 @@ export function Logs() {
   async function clearLogs() {
     const [responseCode] = await DeleteRequest("queries", null);
     if (responseCode === 200) {
-      toast.success("Logs cleared successfully!");
+      toast.success(t("logs.clearSuccess"));
       setQueries([]);
       setTotalRecords(0);
       setIsModalOpen(false);
@@ -487,12 +486,12 @@ export function Logs() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-36 mb-4 text-sm">
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Flow Summary
+            {t("logs.flowSummary")}
           </div>
           <div className="flex items-center justify-between">
             <div className="flex gap-1 items-center">
               <ArrowsDownUpIcon className="text-blue-400" />
-              Total
+              {t("home.charts.total")}
             </div>
             <div className="flex text-muted-foreground">
               {metricsData?.total}
@@ -501,7 +500,7 @@ export function Logs() {
           <div className="flex items-center justify-between">
             <div className="flex gap-1 items-center">
               <LeafIcon className="text-green-400" />
-              Allowed
+              {t("home.charts.allowed")}
             </div>
             <div className="flex text-muted-foreground">
               {(metricsData?.allowed || 0) + (metricsData?.cached || 0)}
@@ -510,7 +509,7 @@ export function Logs() {
           <div className="flex items-center justify-between">
             <div className="flex gap-1 items-center">
               <FlagIcon className="text-red-400" />
-              Blocked
+              {t("home.charts.blocked")}
             </div>
             <div className="flex text-muted-foreground">
               {metricsData?.blocked}
@@ -519,7 +518,7 @@ export function Logs() {
           <div className="flex items-center justify-between">
             <div className="flex gap-1 items-center">
               <LightningIcon className="text-yellow-400" />
-              Cached
+              {t("home.charts.cached")}
             </div>
             <div className="flex text-muted-foreground">
               {metricsData?.cached}
@@ -529,11 +528,11 @@ export function Logs() {
 
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Top Destinations
+            {t("logs.topDestinations")}
           </div>
           {topDestinations.length === 0 ? (
             <div className="text-xs text-muted-foreground/70 italic">
-              No destinations requested
+              {t("logs.noDestinations")}
             </div>
           ) : (
             <div>
@@ -554,11 +553,11 @@ export function Logs() {
 
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Top Clients
+            {t("logs.topClients")}
           </div>
           {topClients.length === 0 ? (
             <div className="text-xs text-muted-foreground/70 italic">
-              No clients seen
+              {t("logs.noClients")}
             </div>
           ) : (
             <div>
@@ -589,7 +588,7 @@ export function Logs() {
         <div className="relative max-w-sm">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Filter domain..."
+            placeholder={t("logs.filterDomain")}
             value={domainInputValue}
             onChange={(event) => handleDomainInputChange(event.target.value)}
             className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
@@ -618,7 +617,7 @@ export function Logs() {
         <div className="ml-5 relative max-w-sm">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Filter client..."
+            placeholder={t("logs.filterClient")}
             value={clientInputValue}
             onChange={(event) => handleClientInputChange(event.target.value)}
             className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
@@ -642,7 +641,7 @@ export function Logs() {
         {clientFilter && (
           <div className="ml-3 flex items-center text-sm text-muted-foreground animate-in fade-in-50 slide-in-from-left-2 duration-200">
             <span className="bg-primary/10 text-primary px-2 py-1 rounded-md border">
-              Filtered: "{clientFilter}"
+              {t("logs.filtered")}: "{clientFilter}"
             </span>
           </div>
         )}
@@ -650,21 +649,21 @@ export function Logs() {
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild className="ml-5">
             <Button disabled={queries.length === 0} variant="destructive">
-              Clear
+              {t("logs.clear")}
             </Button>
           </DialogTrigger>
           <DialogContent className="md:w-auto max-w-md p-6 rounded-xl shadow-lg">
             <div className="flex flex-col items-center text-center">
               <WarningIcon className="h-12 w-12 text-amber-500 mb-4" />
               <DialogTitle className="text-xl font-semibold mb-2">
-                Confirm Log Clearance
+                {t("logs.confirmClearTitle")}
               </DialogTitle>
               <DialogDescription className="text-base mb-6">
                 <div className="bg-destructive/20 border border-destructive text-destructive p-4 rounded-xl">
-                  <p>Are you sure you want to clear all logs?</p>{" "}
+                  <p>{t("logs.confirmClearMessage")}</p>{" "}
                   <p>
-                    This action is{" "}
-                    <span className="font-bold underline">irreversible</span>.
+                    {t("logs.confirmClearTitle").split(" ")[0]} is{" "}
+                    <span className="font-bold underline">{t("logs.irreversible")}</span>.
                   </p>
                 </div>
               </DialogDescription>
@@ -674,14 +673,14 @@ export function Logs() {
                   className="hover:font-bold transition-all duration-200"
                   onClick={() => setIsModalOpen(false)}
                 >
-                  Cancel
+                  {t("logs.cancel")}
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={clearLogs}
                   className="hover:font-bold transition-all duration-200 bg-destructive/20"
                 >
-                  Yes, clear logs
+                  {t("logs.yesClear")}
                 </Button>
               </div>
             </div>
@@ -693,7 +692,7 @@ export function Logs() {
               variant="outline"
               className="ml-auto transition-all duration-200 hover:scale-105"
             >
-              Columns <CaretDownIcon />
+              {t("logs.columns")} <CaretDownIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -744,7 +743,7 @@ export function Logs() {
                 >
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
-                    <span>Loading...</span>
+                    <span>{t("logs.loading")}</span>
                   </div>
                 </TableCell>
               </TableRow>

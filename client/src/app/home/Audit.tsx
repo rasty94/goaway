@@ -5,6 +5,7 @@ import { NoContent } from "@/shared";
 import { GetRequest } from "@/util";
 import { ArticleIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 type AuditEntry = {
@@ -15,6 +16,7 @@ type AuditEntry = {
 };
 
 export default function Audit() {
+  const { t } = useTranslation();
   const [audits, setAudits] = useState<AuditEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,9 +26,7 @@ export default function Audit() {
         const [status, response] = await GetRequest("audit");
         if (status === 200) setAudits(response);
       } catch (error) {
-        toast.warning("Failed to fetch audits", {
-          description: response.error
-        });
+        toast.warning("Failed to fetch audits");
         console.error("Failed to fetch audits:", error);
       } finally {
         setIsLoading(false);
@@ -39,10 +39,10 @@ export default function Audit() {
   }, []);
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return "Never";
+    if (!dateString) return t("home.audit.never");
 
     try {
-      return new Date(dateString).toLocaleString("en-US", {
+      return new Date(dateString).toLocaleString(undefined, {
         month: "short",
         day: "numeric",
         hour: "2-digit",
@@ -59,14 +59,14 @@ export default function Audit() {
       <CardHeader className="pl-4 mb-2">
         <CardTitle className="flex items-center gap-2">
           <ArticleIcon size={18} />
-          Audit Log
+          {t("home.audit.title")}
         </CardTitle>
       </CardHeader>
 
       <CardContent className="p-0">
         {isLoading ? (
           <div className="p-4 text-center text-muted-foreground">
-            Loading...
+            {t("home.audit.loading")}
           </div>
         ) : audits.length > 0 ? (
           <div className="space-y-2">
@@ -88,7 +88,7 @@ export default function Audit() {
             ))}
           </div>
         ) : (
-          <NoContent text={"No audits created"} />
+          <NoContent text={t("home.audit.noAudits")} />
         )}
       </CardContent>
     </Card>

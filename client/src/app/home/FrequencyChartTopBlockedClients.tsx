@@ -6,6 +6,7 @@ import { NoContent } from "@/shared";
 import { GetRequest } from "@/util";
 import { UsersIcon } from "@phosphor-icons/react";
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Bar,
   BarChart,
@@ -13,15 +14,9 @@ import {
   LabelList,
   ResponsiveContainer,
   Tooltip,
-  TooltipContentProps,
   XAxis,
   YAxis
 } from "recharts";
-import {
-  NameType,
-  ValueType
-} from "recharts/types/component/DefaultTooltipContent";
-
 type TopBlockedClients = {
   frequency: number;
   requestCount: number;
@@ -32,7 +27,8 @@ type TopBlockedClients = {
 const CustomTooltip = ({
   active,
   payload
-}: TooltipContentProps<ValueType, NameType>) => {
+}: any) => {
+  const { t } = useTranslation();
   if (active && payload && payload.length) {
     const data = payload[0].payload as TopBlockedClients;
     return (
@@ -41,14 +37,14 @@ const CustomTooltip = ({
         <div className="flex flex-col gap-1 text-sm">
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-primary mr-2" />
-            <span className="text-muted-foreground">Requests:</span>
+            <span className="text-muted-foreground">{t("home.charts.requests")}:</span>
             <span className="ml-1 font-medium">
               {data.requestCount.toLocaleString()}
             </span>
           </div>
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-primary mr-2" />
-            <span className="text-muted-foreground">Frequency:</span>
+            <span className="text-muted-foreground">{t("home.charts.frequency")}:</span>
             <span className="ml-1 font-medium">
               {data.frequency.toFixed(2)}%
             </span>
@@ -74,6 +70,7 @@ const isNewData = (a: TopBlockedClients[], b: TopBlockedClients[]): boolean => {
 };
 
 export default function FrequencyChartTopBlockedClients() {
+  const { t } = useTranslation();
   const [data, setData] = useState<TopBlockedClients[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [sortBy, setSortBy] = useState<"frequency" | "requestCount">(
@@ -125,7 +122,7 @@ export default function FrequencyChartTopBlockedClients() {
         <div className="flex justify-between items-center">
           <CardTitle className="flex lg:text-xl font-bold">
             <UsersIcon className="mt-1 mr-2" />
-            Top Clients
+            {t("home.charts.topBlockedClients")}
           </CardTitle>
           <Tabs
             value={sortBy}
@@ -138,13 +135,13 @@ export default function FrequencyChartTopBlockedClients() {
                 value="frequency"
                 className="border-l-0 !bg-accent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-orange-600 rounded-none p-0 m-2"
               >
-                Frequency
+                {t("home.charts.frequency")}
               </TabsTrigger>
               <TabsTrigger
                 value="requestCount"
                 className="border-l-0 !bg-accent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-orange-600 rounded-none p-0 m-2"
               >
-                Requests
+                {t("home.charts.requests")}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -192,10 +189,10 @@ export default function FrequencyChartTopBlockedClients() {
                   dataKey={sortBy}
                   position="right"
                   offset={8}
-                  formatter={(value: number) =>
+                  formatter={(value: any) =>
                     sortBy === "frequency"
-                      ? `${value.toFixed(1)}%`
-                      : value.toLocaleString()
+                      ? `${Number(value).toFixed(1)}%`
+                      : Number(value).toLocaleString()
                   }
                   style={{
                     fontSize: "12px",
@@ -206,7 +203,7 @@ export default function FrequencyChartTopBlockedClients() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <NoContent text={"No client data to show"} />
+          <NoContent text={t("home.charts.noBlockedClients")} />
         )}
       </CardContent>
     </Card>

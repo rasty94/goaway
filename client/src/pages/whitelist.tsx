@@ -22,14 +22,15 @@ import {
   TrashIcon
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import { toast } from "sonner";
 
-async function CreateWhitelistedDomain(domain: string) {
+async function CreateWhitelistedDomain(domain: string, t: any) {
   const [code, response] = await PostRequest("whitelist", {
     domain: domain
   });
   if (code === 200) {
-    toast.success(`${domain} is now whitelisted!`);
+    toast.success(t("whitelist.successAdd", { domain }));
     return true;
   } else {
     toast.error(response.error);
@@ -37,13 +38,13 @@ async function CreateWhitelistedDomain(domain: string) {
   }
 }
 
-async function DeleteWhitelistedDomain(domain: string) {
+async function DeleteWhitelistedDomain(domain: string, t: any) {
   const [code, response] = await DeleteRequest(
     `whitelist?domain=${domain}`,
     null
   );
   if (code === 200) {
-    toast.success(`${domain} is no longer whitelisted!`);
+    toast.success(t("whitelist.successDelete", { domain }));
     return true;
   } else {
     toast.error(response.error);
@@ -52,6 +53,7 @@ async function DeleteWhitelistedDomain(domain: string) {
 }
 
 export function Whitelist() {
+  const { t } = useTranslation();
   const [whitelistedDomains, setWhitelistedDomains] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -63,7 +65,7 @@ export function Whitelist() {
       setLoading(true);
       const [code, data] = await GetRequest("whitelist");
       if (code !== 200) {
-        toast.error("Unable to fetch whitelisted domains");
+        toast.error(t("whitelist.fetchError"));
         setWhitelistedDomains([]);
       } else {
         setWhitelistedDomains(data || []);
@@ -76,12 +78,12 @@ export function Whitelist() {
 
   const handleSave = async () => {
     if (!domainName) {
-      toast.warning("Domain is required");
+      toast.warning(t("whitelist.domainRequired"));
       return;
     }
 
     setSubmitting(true);
-    const success = await CreateWhitelistedDomain(domainName);
+    const success = await CreateWhitelistedDomain(domainName, t);
     if (success) {
       setWhitelistedDomains(whitelistedDomains.concat(domainName));
       setDomainName("");
@@ -90,11 +92,11 @@ export function Whitelist() {
   };
 
   const handleDelete = async (domain: string) => {
-    const success = await DeleteWhitelistedDomain(domain);
+    const success = await DeleteWhitelistedDomain(domain, t);
     if (success) {
       setWhitelistedDomains((prev) => prev.filter((d) => d !== domain));
     } else {
-      toast.error(`Failed to remove ${domain}`);
+      toast.error(t("whitelist.deleteError", { domain }));
     }
   };
 
@@ -109,17 +111,18 @@ export function Whitelist() {
       <div className="space-y-8 xl:w-2/3">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold">Domain whitelist</h1>
+            <h1 className="text-4xl font-bold">{t("whitelist.title")}</h1>
             <p className="text-muted-foreground text-sm">
-              Whitelisted domains will surpass blacklisted ones. Can be useful
-              if a list were to block <strong>example.com</strong>, but you want
-              it to always resolve.
+              <Trans
+                i18nKey="whitelist.description"
+                components={{ strong: <strong /> }}
+              />
             </p>
           </div>
           <div className="flex items-center gap-2">
             <DatabaseIcon className="h-3 w-3" />
             {whitelistedDomains.length}{" "}
-            {whitelistedDomains.length === 1 ? "Entry" : "Entries"}
+            {whitelistedDomains.length === 1 ? t("whitelist.entry") : t("whitelist.entries")}
           </div>
         </div>
 
@@ -127,7 +130,7 @@ export function Whitelist() {
           <CardHeader className="pb-4 border-b-2">
             <CardTitle className="flex items-center gap-2">
               <PlusIcon className="h-5 w-5 text-green-500" />
-              New whitelisted domain
+              {t("whitelist.newEntry")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -135,28 +138,32 @@ export function Whitelist() {
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="md:col-span-3 space-y-2">
                   <Label htmlFor="domain" className="font-medium">
-                    Domain name
+                    {t("whitelist.domainNameLabel")}
                   </Label>
                   <div className="relative">
                     <GlobeIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="domain"
-                      placeholder="example.com"
+                      placeholder={t("whitelist.domainPlaceholder")}
                       className="pl-9"
                       value={domainName}
                       onChange={(e) => setDomainName(e.target.value)}
                     />
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    Enter the domain you want to whitelist. Make sure it's a{" "}
-                    <a
-                      href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline hover:text-primary"
-                    >
-                      FQDN
-                    </a>
+                    <Trans
+                      i18nKey="whitelist.fqdnHint"
+                      components={{
+                        fqdnLink: (
+                          <a
+                            href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline hover:text-primary"
+                          />
+                        )
+                      }}
+                    />
                   </span>
                 </div>
                 <div className="flex items-end mb-8">
@@ -169,10 +176,10 @@ export function Whitelist() {
                     {submitting ? (
                       <>
                         <SpinnerIcon className="h-4 w-4 mr-2 animate-spin" />
-                        Adding...
+                        {t("whitelist.adding")}
                       </>
                     ) : (
-                      "Add"
+                      t("whitelist.add")
                     )}
                   </Button>
                 </div>
@@ -186,11 +193,11 @@ export function Whitelist() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <ShieldCheckIcon className="h-5 w-5 text-blue-500" />
-                Whitelisted domains
+                {t("whitelist.title")}
               </CardTitle>
               <div className="w-64">
                 <Input
-                  placeholder="Search domains..."
+                  placeholder={t("whitelist.searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="text-sm"
@@ -215,8 +222,8 @@ export function Whitelist() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead>Domain</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead>{t("whitelist.domainColumn")}</TableHead>
+                    <TableHead className="text-right">{t("whitelist.actionColumn")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -232,7 +239,7 @@ export function Whitelist() {
                             onClick={() => handleDelete(domain)}
                           >
                             <TrashIcon className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
+                            <span className="sr-only">{t("whitelist.delete")}</span>
                           </Button>
                         </div>
                       </TableCell>
@@ -244,9 +251,9 @@ export function Whitelist() {
               <div className="flex flex-col items-center justify-center py-6 text-center">
                 <p className="text-muted-foreground mt-1">
                   {searchTerm ? (
-                    "No matching entries for your search"
+                    t("whitelist.noMatch")
                   ) : (
-                    <NoContent text="Add a whitelisted domain to get started" />
+                    <NoContent text={t("whitelist.emptyState")} />
                   )}
                 </p>
               </div>

@@ -14,11 +14,12 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 - [x] **Graceful Shutdown**: Implement comprehensive graceful shutdown logic in `backend/lifecycle/manager.go` handling the `SIGINT`/`SIGTERM` signals correctly to avoid dropping in-flight DNS queries.
 
 ### Dashboard / Frontend
-- [x] **Localization (i18n)**: Prepare the frontend for multiple languages (English, Spanish, etc.) to improve international adoption. (Base implemented with EN/ES)
+- [x] **Localization (i18n)**: Fully implemented frontend support for multiple languages (English/Spanish). Integrated across all main pages and components.
 - [ ] **Live Query Tail**: Real-time visualization of incoming DNS requests with interactive filtering and highlighting.
 - [ ] **Advanced Data Visualization**: More detailed charts for top permitted/blocked domains and client activity over time.
-- [ ] **Network Topology Graph**: Interactive 2D visualization of connected clients and their DNS traffic patterns (using `react-force-graph-2d`).
+- [x] **Network Topology Graph**: Interactive 2D visualization of connected clients and their DNS traffic patterns (Implemented via DNSServerVisualizer).
 - [ ] **Mobile-First Responsive Audit**: Ensure the entire dashboard is 100% usable on mobile devices with touch-friendly targets.
+- [ ] **Go-Native Frontend Migration**: Evaluate and potentially refactor the current React frontend into Go Templates + HTMX to achieve a "Zero-NodeJS" dependency goal and a single-binary deployment.
 
 ---
 

@@ -4,6 +4,7 @@ import { UpdateCustom } from "@/app/lists/updateCustom";
 import { DeleteRequest, GetRequest } from "@/util";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export type ListEntry = {
@@ -15,6 +16,7 @@ export type ListEntry = {
 };
 
 export function Blacklist() {
+  const { t } = useTranslation();
   const [lists, setLists] = useState<ListEntry[]>([]);
   const [blockedDomains, setBlockedDomains] = useState<number>(0);
   const [editMode, setEditMode] = useState(false);
@@ -35,14 +37,14 @@ export function Blacklist() {
     async function fetchLists() {
       const [code, response] = await GetRequest("lists");
       if (code !== 200) {
-        toast.warning("Unable to fetch lists");
+        toast.warning(t("lists.fetchError"));
         return;
       }
 
       const listArray: ListEntry[] = Object.entries(response).map(
         ([name, details]) => ({
           name,
-          ...details
+          ...(details as any)
         })
       );
 
@@ -181,7 +183,7 @@ export function Blacklist() {
       updatingNow.delete(name);
       setUpdating(new Set(updatingNow));
     }
-    toast.info(`${updatedCount} list(s) updated`);
+    toast.info(t("lists.listsUpdated", { count: updatedCount }));
     setEditMode(false);
     setSelected(new Set());
   };
@@ -196,19 +198,19 @@ export function Blacklist() {
         <div className="lg:flex gap-4 mb-4">
           <div className="flex items-center gap-2 px-4 py-1 mb-1 bg-accent border-b rounded-t-sm border-b-blue-400">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-muted-foreground text-sm">Total Lists:</span>
+            <span className="text-muted-foreground text-sm">{t("lists.totalLists")}:</span>
             <span className="font-semibold">{lists.length}</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-1 mb-1 bg-accent border-b rounded-t-sm border-b-green-400">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-muted-foreground text-sm">Active:</span>
+            <span className="text-muted-foreground text-sm">{t("lists.active")}:</span>
             <span className="font-semibold">
               {lists.filter((list) => list.active).length}
             </span>
           </div>
           <div className="flex items-center gap-2 px-4 py-1 mb-1 bg-accent border-b rounded-t-sm border-b-red-400">
             <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-            <span className="text-muted-foreground text-sm">Inactive:</span>
+            <span className="text-muted-foreground text-sm">{t("lists.inactive")}:</span>
             <span className="font-semibold">
               {lists.filter((list) => !list.active).length}
             </span>
@@ -216,7 +218,7 @@ export function Blacklist() {
           <div className="flex items-center gap-2 px-4 py-1 mb-1 bg-accent border-b rounded-t-sm border-b-orange-400">
             <div className="w-2 h-2 bg-red-500 rounded-full"></div>
             <span className="text-muted-foreground text-sm">
-              Blocked Domains:
+              {t("lists.blockedDomains")}:
             </span>
             <span className="font-semibold">
               {blockedDomains.toLocaleString()}
@@ -226,7 +228,7 @@ export function Blacklist() {
       </div>
       <div className="flex gap-2 mb-2">
         <Button variant="outline" onClick={() => setEditMode((v) => !v)}>
-          {editMode ? "Exit Edit Mode" : "Edit Lists"}
+          {editMode ? t("lists.exitEditMode") : t("lists.editLists")}
         </Button>
         {editMode && (
           <>
@@ -235,14 +237,14 @@ export function Blacklist() {
               disabled={selected.size === 0}
               className="bg-red-600 text-white"
             >
-              Remove Selected
+              {t("lists.removeSelected")}
             </Button>
             <Button
               onClick={handleUpdateSelected}
               disabled={selected.size === 0}
               className="bg-blue-600 text-white"
             >
-              Update Selected
+              {t("lists.updateSelected")}
             </Button>
           </>
         )}

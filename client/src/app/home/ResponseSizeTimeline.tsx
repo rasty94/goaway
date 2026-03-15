@@ -22,6 +22,7 @@ import {
   SelectValue
 } from "@radix-ui/react-select";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Area,
   AreaChart,
@@ -30,25 +31,6 @@ import {
   XAxis,
   YAxis
 } from "recharts";
-
-const chartConfig = {
-  total: {
-    label: "Total",
-    color: "hsl(60, 100%, 50%)"
-  },
-  avg: {
-    label: "Average",
-    color: "hsl(217, 91%, 60%)"
-  },
-  max: {
-    label: "Maximum",
-    color: "hsl(0, 84%, 60%)"
-  },
-  min: {
-    label: "Minimum",
-    color: "hsl(142, 71%, 45%)"
-  }
-};
 
 type ResponseSizeQuery = {
   start: number;
@@ -59,12 +41,32 @@ type ResponseSizeQuery = {
 };
 
 export default function ResponseSizeTimeline() {
-  const [chartData, setChartData] = useState([]);
+  const { t } = useTranslation();
+  const chartConfig = {
+    total: {
+      label: t("home.charts.total"),
+      color: "hsl(60, 100%, 50%)"
+    },
+    avg: {
+      label: t("home.charts.avg"),
+      color: "hsl(217, 91%, 60%)"
+    },
+    max: {
+      label: t("home.charts.max"),
+      color: "hsl(0, 84%, 60%)"
+    },
+    min: {
+      label: t("home.charts.min"),
+      color: "hsl(142, 71%, 45%)"
+    }
+  };
+
+  const [chartData, setChartData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refAreaLeft, setRefAreaLeft] = useState("");
   const [refAreaRight, setRefAreaRight] = useState("");
-  const [zoomedData, setZoomedData] = useState([]);
+  const [zoomedData, setZoomedData] = useState<any[]>([]);
   const [isZoomed, setIsZoomed] = useState(false);
   const [timelineInterval, setTimelineInterval] = useState("2");
 
@@ -123,8 +125,8 @@ export default function ResponseSizeTimeline() {
       return;
     }
 
-    const indexLeft = chartData.findIndex((d) => d.interval === refAreaLeft);
-    const indexRight = chartData.findIndex((d) => d.interval === refAreaRight);
+    const indexLeft = chartData.findIndex((d) => String(d.interval) === String(refAreaLeft));
+    const indexRight = chartData.findIndex((d) => String(d.interval) === String(refAreaRight));
 
     const startIndex = Math.min(indexLeft, indexRight);
     const endIndex = Math.max(indexLeft, indexRight);
@@ -147,12 +149,12 @@ export default function ResponseSizeTimeline() {
     setIsZoomed(false);
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: any) => {
     if (!e || !e.activeLabel) return;
     setRefAreaLeft(e.activeLabel);
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: any) => {
     if (!refAreaLeft || !e || !e.activeLabel) return;
     setRefAreaRight(e.activeLabel);
   };
@@ -163,7 +165,7 @@ export default function ResponseSizeTimeline() {
     }
   };
 
-  const formatBytes = (bytes) => {
+  const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 B";
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB"];
@@ -179,8 +181,7 @@ export default function ResponseSizeTimeline() {
         <CardContent className="flex items-center justify-center p-6">
           <div className="flex flex-col items-center space-y-2">
             <p className="flex text-sm text-muted-foreground">
-              <SpinnerIcon className="animate-spin mt-1 mr-2" /> Loading
-              response size data...
+              <SpinnerIcon className="animate-spin mt-1 mr-2" /> {t("home.charts.noData")}
             </p>
           </div>
         </CardContent>
@@ -194,12 +195,12 @@ export default function ResponseSizeTimeline() {
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:space-y-0 px-4">
           <div className="grid sm:text-left">
             <CardTitle className="lg:flex lg:text-xl">
-              Response Size Timeline
+              {t("home.charts.responseSizes")}
               <p className="text-sm text-muted-foreground mt-1 lg:ml-4">
                 {timelineInterval}-Minute Intervals,{" "}
                 {filteredData.length > 0
-                  ? "Updated: " +
-                    new Date().toLocaleString("en-US", {
+                  ? t("home.charts.updated") + ": " +
+                    new Date().toLocaleString(undefined, {
                       month: "short",
                       day: "numeric",
                       hour: "2-digit",
@@ -207,7 +208,7 @@ export default function ResponseSizeTimeline() {
                       second: "2-digit",
                       hour12: false
                     })
-                  : "No data available"}
+                  : t("home.charts.noData")}
               </p>
             </CardTitle>
           </div>
@@ -218,7 +219,7 @@ export default function ResponseSizeTimeline() {
                 onClick={handleZoomOut}
               >
                 <MagnifyingGlassMinusIcon weight="bold" className="mr-1" />
-                Reset Zoom
+                {t("home.charts.resetZoom")}
               </Button>
             )}
             <div>
@@ -246,7 +247,7 @@ export default function ResponseSizeTimeline() {
               disabled={isRefreshing}
             >
               <ArrowsClockwiseIcon weight="bold" className="mr-1" />
-              Refresh
+              {t("home.charts.refresh")}
             </Button>
           </div>
         </CardHeader>
@@ -258,7 +259,7 @@ export default function ResponseSizeTimeline() {
                 {!isZoomed && (
                   <div className="flex items-center ml-2">
                     <MagnifyingGlassPlusIcon weight="bold" className="mr-1" />
-                    Drag to zoom: Select an area on the chart to zoom in
+                    {t("home.charts.dragZoom")}
                   </div>
                 )}
               </div>
@@ -390,7 +391,7 @@ export default function ResponseSizeTimeline() {
                                     style={{ backgroundColor: entry.color }}
                                   />
                                   <span className="text-muted-foreground text-xs mr-4">
-                                    {chartConfig[entry.dataKey]?.label ||
+                                    {(chartConfig as any)[entry.dataKey]?.label ||
                                       entry.dataKey}
                                   </span>
                                 </div>
@@ -445,14 +446,14 @@ export default function ResponseSizeTimeline() {
                       fillOpacity={0.3}
                     />
                   )}
-                  <ChartLegend content={<ChartLegendContent />} />
+                  <ChartLegend content={<ChartLegendContent payload={[]} />} />
                 </AreaChart>
               </ChartContainer>
             </CardContent>
           </>
         ) : (
           <CardContent className="flex h-[220px] items-center justify-center">
-            <NoContent text={"No requests recorded"} />
+            <NoContent text={t("home.charts.noData")} />
           </CardContent>
         )}
       </Card>

@@ -30,38 +30,49 @@ import {
   MagnifyingGlassPlusIcon
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../components/ui/button";
 import { NoContent } from "@/shared";
 
-const chartConfig = {
-  blocked: {
-    label: "Blocked",
-    color: "hsl(0, 84%, 60%)"
-  },
-  allowed: {
-    label: "Allowed",
-    color: "hsl(142, 71%, 45%)"
-  },
-  cached: {
-    label: "Cached",
-    color: "hsl(62, 86%, 55%)"
-  }
-};
-
-type Query = {
+interface Query {
   start: number;
   blocked: boolean;
   cached: boolean;
   allowed: boolean;
-};
+}
+
+interface ChartEntry {
+  interval: number;
+  timestamp: string;
+  blocked: number;
+  cached: number;
+  allowed: number;
+}
 
 export default function RequestTimeline() {
-  const [chartData, setChartData] = useState([]);
+  const { t } = useTranslation();
+
+  const chartConfig = {
+    blocked: {
+      label: t("home.charts.blocked"),
+      color: "hsl(0, 84%, 60%)"
+    },
+    allowed: {
+      label: t("home.charts.allowed"),
+      color: "hsl(142, 71%, 45%)"
+    },
+    cached: {
+      label: t("home.charts.cached"),
+      color: "hsl(62, 86%, 55%)"
+    }
+  };
+
+  const [chartData, setChartData] = useState<ChartEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refAreaLeft, setRefAreaLeft] = useState("");
-  const [refAreaRight, setRefAreaRight] = useState("");
-  const [zoomedData, setZoomedData] = useState([]);
+  const [refAreaLeft, setRefAreaLeft] = useState<number | string>("");
+  const [refAreaRight, setRefAreaRight] = useState<number | string>("");
+  const [zoomedData, setZoomedData] = useState<ChartEntry[]>([]);
   const [isZoomed, setIsZoomed] = useState(false);
   const [timelineInterval, setTimelineInterval] = useState("2");
 
@@ -118,8 +129,8 @@ export default function RequestTimeline() {
       return;
     }
 
-    const indexLeft = chartData.findIndex((d) => d.interval === refAreaLeft);
-    const indexRight = chartData.findIndex((d) => d.interval === refAreaRight);
+    const indexLeft = chartData.findIndex((d) => String(d.interval) === String(refAreaLeft));
+    const indexRight = chartData.findIndex((d) => String(d.interval) === String(refAreaRight));
 
     const startIndex = Math.min(indexLeft, indexRight);
     const endIndex = Math.max(indexLeft, indexRight);
@@ -142,12 +153,12 @@ export default function RequestTimeline() {
     setIsZoomed(false);
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: any) => {
     if (!e || !e.activeLabel) return;
     setRefAreaLeft(e.activeLabel);
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: any) => {
     if (!refAreaLeft || !e || !e.activeLabel) return;
     setRefAreaRight(e.activeLabel);
   };
@@ -182,13 +193,13 @@ export default function RequestTimeline() {
           <div className="grid sm:text-left">
             <CardTitle className="lg:flex lg:text-xl">
               <div className="flex">
-                <ChartLineIcon className="mt-1 mr-2" /> Request Timeline
+                <ChartLineIcon className="mt-1 mr-2" /> {t("home.charts.timeline")}
               </div>
               <p className="text-sm text-muted-foreground mt-1 lg:ml-4">
                 {timelineInterval}-Minute Intervals,{" "}
                 {filteredData.length > 0
-                  ? "Updated: " +
-                    new Date().toLocaleString("en-US", {
+                   ? t("home.charts.updated") + ": " +
+                    new Date().toLocaleString(undefined, {
                       month: "short",
                       day: "numeric",
                       hour: "2-digit",
@@ -196,7 +207,7 @@ export default function RequestTimeline() {
                       second: "2-digit",
                       hour12: false
                     })
-                  : "No data available"}
+                  : t("home.charts.noData")}
               </p>
             </CardTitle>
           </div>
@@ -208,7 +219,7 @@ export default function RequestTimeline() {
                 onClick={handleZoomOut}
               >
                 <MagnifyingGlassMinusIcon weight="bold" className="mr-1" />
-                Reset Zoom
+                {t("home.charts.resetZoom")}
               </Button>
             )}
             <div>
@@ -236,7 +247,7 @@ export default function RequestTimeline() {
               disabled={isRefreshing}
             >
               <ArrowsClockwiseIcon weight="bold" className="mr-1" />
-              Refresh
+              {t("home.charts.refresh")}
             </Button>
           </div>
         </CardHeader>
@@ -248,7 +259,7 @@ export default function RequestTimeline() {
                 {!isZoomed && (
                   <div className="flex items-center ml-2">
                     <MagnifyingGlassPlusIcon weight="bold" className="mr-1" />
-                    Drag to zoom: Select an area on the chart to zoom in
+                    {t("home.charts.dragZoom")}
                   </div>
                 )}
               </div>
@@ -356,7 +367,7 @@ export default function RequestTimeline() {
                         labelFormatter={(value) => {
                           try {
                             const item = filteredData.find(
-                              (d) => d.interval === value
+                              (d) => String(d.interval) === String(value)
                             );
                             if (item && item.timestamp) {
                               return new Date(item.timestamp).toLocaleString(
@@ -412,7 +423,7 @@ export default function RequestTimeline() {
                     />
                   )}
                   <ChartLegend
-                    content={<ChartLegendContent className="p-0" />}
+                    content={<ChartLegendContent className="p-0" payload={[]} />}
                   />
                 </AreaChart>
               </ChartContainer>
@@ -420,7 +431,7 @@ export default function RequestTimeline() {
           </>
         ) : (
           <CardContent className="flex h-[220px] items-center justify-center">
-            <NoContent text={"No requests recorded"} />
+            <NoContent text={t("home.charts.noData")} />
           </CardContent>
         )}
       </Card>

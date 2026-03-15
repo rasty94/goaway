@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { GetRequest, PostRequest } from "@/util";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import { ImportModal } from "@/app/settings/ImportModal";
 import { LoggingSection } from "@/app/settings/LoggingSection";
 
 export function Settings() {
+  const { t } = useTranslation();
   const [preferences, setPreferences] = useState<Root>({
     dns: {
       status: { pausedAt: "", pauseTime: "", paused: false },
@@ -78,7 +80,7 @@ export function Settings() {
         originalPrefs.current = JSON.stringify(response);
       }
     } catch {
-      toast.error("Failed to load settings");
+      toast.error(t("settings.loadError"));
     } finally {
       setLoading((prev) => ({ ...prev, main: false }));
     }
@@ -189,17 +191,17 @@ export function Settings() {
         toast.dismiss(unsavedToastId);
         setUnsavedToastId(null);
       }
-      toast.success("Settings saved");
+      toast.success(t("settings.settingsSaved"));
     } catch {
-      toast.error("Failed to save settings");
+      toast.error(t("settings.saveError"));
     }
-  }, [unsavedToastId]);
+  }, [unsavedToastId, t]);
 
   useEffect(() => {
     if (isChanged && !unsavedToastId) {
-      const toastId = toast.info("Unsaved Changes", {
-        description: "You have pending changes",
-        action: { label: "Save", onClick: saveSettingsCallback },
+      const toastId = toast.info(t("settings.unsavedChanges"), {
+        description: t("settings.unsavedDescription"),
+        action: { label: t("settings.save"), onClick: saveSettingsCallback },
         closeButton: true,
         duration: Infinity
       });
@@ -234,26 +236,26 @@ export function Settings() {
   };
 
   if (loading.main) {
-    return <div className="container mx-auto py-8 text-center">Loading...</div>;
+    return <div className="container mx-auto py-8 text-center">{t("settings.loading")}</div>;
   }
 
   return (
     <div className="container mx-auto space-y-4 xl:w-1/2">
       <p className="text-sm text-muted-foreground">
-        Settings marked with an asterisk (*) require a restart to take effect.
+        {t("settings.restartRequired")}
       </p>
 
-      {SETTINGS_SECTIONS.map(({ title, description, icon, settings }) => (
+      {SETTINGS_SECTIONS.map(({ title, icon, settings }) => (
         <Card key={title} className="p-4 gap-2">
           <CardTitle className="border-b pb-1">
             <div className="flex">
               <div className="mt-1 p-1 mr-2 rounded-lg bg-primary/10 text-primary">
                 {icon}
               </div>
-              <h2 className="text-xl font-semibold">{title}</h2>
+              <h2 className="text-xl font-semibold">{t(`settings.sections.${title.toLowerCase()}.title`)}</h2>
             </div>
             <p className="mt-1 text-sm font-normal text-muted-foreground">
-              {description}
+              {t(`settings.sections.${title.toLowerCase()}.description`)}
             </p>
           </CardTitle>
 
@@ -272,10 +274,10 @@ export function Settings() {
             {title === "Database" && (
               <DatabaseSection
                 loading={loading}
-                setLoading={setLoading}
-                fileInput={fileInput}
+                setLoading={setLoading as any}
+                fileInput={fileInput as any}
                 setFile={setFile}
-                setModals={setModals}
+                setModals={setModals as any}
               />
             )}
 
@@ -312,7 +314,7 @@ export function Settings() {
 
             {settings.length > 0 && (
               <DynamicSettingsSection
-                settings={settings}
+                settings={settings as any}
                 getSettingValue={getSettingValue}
                 handleSettingChange={handleSettingChange}
               />
@@ -325,10 +327,10 @@ export function Settings() {
         open={modals.password}
         onClose={() => setModals((prev) => ({ ...prev, password: false }))}
         onSubmit={async () => {
-          if (!passwords.current) return setError("Current password required");
-          if (!passwords.new) return setError("New password required");
+          if (!passwords.current) return setError(t("settings.password.currentRequired"));
+          if (!passwords.new) return setError(t("settings.password.newRequired"));
           if (passwords.new !== passwords.confirm)
-            return setError("Passwords don't match");
+            return setError(t("settings.password.mismatch"));
 
           try {
             const { PutRequest } = await import("@/util");
@@ -338,14 +340,14 @@ export function Settings() {
             });
 
             if (status === 200) {
-              toast.success("Password updated");
+              toast.success(t("settings.password.updated"));
               setModals((prev) => ({ ...prev, password: false }));
               navigate("/login");
             } else {
-              setError(response || "Error updating password");
+              setError(response || t("settings.password.updateError"));
             }
           } catch {
-            setError("Failed to update password");
+            setError(t("settings.password.fetchError"));
           }
         }}
         passwords={passwords}
@@ -375,16 +377,16 @@ export function Settings() {
 
             if (response.ok) {
               const result = await response.json();
-              toast.success("Database imported", {
+              toast.success(t("settings.import.success"), {
                 description: result.backup_created
-                  ? `Backup: ${result.backup_created}`
+                  ? t("settings.import.backup", { name: result.backup_created })
                   : ""
               });
             } else {
               throw new Error(await response.text());
             }
           } catch (err) {
-            toast.error("Import failed", {
+            toast.error(t("settings.import.error"), {
               description: err instanceof Error ? err.message : ""
             });
           } finally {

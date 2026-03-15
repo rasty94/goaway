@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GetRequest } from "@/util";
 import { NetworkSlashIcon } from "@phosphor-icons/react";
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Bar,
   BarChart,
@@ -11,15 +12,10 @@ import {
   LabelList,
   ResponsiveContainer,
   Tooltip,
-  TooltipContentProps,
   XAxis,
   YAxis
 } from "recharts";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import {
-  NameType,
-  ValueType
-} from "recharts/types/component/DefaultTooltipContent";
 import { NoContent } from "@/shared";
 
 type TopBlockedDomains = {
@@ -31,7 +27,8 @@ type TopBlockedDomains = {
 const CustomTooltip = ({
   active,
   payload
-}: TooltipContentProps<ValueType, NameType>) => {
+}: any) => {
+  const { t } = useTranslation();
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -40,14 +37,14 @@ const CustomTooltip = ({
         <div className="flex flex-col gap-1 text-sm">
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-primary mr-2" />
-            <span className="text-muted-foreground">Hits:</span>
+            <span className="text-muted-foreground">{t("home.charts.hits")}:</span>
             <span className="ml-1 font-medium">
               {data.hits.toLocaleString()}
             </span>
           </div>
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-primary mr-2" />
-            <span className="text-muted-foreground">Frequency:</span>
+            <span className="text-muted-foreground">{t("home.charts.frequency")}:</span>
             <span className="ml-1 font-medium">
               {data.frequency.toFixed(2)}%
             </span>
@@ -73,6 +70,7 @@ const isNewData = (a: TopBlockedDomains[], b: TopBlockedDomains[]): boolean => {
 };
 
 export default function FrequencyChartBlockedDomains() {
+  const { t } = useTranslation();
   const [data, setData] = useState<TopBlockedDomains[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [sortBy, setSortBy] = useState<"frequency" | "hits">("frequency");
@@ -121,7 +119,7 @@ export default function FrequencyChartBlockedDomains() {
       <CardHeader className="px-4 mb-2">
         <div className="flex justify-between items-center">
           <CardTitle className="flex lg:text-xl font-bold">
-            <NetworkSlashIcon className="mt-1 mr-2" /> Top Blocked Domains
+            <NetworkSlashIcon className="mt-1 mr-2" /> {t("home.charts.blockedDomains")}
           </CardTitle>
           <Tabs
             value={sortBy}
@@ -132,13 +130,13 @@ export default function FrequencyChartBlockedDomains() {
                 value="frequency"
                 className="border-l-0 !bg-accent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-orange-600 rounded-none p-0 m-2"
               >
-                Frequency
+                {t("home.charts.frequency")}
               </TabsTrigger>
               <TabsTrigger
                 value="hits"
                 className="border-l-0 !bg-accent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-orange-600 rounded-none p-0 m-2"
               >
-                Hits
+                {t("home.charts.hits")}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -187,10 +185,10 @@ export default function FrequencyChartBlockedDomains() {
                   dataKey={sortBy}
                   position="right"
                   offset={8}
-                  formatter={(value: number) =>
+                  formatter={(value: any) =>
                     sortBy === "frequency"
-                      ? `${value.toFixed(1)}%`
-                      : value.toLocaleString()
+                      ? `${Number(value).toFixed(1)}%`
+                      : Number(value).toLocaleString()
                   }
                   style={{
                     fontSize: "12px",
@@ -201,7 +199,7 @@ export default function FrequencyChartBlockedDomains() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <NoContent text={"No domain has been blocked"} />
+          <NoContent text={t("home.charts.noBlockedDomains")} />
         )}
       </CardContent>
     </Card>

@@ -20,5 +20,174 @@
     "error": "Error",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "home": {
+    "metrics": {
+      "total": "Total Queries",
+      "blocked": "Queries Blocked",
+      "percentage": "Percent Blocked",
+      "cached": "Queries Cached"
+    },
+    "charts": {
+      "timeline": "Query Timeline",
+      "requestTypes": "Request Types",
+      "blockedDomains": "Top Blocked Domains",
+      "topBlockedClients": "Top Blocked Clients",
+      "responseSizes": "Response Sizes",
+      "total": "Total",
+      "avg": "Average",
+      "max": "Maximum",
+      "min": "Minimum",
+      "hits": "Hits",
+      "requests": "Requests",
+      "frequency": "Frequency",
+      "noBlockedDomains": "No domain has been blocked",
+      "noBlockedClients": "No client data to show",
+      "radarChart": "Radar Chart",
+      "pieChart": "Pie Chart",
+      "chartType": "Chart Type",
+      "noQueryTypes": "No query types have been identified",
+      "blocked": "Blocked",
+      "allowed": "Allowed",
+      "cached": "Cached",
+      "resetZoom": "Reset Zoom",
+      "refresh": "Refresh",
+      "dragZoom": "Drag to zoom: Select an area on the chart to zoom in",
+      "noData": "No data available",
+      "updated": "Updated"
+    },
+    "audit": {
+      "title": "System Audit",
+      "never": "Never",
+      "loading": "Loading...",
+      "noAudits": "No audits created"
+    }
+  },
+  "logs": {
+    "flowSummary": "Flow Summary",
+    "topDestinations": "Top Destinations",
+    "topClients": "Top Clients",
+    "noDestinations": "No destinations requested",
+    "noClients": "No clients seen",
+    "filterDomain": "Filter domain...",
+    "filterClient": "Filter client...",
+    "clear": "Clear",
+    "columns": "Columns",
+    "confirmClearTitle": "Confirm Log Clearance",
+    "confirmClearMessage": "Are you sure you want to clear all logs?",
+    "irreversible": "irreversible",
+    "yesClear": "Yes, clear logs",
+    "cancel": "Cancel",
+    "filtered": "Filtered",
+    "loading": "Loading...",
+    "help": "Help",
+    "clearSuccess": "Logs cleared successfully!"
+  },
+  "clients": {
+    "loading": "Loading network map...",
+    "noClients": "No clients have sent any requests yet. Client information will appear here when available.",
+    "fetchError": "Failed to fetch clients"
+  },
+  "networkMap": {
+    "searchPlaceholder": "Search by name, IP, or vendor...",
+    "searchLabel": "Search Clients",
+    "clusterBySubnet": "Cluster by subnet",
+    "hideInactiveClients": "Hide inactive clients",
+    "activityThreshold": "Activity threshold (minutes)",
+    "minutes": "minutes",
+    "totalClients": "total clients",
+    "visibleClients": "visible clients",
+    "nodes": "nodes",
+    "active": "active",
+    "nodeInstruction": "Click nodes for details • Drag to move • Mouse wheel to zoom",
+    "legendGreen": "Green nodes are active",
+    "legendGray": "Gray nodes are inactive",
+    "legendSize": "Larger nodes = more clients",
+    "showing": "Showing {{count}} of {{total}} clients",
+    "subnetCluster": "Subnet Cluster ({{count}} clients)",
+    "dnsServer": "DNS Server",
+    "upstream": "Upstream",
+    "failedConnect": "Failed to connect to API",
+    "couldNotLoad": "Could not load network map!"
+  },
+  "lists": {
+    "totalLists": "Total Lists",
+    "active": "Active",
+    "inactive": "Inactive",
+    "blockedDomains": "Blocked Domains",
+    "editLists": "Edit Lists",
+    "exitEditMode": "Exit Edit Mode",
+    "removeSelected": "Remove Selected",
+    "updateSelected": "Update Selected",
+    "listsUpdated": "{{count}} list(s) updated",
+    "fetchError": "Unable to fetch lists",
+    "whitelist": "Whitelist",
+    "blacklist": "Blacklist",
+    "noEntries": "No entries found"
+  },
+  "whitelist": {
+    "title": "Domain whitelist",
+    "description": "Whitelisted domains will surpass blacklisted ones. Can be useful if a list were to block <strong>example.com</strong>, but you want it to always resolve.",
+    "newEntry": "New whitelisted domain",
+    "domainNameLabel": "Domain name",
+    "domainPlaceholder": "example.com",
+    "fqdnHint": "Enter the domain you want to whitelist. Make sure it's a <fqdnLink>FQDN</fqdnLink>",
+    "add": "Add",
+    "adding": "Adding...",
+    "searchPlaceholder": "Search domains...",
+    "domainColumn": "Domain",
+    "actionColumn": "Action",
+    "delete": "Delete",
+    "noMatch": "No matching entries for your search",
+    "emptyState": "Add a whitelisted domain to get started",
+    "successAdd": "{{domain}} is now whitelisted!",
+    "successDelete": "{{domain}} is no longer whitelisted!",
+    "fetchError": "Unable to fetch whitelisted domains",
+    "deleteError": "Failed to remove {{domain}}",
+    "domainRequired": "Domain is required",
+    "entry": "Entry",
+    "entries": "Entries"
+  },
+  "settings": {
+    "title": "Settings",
+    "restartRequired": "Settings marked with an asterisk (*) require a restart to take effect.",
+    "unsavedChanges": "Unsaved Changes",
+    "unsavedDescription": "You have pending changes",
+    "save": "Save",
+    "settingsSaved": "Settings saved",
+    "loadError": "Failed to load settings",
+    "saveError": "Failed to save settings",
+    "loading": "Loading...",
+    "sections": {
+      "security": {
+        "title": "Security",
+        "description": "API status and authentication settings"
+      },
+      "database": {
+        "title": "Database",
+        "description": "Import/Export and database management"
+      },
+      "logging": {
+        "title": "Logging",
+        "description": "Application logs and statistics retention"
+      },
+      "alerts": {
+        "title": "Alerts",
+        "description": "Configure external notifications and alerts"
+      }
+    },
+    "password": {
+      "updated": "Password updated",
+      "updateError": "Error updating password",
+      "fetchError": "Failed to update password",
+      "currentRequired": "Current password required",
+      "newRequired": "New password required",
+      "mismatch": "Passwords don't match"
+    },
+    "import": {
+      "success": "Database imported",
+      "backup": "Backup: {{name}}",
+      "error": "Import failed"
+    }
   }
 }

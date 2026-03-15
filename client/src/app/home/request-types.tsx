@@ -16,6 +16,7 @@ import {
 import { NoContent } from "@/shared";
 import { GetRequest } from "@/util";
 import { SetStateAction, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Pie,
   PieChart,
@@ -36,9 +37,11 @@ const colors = [
 type QueryType = {
   count: number;
   queryType: string;
+  fill?: string;
 };
 
 export default function RequestTypeChart() {
+  const { t } = useTranslation();
   const [chartData, setChartData] = useState<QueryType[]>([]);
   const [chartType, setChartType] = useState("radar");
 
@@ -75,14 +78,14 @@ export default function RequestTypeChart() {
     <Card className="py-2 min-w-80 gap-2">
       <CardHeader className="mx-2">
         <div className="flex items-center justify-between gap-1 w-full">
-          <CardTitle className="text-sm">Request Types</CardTitle>
+          <CardTitle className="text-sm">{t("home.charts.requestTypes")}</CardTitle>
           <Select value={chartType} onValueChange={handleChartTypeChange}>
             <SelectTrigger className="text-xs">
-              <SelectValue placeholder="Chart Type" />
+              <SelectValue placeholder={t("home.charts.chartType")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="radar">Radar Chart</SelectItem>
-              <SelectItem value="pie">Pie Chart</SelectItem>
+              <SelectItem value="radar">{t("home.charts.radarChart")}</SelectItem>
+              <SelectItem value="pie">{t("home.charts.pieChart")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -145,7 +148,7 @@ export default function RequestTypeChart() {
         </CardContent>
       ) : (
         <CardContent className="flex h-[200px] items-center justify-center">
-          <NoContent text={"No query types has been identified"} />
+          <NoContent text={t("home.charts.noQueryTypes")} />
         </CardContent>
       )}
     </Card>

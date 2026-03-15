@@ -8,6 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../components/ui/card";
 
 export type DNSMetrics = {
@@ -70,6 +71,7 @@ function MetricsCard({
 }
 
 export default function MetricsCards() {
+  const { t } = useTranslation();
   const [metricsData, setMetricsData] = useState<DNSMetrics | null>(null);
 
   useEffect(() => {
@@ -91,37 +93,33 @@ export default function MetricsCards() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <MetricsCard
-        title="Total Queries"
+        title={t("home.metrics.total")}
         valueKey="total"
         Icon={ShieldIcon}
         bgColor="#166534"
         metricsData={metricsData}
-        description="All DNS queries processed"
       />
       <MetricsCard
-        title="Queries Blocked"
+        title={t("home.metrics.blocked")}
         valueKey="blocked"
         Icon={TrashIcon}
         bgColor="#991b1b"
         metricsData={metricsData}
-        description="Total queries filtered"
       />
       <MetricsCard
-        title="Percent Blocked"
+        title={t("home.metrics.percentage")}
         valueKey="percentageBlocked"
         Icon={UsersIcon}
         bgColor="#1e40af"
         type="percentage"
         metricsData={metricsData}
-        description="Percentage of blocked queries"
       />
       <MetricsCard
-        title="Blocked Domains"
+        title={t("sidebar.blacklist")}
         valueKey="domainBlockLen"
         Icon={DatabaseIcon}
         bgColor="#6b21a8"
         metricsData={metricsData}
-        description="Number of domains in blocklist"
       />
     </div>
   );
