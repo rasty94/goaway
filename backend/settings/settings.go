@@ -71,6 +71,7 @@ func (config *Config) Update(updatedSettings Config) {
 
 	config.DNS.Address = updatedSettings.DNS.Address
 	config.DNS.Gateway = updatedSettings.DNS.Gateway
+	config.DNS.CacheEnabled = updatedSettings.DNS.CacheEnabled
 	config.DNS.Ports = updatedSettings.DNS.Ports
 	config.DNS.UDPSize = updatedSettings.DNS.UDPSize
 	config.DNS.CacheTTL = updatedSettings.DNS.CacheTTL
@@ -99,10 +100,11 @@ func GenerateSecret() string {
 func createDefaultSettings(filePath string) (Config, error) {
 	defaultConfig := Config{
 		DNS: DNSConfig{
-			Address:  "0.0.0.0",
-			Gateway:  getDefaultGateway(),
-			CacheTTL: 3600,
-			UDPSize:  512,
+			Address:      "0.0.0.0",
+			Gateway:      getDefaultGateway(),
+			CacheEnabled: true,
+			CacheTTL:     3600,
+			UDPSize:      512,
 			TLS: TLSConfig{
 				Enabled: false,
 				Cert:    "",

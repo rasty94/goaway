@@ -597,9 +597,11 @@ func (s *DNSServer) handleStandardQuery(request *Request) model.RequestLogEntry 
 
 func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, string) {
 	cacheKey := req.Question.Name + ":" + strconv.Itoa(int(req.Question.Qtype))
-	if cached, found := s.DomainCache.Load(cacheKey); found {
-		if ipAddresses, valid := s.getCachedRecord(cached); valid {
-			return ipAddresses, true, dns.RcodeToString[dns.RcodeSuccess]
+	if s.Config.DNS.CacheEnabled {
+		if cached, found := s.DomainCache.Load(cacheKey); found {
+			if ipAddresses, valid := s.getCachedRecord(cached); valid {
+				return ipAddresses, true, dns.RcodeToString[dns.RcodeSuccess]
+			}
 		}
 	}
 

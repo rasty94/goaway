@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"goaway/backend/api/models"
+	arp "goaway/backend/dns"
 	"html/template"
 	"net/http"
 
@@ -17,6 +18,35 @@ func (api *API) registerNativeRoutes() {
 	api.router.GET("/native", api.serveNativeDashboard)
 	api.router.GET("/api/native/stats", api.getNativeStats)
 	api.router.GET("/api/native/logs", api.getNativeLogs)
+	api.router.GET("/api/native/resolutions", api.getNativeResolutions)
+	api.router.POST("/api/native/resolutions", api.addNativeResolution)
+	api.router.DELETE("/api/native/resolutions", api.deleteNativeResolution)
+	api.router.GET("/api/native/clients", api.getNativeClients)
+	api.router.GET("/api/native/cache/status", api.getNativeCacheStatus)
+	api.router.POST("/api/native/cache/toggle", api.toggleNativeCache)
+}
+
+func (api *API) getNativeClients(c *gin.Context) {
+	table := arp.GetARPTable()
+	var html string
+	for ip, mac := range table {
+		html += fmt.Sprintf(`
+            <tr class="border-b border-stone-800/50 hover:bg-stone-800/20 transition-colors">
+                <td class="px-6 py-3 font-mono text-stone-300">%s</td>
+                <td class="px-6 py-3 text-stone-500 font-mono text-xs">%s</td>
+                <td class="px-6 py-3 text-right">
+                    <button class="bg-stone-800 hover:bg-stone-700 text-stone-300 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-stone-700 transition-colors"
+                            hx-on:click="document.querySelector('input[name=value]').value = '%s'">
+                        Use IP
+                    </button>
+                </td>
+            </tr>
+        `, ip, mac, ip)
+	}
+	if html == "" {
+		html = "<tr><td colspan='3' class='p-10 text-center text-stone-600 uppercase text-[10px] font-black tracking-widest'>No local clients discovered yet</td></tr>"
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
 func (api *API) serveNativeDashboard(c *gin.Context) {
@@ -44,19 +74,19 @@ func (api *API) getNativeStats(c *gin.Context) {
 	html := fmt.Sprintf(`
         <div class="glass p-6 rounded-2xl stat-card">
             <p class="text-stone-500 text-xs font-bold uppercase tracking-widest">Total Queries</p>
-            <p class="text-3xl font-black mt-1">%%d</p>
+            <p class="text-3xl font-black mt-1">%d</p>
         </div>
         <div class="glass p-6 rounded-2xl stat-card border-l-4 border-l-red-500">
             <p class="text-stone-500 text-xs font-bold uppercase tracking-widest text-red-400">Blocked</p>
-            <p class="text-3xl font-black mt-1 text-red-500">%%d</p>
+            <p class="text-3xl font-black mt-1 text-red-500">%d</p>
         </div>
         <div class="glass p-6 rounded-2xl stat-card border-l-4 border-l-green-500">
             <p class="text-stone-500 text-xs font-bold uppercase tracking-widest text-green-400">Percentage</p>
-            <p class="text-3xl font-black mt-1 text-green-500">%%.1f%%%%</p>
+            <p class="text-3xl font-black mt-1 text-green-500">%.1f%%</p>
         </div>
         <div class="glass p-6 rounded-2xl stat-card border-l-4 border-l-blue-500">
             <p class="text-stone-500 text-xs font-bold uppercase tracking-widest text-blue-400">Cached</p>
-            <p class="text-3xl font-black mt-1 text-blue-500">%%d</p>
+            <p class="text-3xl font-black mt-1 text-blue-500">%d</p>
         </div>
     `, total, blocked, blockedPercent, cached)
 
@@ -107,6 +137,118 @@ func (api *API) getNativeLogs(c *gin.Context) {
 			statusClass,
 			q.Status)
 	}
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) getNativeResolutions(c *gin.Context) {
+	resolutions, _ := api.ResolutionService.GetResolutions()
+	var html string
+	for _, res := range resolutions {
+		// Use hex of the domain to avoid special chars in ID
+		rowID := fmt.Sprintf("res-%x", res.Domain)
+		html += fmt.Sprintf(`
+            <tr class="border-b border-stone-800/50 hover:bg-stone-800/20 transition-colors" id="%s">
+                <td class="px-6 py-4 font-bold text-stone-300">%s</td>
+                <td class="px-6 py-4 text-stone-400 font-mono text-xs">%s</td>
+                <td class="px-6 py-4">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                        %s
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <button class="text-red-400 hover:text-red-300 transition-colors text-xs font-bold uppercase tracking-tighter"
+                            hx-delete="/api/native/resolutions?domain=%s&value=%s"
+                            hx-target="#%s"
+                            hx-swap="outerHTML"
+                            hx-confirm="Delete %s?">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `,
+			rowID,
+			template.HTMLEscapeString(res.Domain),
+			template.HTMLEscapeString(res.Value),
+			res.Type,
+			template.HTMLEscapeString(res.Domain),
+			template.HTMLEscapeString(res.Value),
+			rowID,
+			template.HTMLEscapeString(res.Domain))
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) addNativeResolution(c *gin.Context) {
+	domain := c.PostForm("domain")
+	value := c.PostForm("value")
+	recType := c.PostForm("type")
+
+	if domain == "" || value == "" {
+		c.String(http.StatusBadRequest, "Missing fields")
+		return
+	}
+
+	err := api.ResolutionService.CreateResolution(value, domain, recType)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.Header("HX-Trigger", "refreshResolutions")
+	c.Status(http.StatusCreated)
+}
+
+func (api *API) deleteNativeResolution(c *gin.Context) {
+	domain := c.Query("domain")
+	value := c.Query("value")
+
+	_, err := api.ResolutionService.DeleteResolution(value, domain)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (api *API) toggleNativeCache(c *gin.Context) {
+	api.Config.DNS.CacheEnabled = !api.Config.DNS.CacheEnabled
+	api.Config.Save()
+
+	statusText := "Enabled"
+	statusColor := "bg-green-500/20 text-green-400 border-green-500/30"
+	if !api.Config.DNS.CacheEnabled {
+		statusText = "Disabled"
+		statusColor = "bg-red-500/20 text-red-400 border-red-500/30"
+	}
+
+	html := fmt.Sprintf(`
+        <button hx-post="/api/native/cache/toggle" 
+                hx-swap="outerHTML"
+                class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest border %s transition-all">
+            DNS Cache: %s
+        </button>
+    `, statusColor, statusText)
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) getNativeCacheStatus(c *gin.Context) {
+	statusText := "Enabled"
+	statusColor := "bg-green-500/20 text-green-400 border-green-500/30"
+	if !api.Config.DNS.CacheEnabled {
+		statusText = "Disabled"
+		statusColor = "bg-red-500/20 text-red-400 border-red-500/30"
+	}
+
+	html := fmt.Sprintf(`
+        <button hx-post="/api/native/cache/toggle" 
+                hx-swap="outerHTML"
+                class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest border %s transition-all">
+            DNS Cache: %s
+        </button>
+    `, statusColor, statusText)
 
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }

@@ -56,7 +56,7 @@ func (s *DNSServer) RemoveCachedDomain(domain string) {
 }
 
 func (s *DNSServer) CacheRecord(cacheKey, domain string, ipAddresses []dns.RR, ttl uint32) {
-	if len(ipAddresses) == 0 {
+	if len(ipAddresses) == 0 || !s.Config.DNS.CacheEnabled {
 		return
 	}
 

@@ -145,6 +145,17 @@ func GetMacAddress(ip string) string {
 	return "unknown"
 }
 
+func GetARPTable() map[string]string {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
+
+	table := make(map[string]string)
+	for k, v := range cache.table {
+		table[k] = v
+	}
+	return table
+}
+
 func GetMacVendor(mac string) (string, error) {
 	if mac == "" || mac == "unknown" {
 		return "", fmt.Errorf("invalid MAC address")
