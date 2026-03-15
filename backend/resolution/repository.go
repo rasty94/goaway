@@ -10,10 +10,10 @@ import (
 )
 
 type Repository interface {
-	CreateResolution(ip, domain string) error
-	FindResolution(domain string) (string, error)
+	CreateResolution(value, domain, recType string) error
+	FindResolution(domain string) (database.Resolution, error)
 	FindResolutions() ([]database.Resolution, error)
-	DeleteResolution(ip, domain string) (int, error)
+	DeleteResolution(value, domain string) (int, error)
 }
 
 type repository struct {
@@ -24,10 +24,11 @@ func NewRepository(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) CreateResolution(ip, domain string) error {
+func (r *repository) CreateResolution(value, domain, recType string) error {
 	res := database.Resolution{
 		Domain: domain,
-		IP:     ip,
+		Value:  value,
+		Type:   recType,
 	}
 
 	if err := r.db.Create(&res).Error; err != nil {
@@ -39,25 +40,25 @@ func (r *repository) CreateResolution(ip, domain string) error {
 	return nil
 }
 
-func (r *repository) FindResolution(domain string) (string, error) {
+func (r *repository) FindResolution(domain string) (database.Resolution, error) {
 	var res database.Resolution
 
 	r.db.Where("domain = ?", domain).Find(&res)
-	if res.IP != "" {
-		return res.IP, nil
+	if res.Value != "" {
+		return res, nil
 	}
 
 	parts := strings.Split(domain, ".")
 	for i := 1; i < len(parts); i++ {
 		wildcardDomain := "*." + strings.Join(parts[i:], ".")
-		if err := r.db.Where("domain = ?", wildcardDomain).Find(&res).Error; err == nil {
-			return res.IP, nil
-		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", err
+		if err := r.db.Where("domain = ?", wildcardDomain).Find(&res).Error; err == nil && res.Value != "" {
+			return res, nil
+		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return database.Resolution{}, err
 		}
 	}
 
-	return "", nil
+	return database.Resolution{}, nil
 }
 
 func (r *repository) FindResolutions() ([]database.Resolution, error) {
@@ -68,8 +69,8 @@ func (r *repository) FindResolutions() ([]database.Resolution, error) {
 	return resolutions, nil
 }
 
-func (r *repository) DeleteResolution(ip, domain string) (int, error) {
-	result := r.db.Where("domain = ? AND ip = ?", domain, ip).Delete(&database.Resolution{})
+func (r *repository) DeleteResolution(value, domain string) (int, error) {
+	result := r.db.Where("domain = ? AND value = ?", domain, value).Delete(&database.Resolution{})
 	if result.Error != nil {
 		return 0, result.Error
 	}

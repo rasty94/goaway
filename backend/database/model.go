@@ -56,7 +56,8 @@ type RequestLogIP struct {
 
 type Resolution struct {
 	Domain    string    `gorm:"primaryKey" json:"domain" validate:"required,fqdn"`
-	IP        string    `gorm:"index" json:"ip" validate:"required,ip"`
+	Value     string    `gorm:"index" json:"value" validate:"required"`
+	Type      string    `gorm:"type:varchar(10);default:'A'" json:"type"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

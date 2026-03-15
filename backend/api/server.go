@@ -216,26 +216,22 @@ func (api *API) setupWSLiveCommunication(dnsServer *server.DNSServer) {
 			return
 		}
 
+		if dnsServer != nil {
+			dnsServer.RegisterWSCommunication(conn)
+		}
+
 		_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		conn.SetPongHandler(func(string) error {
 			_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 			return nil
 		})
 
-		api.WSCommunication = conn
-
-		if dnsServer != nil {
-			dnsServer.WSCommunication = conn
-		}
-
 		go func() {
 			defer func() {
-				_ = conn.Close()
 				if dnsServer != nil {
-					dnsServer.WSCommunicationLock.Lock()
-					dnsServer.WSCommunication = nil
-					dnsServer.WSCommunicationLock.Unlock()
+					dnsServer.UnregisterWSCommunication(conn)
 				}
+				_ = conn.Close()
 			}()
 
 			for {

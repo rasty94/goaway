@@ -19,10 +19,22 @@ func (s *DNSServer) ProcessLogEntries() {
 		select {
 		case entry := <-s.logEntryChannel:
 			log.Debug("%s", entry.String())
-			if s.WSQueries != nil {
+			s.WSQueriesLock.Lock()
+			if len(s.WSQueries) > 0 {
 				entryWSJson, _ := json.Marshal(entry)
-				_ = s.WSQueries.WriteMessage(websocket.TextMessage, entryWSJson)
+				for conn := range s.WSQueries {
+					if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+						log.Warning("Failed to set query websocket write deadline: %v", err)
+						continue
+					}
+					if err := conn.WriteMessage(websocket.TextMessage, entryWSJson); err != nil {
+						log.Debug("Failed to write query websocket message: %v", err)
+						_ = conn.Close()
+						delete(s.WSQueries, conn)
+					}
+				}
 			}
+			s.WSQueriesLock.Unlock()
 
 			batch = append(batch, entry)
 			if len(batch) >= batchSize {

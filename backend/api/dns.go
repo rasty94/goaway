@@ -252,16 +252,40 @@ func (api *API) setupWSLiveQueries(dnsServer *server.DNSServer) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
+			CheckOrigin: func(_ *http.Request) bool {
+				return true
+			},
 		}
 
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			return
 		}
-		api.WSQueries = conn
 
 		if dnsServer != nil {
-			dnsServer.WSQueries = conn
+			dnsServer.RegisterWSQuery(conn)
 		}
+
+		_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		conn.SetPongHandler(func(string) error {
+			_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			return nil
+		})
+
+		go func() {
+			defer func() {
+				if dnsServer != nil {
+					dnsServer.UnregisterWSQuery(conn)
+				}
+				_ = conn.Close()
+			}()
+
+			for {
+				_, _, err := conn.ReadMessage()
+				if err != nil {
+					break
+				}
+			}
+		}()
 	})
 }

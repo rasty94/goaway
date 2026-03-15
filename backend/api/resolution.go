@@ -18,8 +18,10 @@ func (api *API) registerResolutionRoutes() {
 
 func (api *API) createResolution(c *gin.Context) {
 	type NewResolution struct {
-		IP     string
-		Domain string
+		Value  string `json:"value"`
+		IP     string `json:"ip"`
+		Domain string `json:"domain"`
+		Type   string `json:"type"`
 	}
 
 	var newResolution NewResolution
@@ -30,7 +32,12 @@ func (api *API) createResolution(c *gin.Context) {
 		return
 	}
 
-	err := api.ResolutionService.CreateResolution(newResolution.IP, newResolution.Domain)
+	val := newResolution.Value
+	if val == "" {
+		val = newResolution.IP
+	}
+
+	err := api.ResolutionService.CreateResolution(val, newResolution.Domain, newResolution.Type)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -56,9 +63,12 @@ func (api *API) getResolutions(c *gin.Context) {
 
 func (api *API) deleteResolution(c *gin.Context) {
 	domain := c.Query("domain")
-	ip := c.Query("ip")
+	value := c.Query("value")
+	if value == "" {
+		value = c.Query("ip")
+	}
 
-	rowsAffected, err := api.ResolutionService.DeleteResolution(ip, domain)
+	rowsAffected, err := api.ResolutionService.DeleteResolution(value, domain)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),

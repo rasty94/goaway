@@ -32,7 +32,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -58,8 +57,6 @@ type API struct {
 	DNS             *server.DNSServer
 	RateLimiter     *ratelimit.RateLimiter
 	DBConn          *gorm.DB
-	WSCommunication *websocket.Conn
-	WSQueries       *websocket.Conn
 	router          *gin.Engine
 	routes          *gin.RouterGroup
 	Config          *settings.Config
@@ -114,20 +111,11 @@ func (api *API) Stop() error {
 	// Store server reference before shutdown
 	server := api.server
 
+	// WebSocket connections are managed by DNSServer and will be closed there if needed,
+	// or they will timeout/close on server shutdown.
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	if api.WSCommunication != nil {
-		if err := api.WSCommunication.Close(); err != nil {
-			log.Error("Error closing WSCommunication: %v", err)
-		}
-	}
-
-	if api.WSQueries != nil {
-		if err := api.WSQueries.Close(); err != nil {
-			log.Error("Error closing WSQueries: %v", err)
-		}
-	}
 
 	if err := server.Shutdown(ctx); err != nil {
 		log.Error("Error during server shutdown: %v", err)
@@ -193,6 +181,7 @@ func (api *API) setupRoutes() {
 	api.registerSettingsRoutes()
 	api.registerNotificationRoutes()
 	api.registerAlertRoutes()
+	api.registerNativeRoutes()
 }
 
 func (api *API) setupAuthAndMiddleware() {

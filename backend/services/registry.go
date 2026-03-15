@@ -134,8 +134,6 @@ func (r *ServiceRegistry) setupAPIServer() {
 		Date:            r.date,
 		DNSServer:       r.Context.DNSServer,
 		DBConn:          r.Context.DBConn,
-		WSQueries:       r.Context.DNSServer.WSQueries,
-		WSCommunication: r.Context.DNSServer.WSCommunication,
 
 		ResolutionService:   r.ResolutionService,
 		RequestService:      r.RequestService,

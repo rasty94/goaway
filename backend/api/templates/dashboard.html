@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoAway - Native Dashboard</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0c0a09; color: #fafaf9; }
+        .glass { background: rgba(28, 25, 23, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(63, 63, 70, 0.4); }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); border-color: rgba(59, 130, 246, 0.5); }
+    </style>
+</head>
+<body class="p-8 font-sans">
+    <div class="max-w-6xl mx-auto space-y-8">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-4xl font-black bg-gradient-to-r from-white to-stone-500 bg-clip-text text-transparent">
+                    GoAway Native
+                    <span class="text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full ml-3 align-middle uppercase tracking-widest">HTMX Alpha</span>
+                </h1>
+                <p class="text-stone-400 mt-2 font-medium">Running with zero NodeJS dependencies. Blazing fast SSR.</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="/" class="glass px-4 py-2 rounded-lg text-sm font-semibold hover:bg-stone-800 transition-colors">Switch to React UI</a>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div id="stats-container" 
+             hx-get="/api/native/stats" 
+             hx-trigger="load, every 5s" 
+             hx-swap="innerHTML"
+             class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="glass p-6 rounded-2xl animate-pulse h-32"></div>
+            <div class="glass p-6 rounded-2xl animate-pulse h-32"></div>
+            <div class="glass p-6 rounded-2xl animate-pulse h-32"></div>
+            <div class="glass p-6 rounded-2xl animate-pulse h-32"></div>
+        </div>
+
+        <!-- Live Traffic -->
+        <div class="glass rounded-2xl overflow-hidden shadow-2xl border-stone-800">
+            <div class="px-6 py-5 border-b border-stone-800 bg-stone-900/30 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-lg text-white">Live Query Stream</h3>
+                    <p class="text-xs text-stone-500 mt-1">Real-time updates without heavy SPA overhead</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-blink"></span>
+                    <span class="text-xs font-bold text-green-500 uppercase tracking-tighter">Live</span>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead class="bg-stone-900/50 text-stone-500 uppercase text-[10px] font-black tracking-[0.2em]">
+                        <tr>
+                            <th class="px-6 py-4">Timestamp</th>
+                            <th class="px-6 py-4">Domain</th>
+                            <th class="px-6 py-4">Client</th>
+                            <th class="px-6 py-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-logs" 
+                           hx-get="/api/native/logs" 
+                           hx-trigger="every 3s" 
+                           hx-swap="afterbegin">
+                        <!-- Content streamed here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-16 text-center text-stone-600 text-xs font-medium uppercase tracking-widest py-8">
+        GoAway &copy; 2024 • Powered by HTMX & Go
+    </footer>
+
+    <style>
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .animate-blink { animation: blink 1.5s infinite; }
+    </style>
+</body>
+</html>

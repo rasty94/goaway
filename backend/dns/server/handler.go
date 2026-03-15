@@ -622,27 +622,54 @@ func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string) 
 		status  = dns.RcodeToString[dns.RcodeSuccess]
 	)
 
-	ipFound, err := s.ResolutionService.GetResolution(domain)
+	res, err := s.ResolutionService.GetResolution(domain)
 	if err != nil {
 		log.Error("Database lookup error for domain (%s): %v", domain, err)
 		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure]
 	}
 
-	if net.ParseIP(ipFound) != nil {
-		var rr dns.RR
-		if strings.Contains(ipFound, ":") {
-			rr = &dns.AAAA{
-				Hdr:  dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl},
-				AAAA: net.ParseIP(ipFound),
-			}
-		} else {
-			rr = &dns.A{
+	if res.Value == "" {
+		return nil, 0, dns.RcodeToString[dns.RcodeNameError]
+	}
+
+	switch strings.ToUpper(res.Type) {
+	case "A":
+		if ip := net.ParseIP(res.Value); ip != nil && ip.To4() != nil {
+			records = append(records, &dns.A{
 				Hdr: dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: ttl},
-				A:   net.ParseIP(ipFound),
+				A:   ip,
+			})
+		}
+	case "AAAA":
+		if ip := net.ParseIP(res.Value); ip != nil && ip.To4() == nil {
+			records = append(records, &dns.AAAA{
+				Hdr:  dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl},
+				AAAA: ip,
+			})
+		}
+	case "CNAME":
+		records = append(records, &dns.CNAME{
+			Hdr:    dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: ttl},
+			Target: dns.Fqdn(res.Value),
+		})
+	default:
+		// Fallback to auto-detection if type unspecified
+		if ip := net.ParseIP(res.Value); ip != nil {
+			if ip.To4() != nil {
+				records = append(records, &dns.A{
+					Hdr: dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: ttl},
+					A:   ip,
+				})
+			} else {
+				records = append(records, &dns.AAAA{
+					Hdr:  dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl},
+					AAAA: ip,
+				})
 			}
 		}
-		records = append(records, rr)
-	} else {
+	}
+
+	if len(records) == 0 {
 		status = dns.RcodeToString[dns.RcodeNameError]
 	}
 

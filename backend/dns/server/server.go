@@ -43,14 +43,13 @@ type DNSServer struct {
 	// Central channel where processed request log entries are pushed
 	logEntryChannel chan model.RequestLogEntry
 
-	// Websocket connection used to stream query logs to the web UI
-	WSQueries *websocket.Conn
+	// Websocket connections used to stream query logs to the web UI
+	WSQueries     map[*websocket.Conn]bool
+	WSQueriesLock sync.Mutex
 
-	// Websocket connection used to stream communication events to the UI
+	// Websocket connections used to stream communication events to the UI
 	// Used to visualize client/upstream/DNS activity
-	WSCommunication *websocket.Conn
-
-	// Guards writes to WSCommunication.
+	WSCommunication     map[*websocket.Conn]bool
 	WSCommunicationLock sync.Mutex
 
 	// Cache mapping hostnames to client metadata to avoid repeated lookups when resolving PTR/hostnames
@@ -108,11 +107,13 @@ func NewDNSServer(config *settings.Config, dbconn *gorm.DB, cert tls.Certificate
 	}
 
 	server := &DNSServer{
-		Config:          config,
-		dbConn:          dbconn,
-		logEntryChannel: make(chan model.RequestLogEntry, 1000),
-		dnsClient:       &client,
-		DomainCache:     sync.Map{},
+		Config:              config,
+		dbConn:              dbconn,
+		logEntryChannel:     make(chan model.RequestLogEntry, 1000),
+		dnsClient:           &client,
+		DomainCache:         sync.Map{},
+		WSQueries:           make(map[*websocket.Conn]bool),
+		WSCommunication:     make(map[*websocket.Conn]bool),
 	}
 
 	return server, nil
@@ -199,14 +200,10 @@ func (s *DNSServer) PopulateClientCaches() error {
 }
 
 func (s *DNSServer) WSCom(message communicationMessage) {
-	if s.WSCommunication == nil {
-		return
-	}
-
 	s.WSCommunicationLock.Lock()
 	defer s.WSCommunicationLock.Unlock()
 
-	if s.WSCommunication == nil {
+	if len(s.WSCommunication) == 0 {
 		return
 	}
 
@@ -216,15 +213,42 @@ func (s *DNSServer) WSCom(message communicationMessage) {
 		return
 	}
 
-	if err := s.WSCommunication.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
-		log.Warning("Failed to set websocket write deadline: %v", err)
-		return
-	}
+	for conn := range s.WSCommunication {
+		if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+			log.Warning("Failed to set websocket write deadline: %v", err)
+			continue
+		}
 
-	if err := s.WSCommunication.WriteMessage(websocket.TextMessage, entryWSJson); err != nil {
-		log.Debug("Failed to write websocket message: %v", err)
-		s.WSCommunication = nil
+		if err := conn.WriteMessage(websocket.TextMessage, entryWSJson); err != nil {
+			log.Debug("Failed to write websocket message: %v", err)
+			_ = conn.Close()
+			delete(s.WSCommunication, conn)
+		}
 	}
+}
+
+func (s *DNSServer) RegisterWSQuery(conn *websocket.Conn) {
+	s.WSQueriesLock.Lock()
+	defer s.WSQueriesLock.Unlock()
+	s.WSQueries[conn] = true
+}
+
+func (s *DNSServer) UnregisterWSQuery(conn *websocket.Conn) {
+	s.WSQueriesLock.Lock()
+	defer s.WSQueriesLock.Unlock()
+	delete(s.WSQueries, conn)
+}
+
+func (s *DNSServer) RegisterWSCommunication(conn *websocket.Conn) {
+	s.WSCommunicationLock.Lock()
+	defer s.WSCommunicationLock.Unlock()
+	s.WSCommunication[conn] = true
+}
+
+func (s *DNSServer) UnregisterWSCommunication(conn *websocket.Conn) {
+	s.WSCommunicationLock.Lock()
+	defer s.WSCommunicationLock.Unlock()
+	delete(s.WSCommunication, conn)
 }
 
 func (s *DNSServer) validQuery(w dns.ResponseWriter, r *dns.Msg) bool {
