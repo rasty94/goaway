@@ -7,6 +7,7 @@ import (
 	"goaway/backend/services"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -63,6 +64,56 @@ func (m *Manager) waitForTermination() error {
 }
 
 func (m *Manager) shutdown() {
-	// TODO: Add graceful shutdown logic
+	log.Info("Initiating graceful shutdown...")
+
+	m.services.APIServer.IsShuttingDown = true
+
+	var wg sync.WaitGroup
+	
+	if m.services.APIServer != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := m.services.APIServer.Stop(); err != nil {
+				log.Error("Failed to stop API server: %v", err)
+			}
+		}()
+	}
+
+	if m.services.UDPServer != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := m.services.UDPServer.Shutdown(); err != nil {
+				log.Error("Failed to stop UDP server: %v", err)
+			}
+		}()
+	}
+
+	if m.services.TCPServer != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := m.services.TCPServer.Shutdown(); err != nil {
+				log.Error("Failed to stop TCP server: %v", err)
+			}
+		}()
+	}
+
+	if m.services.DoTServer != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := m.services.DoTServer.Shutdown(); err != nil {
+				log.Error("Failed to stop DoT server: %v", err)
+			}
+		}()
+	}
+
+	// DoH Server doesn't have a direct Context-less shutdown like Miekg DNS
+	// So we won't wait for its shutdown strictly here if it takes too long.
+	
+	wg.Wait()
+	log.Info("Graceful shutdown completed successfully.")
 	os.Exit(0)
 }
