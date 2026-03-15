@@ -10,7 +10,7 @@ publish:
 	docker buildx create --name multiarch-builder --use || true
 
 	docker buildx build \
-	--platform linux/amd64,linux/arm64/v8,linux/arm/v7 \
+	--platform linux/amd64,linux/arm64/v8 \
 	--file Dockerfile.multi \
 	--tag ${GHCR_REPO}:${LATEST_VERSION} \
 	--tag ${GHCR_REPO}:latest \
