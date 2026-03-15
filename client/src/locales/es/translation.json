@@ -188,6 +188,37 @@
       "success": "Base de datos importada",
       "backup": "Copia de seguridad: {{name}}",
       "error": "Error al importar"
+    },
+    "remoteBackup": {
+      "title": "Copia remota",
+      "description": "Sincroniza copias en AWS S3, WebDAV o un directorio NFS/SMB montado.",
+      "enableTitle": "Activar copias remotas",
+      "enableDescription": "Sincroniza archivos de copia de forma automática o manual en almacenamiento remoto.",
+      "provider": "Proveedor",
+      "providerLocal": "Directorio remoto (montaje NFS/SMB)",
+      "selectProvider": "Selecciona proveedor",
+      "schedule": "Frecuencia",
+      "selectSchedule": "Selecciona frecuencia",
+      "manualOnly": "Solo manual",
+      "daily": "Diaria",
+      "weekly": "Semanal",
+      "directoryPath": "Ruta del directorio",
+      "endpoint": "Endpoint",
+      "bucket": "Bucket",
+      "region": "Región",
+      "accessKey": "Access Key",
+      "secretKey": "Secret Key",
+      "username": "Usuario",
+      "password": "Contraseña",
+      "saving": "Guardando...",
+      "save": "Guardar copia remota",
+      "syncing": "Sincronizando...",
+      "pushNow": "Sincronizar ahora",
+      "toasts": {
+        "configSaved": "Configuración de copia remota guardada",
+        "syncDone": "Copia sincronizada",
+        "file": "Archivo: {{filename}}"
+      }
     }
   },
   "resolution": {

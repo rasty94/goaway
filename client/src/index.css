@@ -740,6 +740,24 @@
   box-shadow: 0 0 4px currentColor;
 }
 
+@media (pointer: coarse) {
+  [data-slot="button"],
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea,
+  [data-slot="sidebar-menu-button"] {
+    min-height: 44px;
+  }
+
+  [data-slot="table-container"] {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+}
+
 @keyframes float {
   0% {
     transform: translateY(0px) translateX(0px) rotate(0deg);

@@ -180,8 +180,8 @@ export function Prefetch() {
   const isFormValid = domainName && !domainError;
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             DNS Prefetch Management
@@ -190,7 +190,7 @@ export function Prefetch() {
             Pre-resolve domain names to improve the response time
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-sm">
           <DatabaseIcon className="h-3 w-3" />
           {prefetches.length} {prefetches.length === 1 ? "Entry" : "Entries"}
         </div>
@@ -294,11 +294,12 @@ export function Prefetch() {
             </div>
           </div>
         </CardContent>
-        <div className="flex justify-end p-4">
+        <div className="flex justify-end p-4 pt-0 sm:pt-4">
           <Button
             variant="default"
             onClick={handleSave}
             disabled={submitting || !isFormValid}
+            className="w-full sm:w-auto"
           >
             {submitting ? (
               <>
@@ -314,12 +315,12 @@ export function Prefetch() {
 
       <Card className="shadow-md">
         <CardHeader className="pb-4 border-b">
-          <div className="lg:flex items-center justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle className="flex items-center gap-2">
               <ClockIcon className="h-5 w-5 text-blue-500" />
               Active Prefetch Domains
             </CardTitle>
-            <div className="mt-2 lg:mt-0">
+            <div className="w-full lg:w-auto mt-1 lg:mt-0">
               <Input
                 placeholder="Search domains..."
                 value={searchTerm}
@@ -358,7 +359,7 @@ export function Prefetch() {
                     key={prefetch.domain}
                     className="hover:bg-accent text-sm"
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium max-w-[220px] truncate sm:max-w-none sm:whitespace-normal">
                       {prefetch.domain}
                     </TableCell>
                     <TableCell className="font-mono">

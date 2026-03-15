@@ -483,7 +483,7 @@ export function Logs() {
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-36 mb-4 text-sm">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4 text-sm">
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {t("logs.flowSummary")}
@@ -578,14 +578,14 @@ export function Logs() {
           )}
         </div>
       </div>
-      <div className="flex items-center">
+      <div className="flex flex-wrap items-center gap-2">
         <QuestionIcon
           size={20}
-          className="mr-4 hover:text-orange-400 cursor-pointer transition-colors"
+          className="mr-2 hover:text-orange-400 cursor-pointer transition-colors"
           onClick={() => setShowHelp(true)}
         />
 
-        <div className="relative max-w-sm">
+        <div className="relative w-full sm:w-auto sm:max-w-sm">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder={t("logs.filterDomain")}
@@ -614,7 +614,7 @@ export function Logs() {
             )}
         </div>
 
-        <div className="ml-5 relative max-w-sm">
+        <div className="relative w-full sm:w-auto sm:max-w-sm sm:ml-3">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder={t("logs.filterClient")}
@@ -639,7 +639,7 @@ export function Logs() {
         </div>
 
         {clientFilter && (
-          <div className="ml-3 flex items-center text-sm text-muted-foreground animate-in fade-in-50 slide-in-from-left-2 duration-200">
+          <div className="flex items-center text-sm text-muted-foreground animate-in fade-in-50 slide-in-from-left-2 duration-200">
             <span className="bg-primary/10 text-primary px-2 py-1 rounded-md border">
               {t("logs.filtered")}: "{clientFilter}"
             </span>
@@ -647,7 +647,7 @@ export function Logs() {
         )}
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild className="ml-5">
+          <DialogTrigger asChild className="sm:ml-2">
             <Button disabled={queries.length === 0} variant="destructive">
               {t("logs.clear")}
             </Button>
@@ -690,7 +690,7 @@ export function Logs() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
-              className="ml-auto transition-all duration-200 hover:scale-105"
+              className="sm:ml-auto transition-all duration-200 hover:scale-105"
             >
               {t("logs.columns")} <CaretDownIcon />
             </Button>
@@ -881,12 +881,11 @@ export function Logs() {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between px-2 mt-4">
-        <div className="flex text-sm text-muted-foreground">
+      <div className="flex flex-col gap-3 px-2 mt-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
           Displaying {table.getPreSelectedRowModel().rows.length} of{" "}
           {totalRecords.toLocaleString()} record(s).
-          <div>
-            <div className="flex items-center ml-5">
+          <div className="flex items-center">
               {wsConnected ? (
                 <>
                   <span className="flex text-sm text-green-500/50">
@@ -902,11 +901,10 @@ export function Logs() {
                   </span>
                 </>
               )}
-            </div>
           </div>
         </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-3 lg:gap-6">
+          <div className="flex items-center gap-2">
             <p className="text-sm font-medium">Rows per page</p>
             <Select
               value={`${pageSize}`}
@@ -929,10 +927,10 @@ export function Logs() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex w-[120px] items-center justify-center text-sm font-medium">
+          <div className="flex min-w-[120px] items-center justify-center text-sm font-medium">
             Page {pageIndex + 1} of {totalPages || 1}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               className="hidden h-8 w-8 p-0 lg:flex transition-all duration-200 hover:scale-110"

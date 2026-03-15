@@ -190,32 +190,32 @@ export function Blacklist() {
 
   return (
     <div>
-      <div className="lg:flex gap-5 items-center">
-        <div className="flex gap-5">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
           <AddList onListAdded={handleListAdded} />
           <UpdateCustom />
         </div>
-        <div className="lg:flex gap-4 mb-4">
-          <div className="flex items-center gap-2 px-4 py-1 mb-1 bg-accent border-b rounded-t-sm border-b-blue-400">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4 mb-2 w-full">
+          <div className="flex items-center gap-2 px-3 py-1 bg-accent border-b rounded-t-sm border-b-blue-400">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             <span className="text-muted-foreground text-sm">{t("lists.totalLists")}:</span>
             <span className="font-semibold">{lists.length}</span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-1 mb-1 bg-accent border-b rounded-t-sm border-b-green-400">
+          <div className="flex items-center gap-2 px-3 py-1 bg-accent border-b rounded-t-sm border-b-green-400">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             <span className="text-muted-foreground text-sm">{t("lists.active")}:</span>
             <span className="font-semibold">
               {lists.filter((list) => list.active).length}
             </span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-1 mb-1 bg-accent border-b rounded-t-sm border-b-red-400">
+          <div className="flex items-center gap-2 px-3 py-1 bg-accent border-b rounded-t-sm border-b-red-400">
             <div className="w-2 h-2 bg-red-500 rounded-full"></div>
             <span className="text-muted-foreground text-sm">{t("lists.inactive")}:</span>
             <span className="font-semibold">
               {lists.filter((list) => !list.active).length}
             </span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-1 mb-1 bg-accent border-b rounded-t-sm border-b-orange-400">
+          <div className="flex items-center gap-2 px-3 py-1 bg-accent border-b rounded-t-sm border-b-orange-400">
             <div className="w-2 h-2 bg-red-500 rounded-full"></div>
             <span className="text-muted-foreground text-sm">
               {t("lists.blockedDomains")}:
@@ -226,8 +226,8 @@ export function Blacklist() {
           </div>
         </div>
       </div>
-      <div className="flex gap-2 mb-2">
-        <Button variant="outline" onClick={() => setEditMode((v) => !v)}>
+      <div className="flex flex-wrap gap-2 mb-2">
+        <Button variant="outline" onClick={() => setEditMode((v) => !v)} className="w-full sm:w-auto">
           {editMode ? t("lists.exitEditMode") : t("lists.editLists")}
         </Button>
         {editMode && (
@@ -235,14 +235,14 @@ export function Blacklist() {
             <Button
               onClick={handleRemoveSelected}
               disabled={selected.size === 0}
-              className="bg-red-600 text-white"
+              className="bg-red-600 text-white w-full sm:w-auto"
             >
               {t("lists.removeSelected")}
             </Button>
             <Button
               onClick={handleUpdateSelected}
               disabled={selected.size === 0}
-              className="bg-blue-600 text-white"
+              className="bg-blue-600 text-white w-full sm:w-auto"
             >
               {t("lists.updateSelected")}
             </Button>

@@ -68,10 +68,24 @@ type MiscConfig struct {
 	ScheduledBlacklistUpdates bool `yaml:"scheduledBlacklistUpdates" json:"scheduledBlacklistUpdates"`
 }
 
+type RemoteBackupConfig struct {
+	Enabled    bool   `yaml:"enabled" json:"enabled"`
+	Provider   string `yaml:"provider" json:"provider"`   // "s3", "webdav", "local"
+	Endpoint   string `yaml:"endpoint" json:"endpoint"`   // S3 endpoint or WebDAV URL or local path
+	Bucket     string `yaml:"bucket" json:"bucket"`       // S3 bucket name
+	Region     string `yaml:"region" json:"region"`       // S3 region
+	AccessKey  string `yaml:"accessKey" json:"-"`
+	SecretKey  string `yaml:"secretKey" json:"-"`
+	Username   string `yaml:"username" json:"username"`   // WebDAV / SMB username
+	Password   string `yaml:"password" json:"-"`
+	Schedule   string `yaml:"schedule" json:"schedule"`   // "daily", "weekly", "manual"
+}
+
 type Config struct {
-	BinaryPath string        `yaml:"-" json:"-"`
-	DNS        DNSConfig     `yaml:"dns" json:"dns"`
-	API        APIConfig     `yaml:"api" json:"api"`
-	Logging    LoggingConfig `yaml:"logging" json:"logging"`
-	Misc       MiscConfig    `yaml:"misc" json:"misc"`
+	BinaryPath    string              `yaml:"-" json:"-"`
+	DNS           DNSConfig           `yaml:"dns" json:"dns"`
+	API           APIConfig           `yaml:"api" json:"api"`
+	Logging       LoggingConfig       `yaml:"logging" json:"logging"`
+	Misc          MiscConfig          `yaml:"misc" json:"misc"`
+	RemoteBackup  RemoteBackupConfig  `yaml:"remoteBackup" json:"remoteBackup"`
 }

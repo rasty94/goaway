@@ -188,7 +188,7 @@ export default function DNSServerVisualizer() {
         const rect = containerRef.current.getBoundingClientRect();
         setDimensions({
           width: rect.width - 32,
-          height: Math.max(600, window.innerHeight - 400)
+          height: Math.max(360, window.innerHeight - 420)
         });
       }
     };
@@ -549,9 +549,9 @@ export default function DNSServerVisualizer() {
 
       <div
         ref={containerRef}
-        className="rounded-xl shadow-md p-4 w-full border dark:bg-accent"
+        className="rounded-xl shadow-md p-3 sm:p-4 w-full border dark:bg-accent"
       >
-        <div className="grid grid-cols-4 gap-2 text-sm mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-4">
           {[
             {
               label: t("networkMap.totalClients"),
@@ -584,7 +584,7 @@ export default function DNSServerVisualizer() {
           ))}
         </div>
 
-        <div className="mb-4 text-sm text-muted-foreground space-y-1">
+        <div className="mb-4 text-xs sm:text-sm text-muted-foreground space-y-1">
           <p>{t("networkMap.nodeInstruction")}</p>
           <p>
             {t("networkMap.legendGreen")} • {t("networkMap.legendGray")} • {t("networkMap.legendSize")}
@@ -669,10 +669,10 @@ export default function DNSServerVisualizer() {
 
       {selectedCluster && (
         <div
-          className="fixed z-50 bg-stone-900 border rounded-lg p-4 shadow-lg max-w-md max-h-96 overflow-y-auto"
+          className="fixed z-50 bg-stone-900 border rounded-lg p-4 shadow-lg w-[calc(100vw-2rem)] sm:w-auto sm:max-w-md max-h-96 overflow-y-auto"
           style={{
-            left: selectedPosition.x + 10,
-            top: selectedPosition.y + 10
+            left: Math.max(16, Math.min(selectedPosition.x + 10, window.innerWidth - 360)),
+            top: Math.max(16, Math.min(selectedPosition.y + 10, window.innerHeight - 420))
           }}
         >
           <ScrollArea>

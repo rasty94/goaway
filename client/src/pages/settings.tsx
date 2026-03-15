@@ -17,6 +17,7 @@ import { SecuritySection } from "@/app/settings/SecuritySection";
 import { PasswordModal } from "@/app/settings/PasswordModal";
 import { ImportModal } from "@/app/settings/ImportModal";
 import { LoggingSection } from "@/app/settings/LoggingSection";
+import { RemoteBackupSection } from "@/app/settings/RemoteBackupSection";
 
 export function Settings() {
   const { t } = useTranslation();
@@ -322,6 +323,22 @@ export function Settings() {
           </div>
         </Card>
       ))}
+
+      <Card className="p-4 gap-2">
+        <CardTitle className="border-b pb-1">
+          <div className="flex">
+            <div className="mt-1 p-1 mr-2 rounded-lg bg-primary/10 text-primary">
+              <span aria-hidden>RB</span>
+            </div>
+            <h2 className="text-xl font-semibold">{t("settings.remoteBackup.title")}</h2>
+          </div>
+          <p className="mt-1 text-sm font-normal text-muted-foreground">
+            {t("settings.remoteBackup.description")}
+          </p>
+        </CardTitle>
+
+        <RemoteBackupSection />
+      </Card>
 
       <PasswordModal
         open={modals.password}

@@ -73,8 +73,8 @@ export function SiteHeader() {
   const description = currentPage?.description || "";
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex w-full items-center gap-2 px-4 lg:gap-3 lg:px-6">
+    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <div className="flex w-full items-center gap-2 px-3 pt-2 sm:px-4 lg:gap-3 lg:px-6 lg:pt-0">
         <SidebarTrigger className="-ml-1 hover:bg-accent hover:text-accent-foreground" />
 
         <Separator
@@ -97,7 +97,7 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 px-4 lg:px-6">
+      <div className="flex w-full items-center justify-end gap-1 border-t px-3 py-2 sm:gap-2 sm:px-4 lg:w-auto lg:border-t-0 lg:px-6 lg:py-0">
         <BlockingTimer />
         <LanguageToggle />
         <ModeToggle />

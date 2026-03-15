@@ -108,10 +108,10 @@ export function Whitelist() {
 
   return (
     <div className="flex justify-center items-center">
-      <div className="space-y-8 xl:w-2/3">
-        <div className="flex justify-between items-center">
+      <div className="space-y-6 w-full xl:w-2/3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
           <div>
-            <h1 className="text-4xl font-bold">{t("whitelist.title")}</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">{t("whitelist.title")}</h1>
             <p className="text-muted-foreground text-sm">
               <Trans
                 i18nKey="whitelist.description"
@@ -119,7 +119,7 @@ export function Whitelist() {
               />
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm">
             <DatabaseIcon className="h-3 w-3" />
             {whitelistedDomains.length}{" "}
             {whitelistedDomains.length === 1 ? t("whitelist.entry") : t("whitelist.entries")}
@@ -166,7 +166,7 @@ export function Whitelist() {
                     />
                   </span>
                 </div>
-                <div className="flex items-end mb-8">
+                <div className="flex items-end mb-2 md:mb-8">
                   <Button
                     variant="default"
                     className="cursor-pointer w-full bg-green-600 hover:bg-green-700"
@@ -190,12 +190,12 @@ export function Whitelist() {
 
         <Card>
           <CardHeader className="pb-4 border-b-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2">
                 <ShieldCheckIcon className="h-5 w-5 text-blue-500" />
                 {t("whitelist.title")}
               </CardTitle>
-              <div className="w-64">
+              <div className="w-full sm:w-64">
                 <Input
                   placeholder={t("whitelist.searchPlaceholder")}
                   value={searchTerm}
@@ -229,7 +229,7 @@ export function Whitelist() {
                 <TableBody>
                   {filteredDomains.map((domain) => (
                     <TableRow key={domain} className="hover:bg-accent">
-                      <TableCell className="font-medium">{domain}</TableCell>
+                      <TableCell className="font-medium max-w-[220px] truncate sm:max-w-none sm:whitespace-normal">{domain}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button

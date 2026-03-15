@@ -188,6 +188,37 @@
       "success": "Database imported",
       "backup": "Backup: {{name}}",
       "error": "Import failed"
+    },
+    "remoteBackup": {
+      "title": "Remote Backup",
+      "description": "Sync backups to AWS S3, WebDAV, or a mounted NFS/SMB directory.",
+      "enableTitle": "Enable remote backups",
+      "enableDescription": "Automatically and manually sync backup archives to remote storage.",
+      "provider": "Provider",
+      "providerLocal": "Remote Directory (NFS/SMB mount)",
+      "selectProvider": "Select provider",
+      "schedule": "Schedule",
+      "selectSchedule": "Select schedule",
+      "manualOnly": "Manual only",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "directoryPath": "Directory path",
+      "endpoint": "Endpoint",
+      "bucket": "Bucket",
+      "region": "Region",
+      "accessKey": "Access Key",
+      "secretKey": "Secret Key",
+      "username": "Username",
+      "password": "Password",
+      "saving": "Saving...",
+      "save": "Save Remote Backup",
+      "syncing": "Syncing...",
+      "pushNow": "Push Backup Now",
+      "toasts": {
+        "configSaved": "Remote backup configuration saved",
+        "syncDone": "Backup synchronized",
+        "file": "File: {{filename}}"
+      }
     }
   },
   "resolution": {

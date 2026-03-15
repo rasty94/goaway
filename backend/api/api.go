@@ -55,18 +55,18 @@ const (
 type RestartApplicationCallback func()
 
 type API struct {
-	DNS             *server.DNSServer
-	RateLimiter     *ratelimit.RateLimiter
-	DBConn          *gorm.DB
-	router          *gin.Engine
-	routes          *gin.RouterGroup
-	Config          *settings.Config
-	DNSServer       *server.DNSServer
-	Version         string
-	Date            string
-	Commit          string
-	DNSPort         int
-	Authentication  bool
+	DNS            *server.DNSServer
+	RateLimiter    *ratelimit.RateLimiter
+	DBConn         *gorm.DB
+	router         *gin.Engine
+	routes         *gin.RouterGroup
+	Config         *settings.Config
+	DNSServer      *server.DNSServer
+	Version        string
+	Date           string
+	Commit         string
+	DNSPort        int
+	Authentication bool
 
 	RestartCallback RestartApplicationCallback
 
@@ -185,6 +185,7 @@ func (api *API) setupRoutes() {
 	api.registerNativeRoutes()
 	api.registerConditionalForwarderRoutes()
 	api.registerTeleporterRoutes()
+	api.registerRemoteBackupRoutes()
 
 	// Metrics route
 	api.router.GET("/metrics", gin.WrapH(promhttp.Handler()))

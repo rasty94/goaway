@@ -32,7 +32,7 @@ export default function BlockingTimer() {
   }, []);
 
   return (
-    <div className="w-max">
+    <div className="hidden w-max sm:block">
       {timeLeft === 0 ? (
         <div className="text-xs font-medium text-green-500/80">
           Blocking active
