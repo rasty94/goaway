@@ -37,6 +37,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { validateFQDN } from "./validation";
 import { NoContent } from "@/shared";
+import { useTranslation } from "react-i18next";
 
 type PrefetchEntry = {
   domain: string;
@@ -60,7 +61,8 @@ function queryTypeExpanded(queryType: number) {
 async function CreatePrefetch(
   domain: string,
   refresh: number,
-  queryType: number
+  queryType: number,
+  t: (key: string, options?: any) => string
 ) {
   const [code, response] = await PostRequest("prefetch", {
     domain,
@@ -68,7 +70,7 @@ async function CreatePrefetch(
     queryType
   });
   if (code === 200) {
-    toast.success(`${domain} has been added to prefetch list!`);
+    toast.success(t("prefetch.toasts.added", { domain }));
     return true;
   } else {
     toast.error(response.error);
@@ -76,13 +78,16 @@ async function CreatePrefetch(
   }
 }
 
-async function DeletePrefetch(domain: string) {
+async function DeletePrefetch(
+  domain: string,
+  t: (key: string, options?: any) => string
+) {
   const [code, response] = await DeleteRequest(
     `prefetch?domain=${domain}`,
     null
   );
   if (code === 200) {
-    toast.success(`${domain} has been removed from prefetch list!`);
+    toast.success(t("prefetch.toasts.removed", { domain }));
     return true;
   } else {
     toast.error(response.error);
@@ -91,6 +96,7 @@ async function DeletePrefetch(domain: string) {
 }
 
 export function Prefetch() {
+  const { t } = useTranslation();
   const [prefetches, setPrefetches] = useState<PrefetchEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -104,7 +110,7 @@ export function Prefetch() {
     setLoading(true);
     const [code, response] = await GetRequest("prefetch");
     if (code !== 200) {
-      toast.error("Unable to fetch DNS prefetch entries");
+      toast.error(t("prefetch.toasts.fetchError"));
       setLoading(false);
       return;
     }
@@ -146,7 +152,8 @@ export function Prefetch() {
     const success = await CreatePrefetch(
       domainName,
       refresh,
-      parseInt(queryType)
+      parseInt(queryType),
+      t
     );
     if (success) {
       await fetchPrefetches();
@@ -157,18 +164,20 @@ export function Prefetch() {
   };
 
   const handleDelete = async (domain: string) => {
-    const success = await DeletePrefetch(domain);
+    const success = await DeletePrefetch(domain, t);
     if (success) {
       await fetchPrefetches();
     }
   };
 
   const formatRefresh = (seconds: number) => {
-    if (seconds === 0) return "On TTL Expire";
-    if (seconds < 60) return `${seconds} seconds`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours`;
-    return `${Math.floor(seconds / 86400)} days`;
+    if (seconds === 0) return t("prefetch.refresh.onTTL");
+    if (seconds < 60) return t("prefetch.refresh.seconds", { count: seconds });
+    if (seconds < 3600)
+      return t("prefetch.refresh.minutes", { count: Math.floor(seconds / 60) });
+    if (seconds < 86400)
+      return t("prefetch.refresh.hours", { count: Math.floor(seconds / 3600) });
+    return t("prefetch.refresh.days", { count: Math.floor(seconds / 86400) });
   };
 
   const filteredPrefetches = searchTerm
@@ -184,15 +193,15 @@ export function Prefetch() {
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            DNS Prefetch Management
+            {t("prefetch.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Pre-resolve domain names to improve the response time
+            {t("prefetch.description")}
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <DatabaseIcon className="h-3 w-3" />
-          {prefetches.length} {prefetches.length === 1 ? "Entry" : "Entries"}
+          {prefetches.length} {prefetches.length === 1 ? t("prefetch.entry") : t("prefetch.entries")}
         </div>
       </div>
 
@@ -200,13 +209,10 @@ export function Prefetch() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
             <PlusIcon className="h-5 w-5 text-green-500" />
-            Add DNS Prefetch
+            {t("prefetch.addTitle")}
           </CardTitle>
           <CardDescription>
-            DNS prefetching preemptively resolves domain names to IP addresses
-            before they're needed. This can reduce page load times by
-            eliminating DNS resolution delays when users navigate to prefetched
-            domains.
+            {t("prefetch.addDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -214,13 +220,13 @@ export function Prefetch() {
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="domain" className="font-medium">
-                  Domain name
+                  {t("prefetch.domainLabel")}
                 </Label>
                 <div className="relative">
                   <GlobeIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="domain"
-                    placeholder="example.com."
+                    placeholder={t("prefetch.domainPlaceholder")}
                     className={`pl-9 ${
                       domainError ? "border-destructive" : ""
                     }`}
@@ -235,50 +241,49 @@ export function Prefetch() {
                   </span>
                 )}
                 <span className="text-xs text-muted-foreground">
-                  Enter the domain you want to pre-resolve.
+                  {t("prefetch.domainHint")}
                 </span>
                 <span className="text-xs text-muted-foreground font-bold">
                   <br />
-                  Note:{" "}
+                  {t("prefetch.note")}:{" "}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  A dot must be added at the end in order for the domain to be
-                  fully qualified (FQDN)
+                  {t("prefetch.fqdnHint")}
                 </span>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="refresh" className="font-medium">
-                  Refresh Interval
+                  {t("prefetch.refreshLabel")}
                 </Label>
                 <Select
                   value={refresh.toString()}
                   onValueChange={(value) => setrefresh(parseInt(value))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select refresh interval" />
+                    <SelectValue placeholder={t("prefetch.refreshSelect")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">On TTL Expire</SelectItem>
+                    <SelectItem value="0">{t("prefetch.refresh.onTTL")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <div>
                   <span className="text-xs text-muted-foreground">
-                    How often DNS records should be refreshed in the cache
+                    {t("prefetch.refreshHint")}
                     <br />
-                    'On TTL Expire' will re-fetch once the domain TTL expires
+                    {t("prefetch.refreshHintTTL")}
                   </span>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="queryType" className="font-medium">
-                  Query Type
+                  {t("prefetch.queryType")}
                 </Label>
                 <Select
                   value={queryType}
                   onValueChange={(value) => setQueryType(value)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select query type" />
+                    <SelectValue placeholder={t("prefetch.queryTypeSelect")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">A (IPv4 address)</SelectItem>
@@ -288,7 +293,7 @@ export function Prefetch() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  The type of DNS record to prefetch
+                  {t("prefetch.queryTypeHint")}
                 </p>
               </div>
             </div>
@@ -304,10 +309,10 @@ export function Prefetch() {
             {submitting ? (
               <>
                 <SpinnerIcon className="h-4 w-4 mr-2 animate-spin" />
-                Adding...
+                {t("prefetch.adding")}
               </>
             ) : (
-              "Add Prefetch"
+              t("prefetch.add")
             )}
           </Button>
         </div>
@@ -318,11 +323,11 @@ export function Prefetch() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle className="flex items-center gap-2">
               <ClockIcon className="h-5 w-5 text-blue-500" />
-              Active Prefetch Domains
+              {t("prefetch.activeTitle")}
             </CardTitle>
             <div className="w-full lg:w-auto mt-1 lg:mt-0">
               <Input
-                placeholder="Search domains..."
+                placeholder={t("prefetch.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="text-sm"
@@ -347,10 +352,10 @@ export function Prefetch() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Domain</TableHead>
-                  <TableHead>Refresh Interval</TableHead>
-                  <TableHead>Query Type</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead>{t("prefetch.columns.domain")}</TableHead>
+                  <TableHead>{t("prefetch.columns.refresh")}</TableHead>
+                  <TableHead>{t("prefetch.columns.queryType")}</TableHead>
+                  <TableHead className="text-right">{t("prefetch.columns.action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -377,7 +382,7 @@ export function Prefetch() {
                           onClick={() => handleDelete(prefetch.domain)}
                         >
                           <TrashIcon className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
+                          <span className="sr-only">{t("prefetch.delete")}</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -388,9 +393,9 @@ export function Prefetch() {
           ) : (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground">
               {searchTerm ? (
-                "No matching entries for your search"
+                t("prefetch.noMatch")
               ) : (
-                <NoContent text="Add a domain to prefetch to get started" />
+                <NoContent text={t("prefetch.emptyState")} />
               )}
             </div>
           )}

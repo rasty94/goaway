@@ -221,6 +221,81 @@
       }
     }
   },
+  "upstream": {
+    "reloadToPing": "recarga para medir",
+    "toasts": {
+      "fetchError": "No se pudieron obtener los upstreams",
+      "added": "Upstream agregado correctamente",
+      "addFailed": "No se pudo agregar el upstream",
+      "setPreferredFailed": "No se pudo marcar como preferido",
+      "deleteFailed": "No se pudo eliminar el upstream"
+    },
+    "add": {
+      "button": "Agregar upstream",
+      "adding": "Agregando...",
+      "title": "Agregar nuevo servidor DNS upstream",
+      "description": "Configura un nuevo servidor DNS upstream indicando su IP y puerto.",
+      "examples": "Ejemplos comunes:",
+      "cloudflare": "Cloudflare",
+      "addressLabel": "Dirección del servidor DNS",
+      "addressPlaceholder": "1.1.1.1:53 o [2606:4700:4700::1111]:53",
+      "ipv6Hint": "Las direcciones IPv6 deben ir entre corchetes",
+      "invalidFormat": "Formato inválido. Usa IPv4 (1.1.1.1:53) o IPv6 ([1111:2222:3333::4444]:53)"
+    },
+    "card": {
+      "dnsPing": "Ping DNS",
+      "icmpPing": "Ping ICMP",
+      "preferred": "Preferido",
+      "setPreferred": "Marcar preferido",
+      "confirm": "¿Confirmar?",
+      "delete": "Eliminar"
+    }
+  },
+  "prefetch": {
+    "title": "Gestión de precarga DNS",
+    "description": "Resuelve dominios por adelantado para mejorar el tiempo de respuesta",
+    "entry": "Entrada",
+    "entries": "Entradas",
+    "addTitle": "Agregar precarga DNS",
+    "addDescription": "La precarga DNS resuelve dominios a IP antes de que se necesiten. Esto puede reducir los tiempos de carga al eliminar retrasos de resolución DNS.",
+    "domainLabel": "Nombre de dominio",
+    "domainPlaceholder": "example.com.",
+    "domainHint": "Ingresa el dominio que quieres pre-resolver.",
+    "note": "Nota",
+    "fqdnHint": "Debes agregar un punto final para que el dominio sea totalmente calificado (FQDN)",
+    "refreshLabel": "Intervalo de refresco",
+    "refreshSelect": "Selecciona intervalo",
+    "refreshHint": "Cada cuánto se debe refrescar el registro DNS en caché",
+    "refreshHintTTL": "'Al expirar TTL' volverá a consultar cuando expire el TTL del dominio",
+    "queryType": "Tipo de consulta",
+    "queryTypeSelect": "Selecciona tipo de consulta",
+    "queryTypeHint": "Tipo de registro DNS a precargar",
+    "add": "Agregar precarga",
+    "adding": "Agregando...",
+    "activeTitle": "Dominios activos en precarga",
+    "searchPlaceholder": "Buscar dominios...",
+    "delete": "Eliminar",
+    "noMatch": "No hay entradas que coincidan con tu búsqueda",
+    "emptyState": "Agrega un dominio para comenzar",
+    "columns": {
+      "domain": "Dominio",
+      "refresh": "Intervalo de refresco",
+      "queryType": "Tipo de consulta",
+      "action": "Acción"
+    },
+    "refresh": {
+      "onTTL": "Al expirar TTL",
+      "seconds": "{{count}} segundos",
+      "minutes": "{{count}} minutos",
+      "hours": "{{count}} horas",
+      "days": "{{count}} días"
+    },
+    "toasts": {
+      "fetchError": "No se pudieron obtener las entradas de precarga DNS",
+      "added": "¡{{domain}} se agregó a la lista de precarga!",
+      "removed": "¡{{domain}} se eliminó de la lista de precarga!"
+    }
+  },
   "resolution": {
     "title": "Resoluciones DNS Personalizadas",
     "description": "Mapea dominios personalizados a direcciones específicas u otros dominios",

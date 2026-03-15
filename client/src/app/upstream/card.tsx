@@ -12,6 +12,7 @@ import { DeleteRequest, PutRequest } from "@/util";
 import { CloudIcon, StarIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 type UpstreamCardProps = {
   upstream: UpstreamEntry;
@@ -19,6 +20,7 @@ type UpstreamCardProps = {
 };
 
 export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
+  const { t } = useTranslation();
   const currentUpstream = upstream;
   const [isPreferred, setIsPreferred] = useState(upstream.preferred);
   const [deleteState, setDeleteState] = useState<"initial" | "confirm">(
@@ -52,7 +54,7 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
         toast.warning(response.message);
       }
     } catch {
-      toast.error("Failed to set preferred upstream");
+      toast.error(t("upstream.toasts.setPreferredFailed"));
     }
   }
 
@@ -71,10 +73,10 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
         onRemove(currentUpstream.upstream);
         toast.success(response.message);
       } else {
-        toast.warning(response.message || "Failed to delete upstream");
+        toast.warning(response.message || t("upstream.toasts.deleteFailed"));
       }
     } catch {
-      toast.error("Failed to delete upstream");
+      toast.error(t("upstream.toasts.deleteFailed"));
     } finally {
       setDeleteState("initial");
     }
@@ -96,11 +98,11 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
 
       <CardContent>
         <div className="flex items-center space-x-2">
-          <p className="text-muted-foreground">DNS Ping: </p>
+          <p className="text-muted-foreground">{t("upstream.card.dnsPing")}: </p>
           <p>{upstream.dnsPing}</p>
         </div>
         <div className="flex items-center space-x-2">
-          <p className="text-muted-foreground">ICMP Ping:</p>
+          <p className="text-muted-foreground">{t("upstream.card.icmpPing")}:</p>
           <p>{upstream.icmpPing}</p>
         </div>
       </CardContent>
@@ -109,7 +111,7 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
         {isPreferred ? (
           <Button className="w-full text-white font-bold bg-green-700 hover:bg-green-700 cursor-default">
             <StarIcon className="mr-2" size={16} />
-            Preferred
+            {t("upstream.card.preferred")}
           </Button>
         ) : (
           <Button
@@ -118,7 +120,7 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
             variant="secondary"
           >
             <StarIcon className="mr-2" size={16} />
-            Set Preferred
+            {t("upstream.card.setPreferred")}
           </Button>
         )}
         <Button
@@ -134,7 +136,7 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
               deleteState === "confirm" ? "translate-y-0" : "translate-y-full"
             }`}
           >
-            Confirm?
+            {t("upstream.card.confirm")}
           </span>
           <span
             className={`transition-transform duration-300 ${
@@ -143,7 +145,7 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
                 : "translate-y-0 opacity-100"
             }`}
           >
-            Delete
+            {t("upstream.card.delete")}
           </span>
         </Button>
       </CardFooter>

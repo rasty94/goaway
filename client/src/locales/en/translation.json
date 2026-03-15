@@ -221,6 +221,81 @@
       }
     }
   },
+  "upstream": {
+    "reloadToPing": "reload to ping",
+    "toasts": {
+      "fetchError": "Unable to fetch upstreams",
+      "added": "Upstream added successfully",
+      "addFailed": "Failed to add upstream",
+      "setPreferredFailed": "Failed to set preferred upstream",
+      "deleteFailed": "Failed to delete upstream"
+    },
+    "add": {
+      "button": "Add Upstream",
+      "adding": "Adding...",
+      "title": "Add New Upstream DNS Server",
+      "description": "Configure a new upstream DNS server by specifying its IP address and port.",
+      "examples": "Common examples:",
+      "cloudflare": "Cloudflare",
+      "addressLabel": "DNS Server Address",
+      "addressPlaceholder": "1.1.1.1:53 or [2606:4700:4700::1111]:53",
+      "ipv6Hint": "IPv6 addresses must be enclosed in square brackets",
+      "invalidFormat": "Invalid format. Use IPv4 (1.1.1.1:53) or IPv6 ([1111:2222:3333::4444]:53)"
+    },
+    "card": {
+      "dnsPing": "DNS Ping",
+      "icmpPing": "ICMP Ping",
+      "preferred": "Preferred",
+      "setPreferred": "Set Preferred",
+      "confirm": "Confirm?",
+      "delete": "Delete"
+    }
+  },
+  "prefetch": {
+    "title": "DNS Prefetch Management",
+    "description": "Pre-resolve domain names to improve the response time",
+    "entry": "Entry",
+    "entries": "Entries",
+    "addTitle": "Add DNS Prefetch",
+    "addDescription": "DNS prefetching preemptively resolves domain names to IP addresses before they're needed. This can reduce page load times by eliminating DNS resolution delays when users navigate to prefetched domains.",
+    "domainLabel": "Domain name",
+    "domainPlaceholder": "example.com.",
+    "domainHint": "Enter the domain you want to pre-resolve.",
+    "note": "Note",
+    "fqdnHint": "A dot must be added at the end in order for the domain to be fully qualified (FQDN)",
+    "refreshLabel": "Refresh Interval",
+    "refreshSelect": "Select refresh interval",
+    "refreshHint": "How often DNS records should be refreshed in the cache",
+    "refreshHintTTL": "'On TTL Expire' will re-fetch once the domain TTL expires",
+    "queryType": "Query Type",
+    "queryTypeSelect": "Select query type",
+    "queryTypeHint": "The type of DNS record to prefetch",
+    "add": "Add Prefetch",
+    "adding": "Adding...",
+    "activeTitle": "Active Prefetch Domains",
+    "searchPlaceholder": "Search domains...",
+    "delete": "Delete",
+    "noMatch": "No matching entries for your search",
+    "emptyState": "Add a domain to prefetch to get started",
+    "columns": {
+      "domain": "Domain",
+      "refresh": "Refresh Interval",
+      "queryType": "Query Type",
+      "action": "Action"
+    },
+    "refresh": {
+      "onTTL": "On TTL Expire",
+      "seconds": "{{count}} seconds",
+      "minutes": "{{count}} minutes",
+      "hours": "{{count}} hours",
+      "days": "{{count}} days"
+    },
+    "toasts": {
+      "fetchError": "Unable to fetch DNS prefetch entries",
+      "added": "{{domain}} has been added to prefetch list!",
+      "removed": "{{domain}} has been removed from prefetch list!"
+    }
+  },
   "resolution": {
     "title": "Custom DNS Resolutions",
     "description": "Map custom domains to specific addresses or other domains",

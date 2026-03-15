@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GetRequest } from "@/util";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export type UpstreamEntry = {
   upstreamName: string;
@@ -15,13 +16,14 @@ export type UpstreamEntry = {
 };
 
 export function Upstream() {
+  const { t } = useTranslation();
   const [upstreams, setUpstreams] = useState<UpstreamEntry[]>([]);
 
   useEffect(() => {
     const fetchupstreams = async () => {
       const [code, response] = await GetRequest("upstreams");
       if (code !== 200) {
-        toast.warning("Unable to fetch upstreams");
+        toast.warning(t("upstream.toasts.fetchError"));
         return;
       }
       setUpstreams(response.upstreams);

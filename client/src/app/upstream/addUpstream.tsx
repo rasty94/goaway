@@ -14,12 +14,14 @@ import { PlusIcon } from "@phosphor-icons/react";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 type AddUpstreamProps = {
   onAdd: (entry: UpstreamEntry) => void;
 };
 
 export function AddUpstream({ onAdd }: AddUpstreamProps) {
+  const { t } = useTranslation();
   const [newUpstreamIP, setNewUpstreamIP] = useState("");
   const [open, setOpen] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
@@ -48,9 +50,7 @@ export function AddUpstream({ onAdd }: AddUpstreamProps) {
 
   const handleSave = async () => {
     if (!validateUpstream(newUpstreamIP)) {
-      toast.error(
-        "Invalid format. Use IPv4 (1.1.1.1:53) or IPv6 ([1111:2222:3333::4444]:53)"
-      );
+      toast.error(t("upstream.add.invalidFormat"));
       return;
     }
 
@@ -61,21 +61,21 @@ export function AddUpstream({ onAdd }: AddUpstreamProps) {
       });
 
       if (code === 200) {
-        toast.success("Upstream added successfully");
+        toast.success(t("upstream.toasts.added"));
         setOpen(false);
         onAdd({
-          dnsPing: "reload to ping",
-          icmpPing: "reload to ping",
+          dnsPing: t("upstream.reloadToPing"),
+          icmpPing: t("upstream.reloadToPing"),
           name: newUpstreamIP.trim(),
           preferred: false,
           upstream: newUpstreamIP.trim()
         });
         setNewUpstreamIP("");
       } else {
-        toast.error(response?.message || "Failed to add upstream");
+        toast.error(response?.message || t("upstream.toasts.addFailed"));
       }
     } catch {
-      toast.error("An error occurred while adding the upstream");
+      toast.error(t("upstream.toasts.addFailed"));
     } finally {
       setIsValidating(false);
     }
@@ -93,29 +93,28 @@ export function AddUpstream({ onAdd }: AddUpstreamProps) {
         <DialogTrigger asChild>
           <Button variant="default">
             <PlusIcon className="mr-2" size={20} />
-            Add Upstream
+            {t("upstream.add.button")}
           </Button>
         </DialogTrigger>
         <DialogContent className="lg:w-1/3">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              Add New Upstream DNS Server
+              {t("upstream.add.title")}
             </DialogTitle>
           </DialogHeader>
           <DialogDescription className="text-sm text-muted-foreground leading-relaxed space-y-3 pt-2">
             <p>
-              Configure a new upstream DNS server by specifying its IP address
-              and port.
+              {t("upstream.add.description")}
             </p>
             <div className="space-y-1.5">
-              <p className="font-medium text-foreground">Common examples:</p>
+              <p className="font-medium text-foreground">{t("upstream.add.examples")}</p>
               <div className="space-y-1 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">IPv4:</span>
                   <code className="bg-muted px-1 py-0.5 rounded text-foreground">
                     1.1.1.1:53
                   </code>
-                  <span className="text-muted-foreground">(Cloudflare)</span>
+                  <span className="text-muted-foreground">({t("upstream.add.cloudflare")})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">IPv4:</span>
@@ -136,19 +135,19 @@ export function AddUpstream({ onAdd }: AddUpstreamProps) {
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="ip" className="text-sm font-medium">
-                DNS Server Address
+                {t("upstream.add.addressLabel")}
               </Label>
               <Input
                 id="ip"
                 value={newUpstreamIP}
-                placeholder="1.1.1.1:53 or [2606:4700:4700::1111]:53"
+                placeholder={t("upstream.add.addressPlaceholder")}
                 onChange={(e) => setNewUpstreamIP(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="font-mono text-sm"
                 disabled={isValidating}
               />
               <p className="text-xs text-muted-foreground">
-                IPv6 addresses must be enclosed in square brackets
+                {t("upstream.add.ipv6Hint")}
               </p>
             </div>
           </div>
@@ -158,14 +157,14 @@ export function AddUpstream({ onAdd }: AddUpstreamProps) {
               disabled={isValidating || !newUpstreamIP.trim()}
               className="flex-1"
             >
-              {isValidating ? "Adding..." : "Add Upstream"}
+              {isValidating ? t("upstream.add.adding") : t("upstream.add.button")}
             </Button>
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isValidating}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
           </div>
         </DialogContent>
