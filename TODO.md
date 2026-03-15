@@ -18,7 +18,7 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 - [x] **Live Query Tail**: Real-time visualization of incoming DNS requests. Multi-client support added to WebSockets and basic tail implemented in HTMX dashboard.
 - [ ] **Advanced Data Visualization**: More detailed charts for top permitted/blocked domains and client activity over time.
 - [x] **Network Topology Graph**: Interactive 2D visualization of connected clients and their DNS traffic patterns (Implemented via DNSServerVisualizer).
-- [ ] **Mobile-First Responsive Audit**: Ensure the entire dashboard is 100% usable on mobile devices with touch-friendly targets.
+- [x] **Mobile-First Responsive Audit**: Core dashboard routes and critical UX flows hardened for mobile/touch usage, including responsive layouts and touch-friendly controls.
 - [x] **Go-Native Frontend Migration**: HTMX Alpha dashboard implemented as a Proof of Concept with stats, logs, and resolution management. Zero NodeJS dependency achieved for this mode.
 
 ---
@@ -36,7 +36,7 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 ### System Architecture
 - [ ] **Schema Migrations**: Introduce a migration runner (e.g., `golang-migrate`) for managing backend database schema updates across versions explicitly.
 - [x] **Data Backup & Restore (Teleporter)**: ZIP-based export (`GET /api/teleporter/export`) and import (`POST /api/teleporter/import`) for settings and database.
-- [ ] **Remote Backups**: Extend backup functionality to automatically sync backups to remote storages like an AWS S3 bucket, a remote directory (NFS/SMB), or WebDAV.
+- [x] **Remote Backups**: Implemented remote backup sync to AWS S3, mounted remote directories (NFS/SMB), and WebDAV with manual trigger + scheduled execution.
 - [x] **Metrics & Observability**: Prometheus metrics exposed at `/metrics` for DNS latency (histogram), queries, blocks, cache hits, and forwarded queries. Compatible with Grafana.
 
 ### Authentication & Users
