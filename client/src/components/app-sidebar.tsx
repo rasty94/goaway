@@ -24,90 +24,93 @@ import {
   UsersIcon
 } from "@phosphor-icons/react";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { TextAnimate } from "./ui/text-animate";
 import { ServerStatistics } from "./server-statistics";
 
-const data = {
-  navMain: [
-    {
-      title: "Home",
-      url: "/home",
-      icon: HouseIcon
-    },
-    {
-      title: "Logs",
-      url: "/logs",
-      icon: NotebookIcon
-    },
-    {
-      title: "Lists",
-      url: "/blacklist",
-      icon: ListIcon,
-      items: [
-        {
-          title: "Blacklist",
-          url: "/blacklist"
-        },
-        {
-          title: "Whitelist",
-          url: "/whitelist"
-        }
-      ]
-    },
-    {
-      title: "Resolution",
-      url: "/resolution",
-      icon: TrafficSignIcon
-    },
-    {
-      title: "Prefetch",
-      url: "/prefetch",
-      icon: PersonSimpleThrowIcon
-    },
-    {
-      title: "Upstream",
-      url: "/upstream",
-      icon: CloudArrowUpIcon
-    },
-    {
-      title: "Clients",
-      url: "/clients",
-      icon: UsersIcon
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: GearIcon
-    },
-    {
-      title: "Changelog",
-      url: "/changelog",
-      icon: NoteIcon
-    }
-  ],
-  navSecondary: [
-    {
-      title: "Website",
-      url: "https://pommee.github.io/goaway",
-      icon: BrowserIcon,
-      blank: "_blank"
-    },
-    {
-      title: "GitHub",
-      url: "https://github.com/pommee/goaway",
-      icon: GithubLogoIcon,
-      blank: "_blank"
-    },
-    {
-      title: "Logout",
-      url: "/login",
-      icon: SignOutIcon,
-      blank: ""
-    }
-  ]
-};
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { t } = useTranslation();
+
+  const data = {
+    navMain: [
+      {
+        title: t("sidebar.home"),
+        url: "/home",
+        icon: HouseIcon
+      },
+      {
+        title: t("sidebar.logs"),
+        url: "/logs",
+        icon: NotebookIcon
+      },
+      {
+        title: t("sidebar.lists"),
+        url: "/blacklist",
+        icon: ListIcon,
+        items: [
+          {
+            title: t("sidebar.blacklist"),
+            url: "/blacklist"
+          },
+          {
+            title: t("sidebar.whitelist"),
+            url: "/whitelist"
+          }
+        ]
+      },
+      {
+        title: t("sidebar.resolution"),
+        url: "/resolution",
+        icon: TrafficSignIcon
+      },
+      {
+        title: t("sidebar.prefetch"),
+        url: "/prefetch",
+        icon: PersonSimpleThrowIcon
+      },
+      {
+        title: t("sidebar.upstream"),
+        url: "/upstream",
+        icon: CloudArrowUpIcon
+      },
+      {
+        title: t("sidebar.clients"),
+        url: "/clients",
+        icon: UsersIcon
+      },
+      {
+        title: t("sidebar.settings"),
+        url: "/settings",
+        icon: GearIcon
+      },
+      {
+        title: t("sidebar.changelog"),
+        url: "/changelog",
+        icon: NoteIcon
+      }
+    ],
+    navSecondary: [
+      {
+        title: t("sidebar.website"),
+        url: "https://pommee.github.io/goaway",
+        icon: BrowserIcon,
+        blank: "_blank"
+      },
+      {
+        title: t("sidebar.github"),
+        url: "https://github.com/pommee/goaway",
+        icon: GithubLogoIcon,
+        blank: "_blank"
+      },
+      {
+        title: t("sidebar.logout"),
+        url: "/login",
+        icon: SignOutIcon,
+        blank: ""
+      }
+    ]
+  };
+
   return (
     <div className="border-r border-accent">
       <Sidebar variant="inset" {...props}>

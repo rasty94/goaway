@@ -5,6 +5,7 @@ import { NavActions } from "./header/nav-actions";
 import Notifications from "./header/notifications";
 import { ModeToggle } from "@/components/header/theme/toggle-theme";
 import BlockingTimer from "./header/BlockingTimer";
+import { LanguageToggle } from "./header/i18n/language-toggle";
 
 interface PageInfo {
   title: string;
@@ -98,6 +99,7 @@ export function SiteHeader() {
 
       <div className="flex items-center gap-2 px-4 lg:px-6">
         <BlockingTimer />
+        <LanguageToggle />
         <ModeToggle />
         <Notifications />
         <NavActions />

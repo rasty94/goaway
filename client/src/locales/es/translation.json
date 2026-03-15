@@ -1,0 +1,24 @@
+{
+  "sidebar": {
+    "home": "Inicio",
+    "logs": "Registros",
+    "lists": "Listas",
+    "blacklist": "Lista negra",
+    "whitelist": "Lista blanca",
+    "resolution": "Resolución",
+    "prefetch": "Precarga",
+    "upstream": "Servidores",
+    "clients": "Clientes",
+    "settings": "Ajustes",
+    "changelog": "Cambios",
+    "website": "Sitio web",
+    "github": "GitHub",
+    "logout": "Cerrar sesión"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  }
+}

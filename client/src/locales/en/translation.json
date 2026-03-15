@@ -1,0 +1,24 @@
+{
+  "sidebar": {
+    "home": "Home",
+    "logs": "Logs",
+    "lists": "Lists",
+    "blacklist": "Blacklist",
+    "whitelist": "Whitelist",
+    "resolution": "Resolution",
+    "prefetch": "Prefetch",
+    "upstream": "Upstream",
+    "clients": "Clients",
+    "settings": "Settings",
+    "changelog": "Changelog",
+    "website": "Website",
+    "github": "GitHub",
+    "logout": "Logout"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}
