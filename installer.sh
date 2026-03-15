@@ -61,6 +61,11 @@ main() {
 
     echo "Manually add the directory to your \$HOME/.bash_profile (or similar):"
     echo "  export PATH=${executable_folder}:\$PATH"
+    
+    echo ""
+    echo "To allow GoAway to bind to DNS port 53 without running as root, run:"
+    echo "  sudo setcap cap_net_bind_service=+ep ${executable_folder}/goaway"
+    
     exit 0
 }
 

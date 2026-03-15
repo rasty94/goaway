@@ -56,7 +56,9 @@ Contributions are welcomed! Here's how you can help:
 
 **Permission Denied (Port 53)**
 
-- DNS servers typically require elevated privileges to bind to port 53
+- DNS servers typically require elevated privileges to bind to port 53.
+  - **Linux**: You can run `sudo setcap cap_net_bind_service=+ep /path/to/goaway` to grant the binary permission to bind to privileged ports without needing full root access.
+  - Alternatively, run the program as `root` (e.g. `sudo goaway`) or change the DNS port in your configuration to a non-privileged one (e.g. `5353`).
 
 **Can't Access Dashboard**
 
