@@ -19,6 +19,11 @@ type UpstreamConfig struct {
 	Fallback  []string `yaml:"fallback" json:"fallback"`
 }
 
+type ConditionalForwarder struct {
+	Domain   string `yaml:"domain" json:"domain"`
+	Upstream string `yaml:"upstream" json:"upstream"`
+}
+
 type PortsConfig struct {
 	TCPUDP int `yaml:"udptcp" json:"udptcp"`
 	DoT    int `yaml:"dot" json:"dot"`
@@ -26,15 +31,16 @@ type PortsConfig struct {
 }
 
 type DNSConfig struct {
-	Status       Status         `yaml:"-" json:"status"`
-	Address      string         `yaml:"address" json:"address"`
-	Gateway      string         `yaml:"gateway" json:"gateway"`
-	CacheEnabled bool           `yaml:"cacheEnabled" json:"cacheEnabled"`
-	CacheTTL     int            `yaml:"cacheTTL" json:"cacheTTL"`
-	UDPSize      int            `yaml:"udpSize" json:"udpSize"`
-	TLS          TLSConfig      `yaml:"tls" json:"tls"`
-	Upstream     UpstreamConfig `yaml:"upstream" json:"upstream"`
-	Ports        PortsConfig    `yaml:"ports" json:"ports"`
+	Status                 Status                 `yaml:"-" json:"status"`
+	Address                string                 `yaml:"address" json:"address"`
+	Gateway                string                 `yaml:"gateway" json:"gateway"`
+	CacheEnabled           bool                   `yaml:"cacheEnabled" json:"cacheEnabled"`
+	CacheTTL               int                    `yaml:"cacheTTL" json:"cacheTTL"`
+	UDPSize                int                    `yaml:"udpSize" json:"udpSize"`
+	TLS                    TLSConfig              `yaml:"tls" json:"tls"`
+	Upstream               UpstreamConfig         `yaml:"upstream" json:"upstream"`
+	Ports                  PortsConfig            `yaml:"ports" json:"ports"`
+	ConditionalForwarders  []ConditionalForwarder `yaml:"conditionalForwarders" json:"conditionalForwarders"`
 }
 
 type RateLimitConfig struct {

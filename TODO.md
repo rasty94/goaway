@@ -28,16 +28,16 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 ### Advanced DNS Management
 - [x] **DNS Caching Layer**: Intelligent in-memory DNS caching system implemented with TTL respect and UI toggle (On/Off).
 - [x] **Local DNS & CNAME Records**: Support for A/AAAA/CNAME records with a dedicated management UI and database persistence.
-- [ ] **Allowlist / Whitelist Lists**: Add support for explicit allowlists to override blocklists for specific domains (or broadly).
-- [ ] **Wildcard Matching**: Introduce wildcard domain matching (e.g., `*.evil.com`) for both blocklists and allowlists to improve coverage easily.
-- [ ] **Regex Blocking**: Implement Regular Expressions (Regex) support for advanced domain blacklisting and whitelisting.
-- [ ] **Conditional Forwarding**: Add support to forward queries for local domains (e.g., `*.lan`) and reverse lookups directly to a localized router/gateway.
+- [x] **Allowlist / Whitelist Lists**: Full support for allowlists over riding blacklists.
+- [x] **Wildcard Matching**: Introduced wildcard domain matching (e.g., `*.evil.com`) for both blocklists and allowlists using suffix matching.
+- [x] **Regex Blocking**: Implemented Regular Expressions (Regex) support for advanced domain blacklisting and whitelisting.
+- [x] **Conditional Forwarding**: Domain-specific upstream routing via `ConditionalForwarders` config + REST API (`GET/POST/DELETE /api/dns/forwarders`).
 
 ### System Architecture
 - [ ] **Schema Migrations**: Introduce a migration runner (e.g., `golang-migrate`) for managing backend database schema updates across versions explicitly.
-- [ ] **Data Backup & Restore (Teleporter)**: Implement an export/import feature allowing users to backup all settings, blocklists, local DNS, and DHCP configurations.
+- [x] **Data Backup & Restore (Teleporter)**: ZIP-based export (`GET /api/teleporter/export`) and import (`POST /api/teleporter/import`) for settings and database.
 - [ ] **Remote Backups**: Extend backup functionality to automatically sync backups to remote storages like an AWS S3 bucket, a remote directory (NFS/SMB), or WebDAV.
-- [ ] **Metrics & Observability**: Expose detailed Prometheus metrics for DNS latency, cache hit/miss rates, and blocked domains to allow integration with Grafana.
+- [x] **Metrics & Observability**: Prometheus metrics exposed at `/metrics` for DNS latency (histogram), queries, blocks, cache hits, and forwarded queries. Compatible with Grafana.
 
 ### Authentication & Users
 - [ ] **Multi-User Administration**: Refactor the auth system to support custom Admin usernames (not just a single password) and allow multiple administrative or view-only users to access the dashboard.

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	arp "goaway/backend/dns"
 	model "goaway/backend/dns/server/models"
+	"goaway/backend/metrics"
 	"goaway/backend/notification"
 	"net"
 	"os"
@@ -58,7 +59,11 @@ func (s *DNSServer) shouldBlockQuery(client *model.Client, domainName, fullName 
 }
 
 func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
+	start := time.Now()
 	domainName := trimDomainDot(request.Question.Name)
+	clientIP := request.Client.IP
+
+	metrics.TotalQueries.WithLabelValues(clientIP, dns.TypeToString[request.Question.Qtype]).Inc()
 
 	if isPTRQuery(request, domainName) {
 		return s.handlePTRQuery(request)
@@ -71,6 +76,8 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 	s.checkAndUpdatePauseStatus()
 
 	if s.shouldBlockQuery(request.Client, domainName, request.Question.Name) {
+		metrics.BlockedQueries.WithLabelValues(clientIP, domainName).Inc()
+		metrics.DNSLatency.WithLabelValues(clientIP, "blocked").Observe(time.Since(start).Seconds())
 		return s.handleBlacklisted(request)
 	}
 
@@ -79,11 +86,19 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 		if err != nil {
 			log.Debug("Reverse lookup failed for %s: %v", request.Question.Name, err)
 		} else {
+			metrics.DNSLatency.WithLabelValues(clientIP, "local").Observe(time.Since(start).Seconds())
 			return val
 		}
 	}
 
-	return s.handleStandardQuery(request)
+	entry := s.handleStandardQuery(request)
+	status := "allowed"
+	if entry.Cached {
+		status = "cached"
+		metrics.CachedQueries.WithLabelValues(clientIP, domainName).Inc()
+	}
+	metrics.DNSLatency.WithLabelValues(clientIP, status).Observe(time.Since(start).Seconds())
+	return entry
 }
 
 func (s *DNSServer) reverseHostnameLookup(requestedHostname string) (string, bool) {
@@ -714,6 +729,18 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string) {
 		upstreamMsg.Id = dns.Id()
 
 		upstream := s.Config.DNS.Upstream.Preferred
+
+		// Conditional forwarding: check for domain-specific upstreams
+		queryDomain := strings.TrimSuffix(req.Question.Name, ".")
+		for _, cf := range s.Config.DNS.ConditionalForwarders {
+			cfDomain := strings.TrimSuffix(cf.Domain, ".")
+			if queryDomain == cfDomain || strings.HasSuffix(queryDomain, "."+cfDomain) {
+				upstream = cf.Upstream
+				log.Debug("Conditional forwarding %s -> %s", queryDomain, upstream)
+				break
+			}
+		}
+
 		if s.dnsClient.Net == "tcp-tls" {
 			host, port, err := net.SplitHostPort(upstream)
 			if err != nil {

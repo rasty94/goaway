@@ -32,6 +32,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gorm.io/gorm"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -182,6 +183,11 @@ func (api *API) setupRoutes() {
 	api.registerNotificationRoutes()
 	api.registerAlertRoutes()
 	api.registerNativeRoutes()
+	api.registerConditionalForwarderRoutes()
+	api.registerTeleporterRoutes()
+
+	// Metrics route
+	api.router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 }
 
 func (api *API) setupAuthAndMiddleware() {

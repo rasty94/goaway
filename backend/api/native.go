@@ -24,6 +24,9 @@ func (api *API) registerNativeRoutes() {
 	api.router.GET("/api/native/clients", api.getNativeClients)
 	api.router.GET("/api/native/cache/status", api.getNativeCacheStatus)
 	api.router.POST("/api/native/cache/toggle", api.toggleNativeCache)
+	api.router.GET("/api/native/wildcards", api.getNativeWildcards)
+	api.router.POST("/api/native/wildcards", api.addNativeWildcard)
+	api.router.DELETE("/api/native/wildcards", api.deleteNativeWildcard)
 }
 
 func (api *API) getNativeClients(c *gin.Context) {
@@ -251,4 +254,55 @@ func (api *API) getNativeCacheStatus(c *gin.Context) {
     `, statusColor, statusText)
 
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) getNativeWildcards(c *gin.Context) {
+	api.BlacklistService.PopulateWildcardCache(c.Request.Context()) // Ensure sync
+	wildcards := api.BlacklistService.GetWildcards()
+	var html string
+	for _, w := range wildcards {
+		rowID := fmt.Sprintf("wild-%x", w)
+		html += fmt.Sprintf(`
+            <tr class="border-b border-stone-800/50 hover:bg-stone-800/20 transition-colors" id="%s">
+                <td class="px-6 py-4 font-bold text-stone-300">*.%s</td>
+                <td class="px-6 py-4 text-right">
+                    <button class="text-red-400 hover:text-red-300 transition-colors text-xs font-bold uppercase tracking-tighter"
+                            hx-delete="/api/native/wildcards?domain=%s"
+                            hx-target="#%s"
+                            hx-swap="outerHTML"
+                            hx-confirm="Delete wildcard for %s?">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `, rowID, template.HTMLEscapeString(w), template.HTMLEscapeString(w), rowID, template.HTMLEscapeString(w))
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) addNativeWildcard(c *gin.Context) {
+	domain := c.PostForm("domain")
+	if domain == "" {
+		c.String(http.StatusBadRequest, "Missing domain")
+		return
+	}
+
+	err := api.BlacklistService.AddWildcard(c.Request.Context(), domain)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.Header("HX-Trigger", "refreshWildcards")
+	c.Status(http.StatusCreated)
+}
+
+func (api *API) deleteNativeWildcard(c *gin.Context) {
+	domain := c.Query("domain")
+	err := api.BlacklistService.RemoveWildcard(c.Request.Context(), domain)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.Status(http.StatusOK)
 }

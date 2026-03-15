@@ -1,10 +1,13 @@
 package whitelist
 
-import "goaway/backend/logging"
+import (
+	"goaway/backend/domain"
+	"goaway/backend/logging"
+)
 
 type Service struct {
 	repository Repository
-	Cache      map[string]bool
+	Matcher    *domain.Matcher
 }
 
 var log = logging.GetLogger()
@@ -12,7 +15,7 @@ var log = logging.GetLogger()
 func NewService(repo Repository) *Service {
 	service := &Service{
 		repository: repo,
-		Cache:      map[string]bool{},
+		Matcher:    domain.NewMatcher(),
 	}
 
 	_, err := service.GetDomains() // Preload cache
@@ -23,13 +26,13 @@ func NewService(repo Repository) *Service {
 	return service
 }
 
-func (s *Service) AddDomain(domain string) error {
-	err := s.repository.AddDomain(domain)
+func (s *Service) AddDomain(d string) error {
+	err := s.repository.AddDomain(d)
 	if err != nil {
 		return err
 	}
 
-	s.Cache[domain] = true
+	s.Matcher.Add(d)
 	return nil
 }
 
@@ -39,21 +42,23 @@ func (s *Service) GetDomains() (map[string]bool, error) {
 		return nil, err
 	}
 
-	s.Cache = domains
+	s.Matcher = domain.NewMatcher()
+	for d := range domains {
+		s.Matcher.Add(d)
+	}
 	return domains, nil
 }
 
-func (s *Service) RemoveDomain(domain string) error {
-	err := s.repository.RemoveDomain(domain)
+func (s *Service) RemoveDomain(d string) error {
+	err := s.repository.RemoveDomain(d)
 	if err != nil {
 		return err
 	}
 
-	delete(s.Cache, domain)
+	s.Matcher.Remove(d)
 	return nil
 }
 
-func (s *Service) IsWhitelisted(domain string) bool {
-	_, exists := s.Cache[domain]
-	return exists
+func (s *Service) IsWhitelisted(d string) bool {
+	return s.Matcher.Match(d)
 }

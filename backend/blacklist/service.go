@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"goaway/backend/database"
+	"goaway/backend/domain"
 	"goaway/backend/logging"
 	"io"
 	"net/http"
@@ -33,7 +34,7 @@ type Config struct {
 type Service struct {
 	repository   Repository
 	httpClient   HTTPClient
-	cache        map[string]bool
+	matcher      *domain.Matcher
 	cacheMu      sync.RWMutex
 	blocklistURL []BlocklistSource
 	config       Config
@@ -73,7 +74,7 @@ func NewService(repo Repository) *Service {
 	service := &Service{
 		repository: repo,
 		httpClient: http.DefaultClient,
-		cache:      make(map[string]bool),
+		matcher:    domain.NewMatcher(),
 		config:     config,
 	}
 
@@ -141,26 +142,60 @@ func (s *Service) PopulateCache(ctx context.Context) error {
 		return fmt.Errorf("failed to populate cache: %w", err)
 	}
 
-	s.cacheMu.Lock()
-	defer s.cacheMu.Unlock()
-
-	s.cache = make(map[string]bool, len(domains))
-	for _, domain := range domains {
-		domain = strings.TrimSuffix(domain, ".")
-		s.cache[domain] = true
+	newMatcher := domain.NewMatcher()
+	
+	// Add Bulk optimization
+	var cleanDomains []string
+	for _, domainStr := range domains {
+		cleanDomains = append(cleanDomains, strings.TrimSuffix(domainStr, "."))
 	}
+	newMatcher.AddBulk(cleanDomains)
+
+	s.cacheMu.Lock()
+	s.matcher = newMatcher
+	s.cacheMu.Unlock()
 
 	return nil
 }
 
 func (s *Service) IsBlacklisted(domain string) bool {
 	s.cacheMu.RLock()
-	defer s.cacheMu.RUnlock()
+	matcher := s.matcher
+	s.cacheMu.RUnlock()
 
-	if exists, found := s.cache[domain]; found {
-		return exists
+	if matcher != nil {
+		return matcher.Match(domain)
 	}
 	return false
+}
+
+func (s *Service) PopulateWildcardCache(ctx context.Context) error {
+	return nil
+}
+
+func (s *Service) GetWildcards() []string {
+	s.cacheMu.RLock()
+	matcher := s.matcher
+	s.cacheMu.RUnlock()
+
+	if matcher != nil {
+		return matcher.GetWildcards()
+	}
+	return nil
+}
+
+func (s *Service) AddWildcard(ctx context.Context, domain string) error {
+	if !strings.HasPrefix(domain, "*.") {
+		domain = "*." + domain
+	}
+	return s.AddCustomDomains(ctx, []string{domain})
+}
+
+func (s *Service) RemoveWildcard(ctx context.Context, domain string) error {
+	if !strings.HasPrefix(domain, "*.") {
+		domain = "*." + domain
+	}
+	return s.RemoveCustomDomain(ctx, domain)
 }
 
 func (s *Service) GetBlocklistUrls(ctx context.Context) ([]BlocklistSource, error) {
@@ -345,14 +380,19 @@ func (s *Service) ExtractDomains(body io.Reader) ([]string, error) {
 }
 
 func (s *Service) updateCache(domains []string, add bool) {
-	s.cacheMu.Lock()
-	defer s.cacheMu.Unlock()
+	s.cacheMu.RLock()
+	matcher := s.matcher
+	s.cacheMu.RUnlock()
 
-	for _, domain := range domains {
+	if matcher == nil {
+		matcher = domain.NewMatcher()
+	}
+
+	for _, d := range domains {
 		if add {
-			s.cache[domain] = true
+			matcher.Add(d)
 		} else {
-			delete(s.cache, domain)
+			matcher.Remove(d)
 		}
 	}
 }
