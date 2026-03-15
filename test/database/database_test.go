@@ -370,7 +370,7 @@ func TestResolutionModel(t *testing.T) {
 
 		resolution := &database.Resolution{
 			Domain: "custom.local",
-			IP:     "192.168.1.10",
+			Value:  "192.168.1.10",
 		}
 
 		err := db.Create(resolution).Error
@@ -384,20 +384,20 @@ func TestResolutionModel(t *testing.T) {
 		domain := "update-test.local"
 		resolution := &database.Resolution{
 			Domain: domain,
-			IP:     "192.168.1.20",
+			Value:  "192.168.1.20",
 		}
 
 		err := db.Create(resolution).Error
 		require.NoError(t, err)
 
-		resolution.IP = "192.168.1.30"
+		resolution.Value = "192.168.1.30"
 		err = db.Save(resolution).Error
 		require.NoError(t, err)
 
 		var updated database.Resolution
 		err = db.First(&updated, "domain = ?", domain).Error
 		require.NoError(t, err)
-		assert.Equal(t, "192.168.1.30", updated.IP)
+		assert.Equal(t, "192.168.1.30", updated.Value)
 	})
 }
 

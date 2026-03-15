@@ -189,5 +189,26 @@
       "backup": "Copia de seguridad: {{name}}",
       "error": "Error al importar"
     }
+  },
+  "resolution": {
+    "title": "Resoluciones DNS Personalizadas",
+    "description": "Mapea dominios personalizados a direcciones específicas u otros dominios",
+    "addTitle": "Añadir Nueva Resolución",
+    "addDescription": "Crea un mapeo personalizado para tu red",
+    "domainPlaceholder": "ejemplo.local.",
+    "valuePlaceholder": "192.168.1.100 o servidor.interno.lan.",
+    "typeLabel": "Tipo de Registro",
+    "save": "Guardar Resolución",
+    "saving": "Guardando...",
+    "wildcardTitle": "Coincidencia con Comodines",
+    "wildcardDescription": "Usa comodines para coincidir con múltiples subdominios",
+    "currentTitle": "Resoluciones Actuales",
+    "activeMappings": "{{count}} mapeo(s) activo(s)",
+    "searchPlaceholder": "Buscar dominios, IPs o destinos...",
+    "successAdd": "¡{{domain}} ha sido añadido!",
+    "successDelete": "¡{{domain}} fue eliminado!",
+    "fetchError": "No se pudieron obtener las resoluciones",
+    "requiredFields": "Dominio, Valor y Tipo son obligatorios",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar {{domain}}?"
   }
 }

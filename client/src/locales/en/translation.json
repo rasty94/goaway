@@ -189,5 +189,26 @@
       "backup": "Backup: {{name}}",
       "error": "Import failed"
     }
+  },
+  "resolution": {
+    "title": "Custom DNS Resolutions",
+    "description": "Map custom domains to specific addresses or other domains",
+    "addTitle": "Add New Resolution",
+    "addDescription": "Create a custom mapping for your network",
+    "domainPlaceholder": "example.local.",
+    "valuePlaceholder": "192.168.1.100 or internal.server.lan.",
+    "typeLabel": "Record Type",
+    "save": "Save Resolution",
+    "saving": "Saving...",
+    "wildcardTitle": "Wildcard Matching",
+    "wildcardDescription": "Use wildcards to match multiple subdomains",
+    "currentTitle": "Current Resolutions",
+    "activeMappings": "{{count}} active mapping(s)",
+    "searchPlaceholder": "Search domains, IPs or targets...",
+    "successAdd": "{{domain}} has been added!",
+    "successDelete": "{{domain}} was deleted!",
+    "fetchError": "Unable to fetch resolutions",
+    "requiredFields": "Domain, Value and Type are required",
+    "deleteConfirm": "Are you sure you want to delete {{domain}}?"
   }
 }
