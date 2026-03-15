@@ -10,8 +10,10 @@ import (
 	"goaway/backend/api/ratelimit"
 	"goaway/backend/blacklist"
 	"goaway/backend/dns/server"
+	_ "goaway/backend/docs"
 	"goaway/backend/logging"
 	"goaway/backend/notification"
+
 	"goaway/backend/prefetch"
 	"goaway/backend/request"
 	"goaway/backend/resolution"
@@ -32,9 +34,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 var log = logging.GetLogger()
+
+// @title GoAway Backend API
+// @version 1.0
+// @description The internal REST API for managing the GoAway DNS sinkhole and its settings.
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 
 const (
 	maxRetries = 10
@@ -165,6 +177,9 @@ func (api *API) configureCORS() {
 }
 
 func (api *API) setupRoutes() {
+	// Swagger route
+	api.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	api.registerServerRoutes()
 	api.registerAuthRoutes()
 	api.registerBlacklistRoutes()
