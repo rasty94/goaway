@@ -1,5 +1,5 @@
-# Build Stage for Frontend
-FROM node:22-alpine AS frontend-builder
+# Build Stage for Frontend (pinned to amd64 - lightningcss has no arm/v7 musl binary)
+FROM --platform=linux/amd64 node:22-alpine AS frontend-builder
 WORKDIR /app/client
 # Install pnpm
 RUN npm install -g pnpm
