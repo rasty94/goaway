@@ -65,3 +65,7 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
