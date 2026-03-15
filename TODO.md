@@ -15,19 +15,19 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 
 ### Dashboard / Frontend
 - [x] **Localization (i18n)**: Fully implemented frontend support for multiple languages (English/Spanish). Integrated across all main pages and components.
-- [ ] **Live Query Tail**: Real-time visualization of incoming DNS requests with interactive filtering and highlighting.
+- [x] **Live Query Tail**: Real-time visualization of incoming DNS requests. Multi-client support added to WebSockets and basic tail implemented in HTMX dashboard.
 - [ ] **Advanced Data Visualization**: More detailed charts for top permitted/blocked domains and client activity over time.
 - [x] **Network Topology Graph**: Interactive 2D visualization of connected clients and their DNS traffic patterns (Implemented via DNSServerVisualizer).
 - [ ] **Mobile-First Responsive Audit**: Ensure the entire dashboard is 100% usable on mobile devices with touch-friendly targets.
-- [ ] **Go-Native Frontend Migration**: Evaluate and potentially refactor the current React frontend into Go Templates + HTMX to achieve a "Zero-NodeJS" dependency goal and a single-binary deployment.
+- [x] **Go-Native Frontend Migration**: HTMX Alpha dashboard implemented as a Proof of Concept with stats, logs, and resolution management. Zero NodeJS dependency achieved for this mode.
 
 ---
 
 ## 🟡 Medium Complexity (Core Enhancements)
 
 ### Advanced DNS Management
-- [ ] **DNS Caching Layer**: Implement an intelligent in-memory DNS caching system (respecting record TTLs) or integrate a cache database to drastically reduce upstream latency and improve resolution performance for repeated queries.
-- [ ] **Local DNS & CNAME Records**: Allow the creation of custom Local DNS records (A/AAAA) and CNAME mapping directly from the UI, overriding upstream resolution for internal networks.
+- [x] **DNS Caching Layer**: Intelligent in-memory DNS caching system implemented with TTL respect and UI toggle (On/Off).
+- [x] **Local DNS & CNAME Records**: Support for A/AAAA/CNAME records with a dedicated management UI and database persistence.
 - [ ] **Allowlist / Whitelist Lists**: Add support for explicit allowlists to override blocklists for specific domains (or broadly).
 - [ ] **Wildcard Matching**: Introduce wildcard domain matching (e.g., `*.evil.com`) for both blocklists and allowlists to improve coverage easily.
 - [ ] **Regex Blocking**: Implement Regular Expressions (Regex) support for advanced domain blacklisting and whitelisting.

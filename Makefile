@@ -17,6 +17,9 @@ publish:
 
 	docker buildx rm multiarch-builder
 
+ghcr-publish:
+	./.agents/skills/ghcr-publish/scripts/publish.sh
+
 build: ; pnpm -C client install && pnpm -C client build
 start: ; docker compose up -d
 
