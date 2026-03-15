@@ -21,6 +21,14 @@ var (
 		[]string{"client_ip", "domain"},
 	)
 
+	ThrottledQueries = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "goaway_dns_throttled_total",
+			Help: "Total number of DNS queries throttled by per-client rate limits",
+		},
+		[]string{"client_ip", "protocol"},
+	)
+
 	CachedQueries = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "goaway_dns_cached_total",
@@ -28,7 +36,7 @@ var (
 		},
 		[]string{"client_ip", "domain"},
 	)
-	
+
 	ForwardedQueries = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "goaway_dns_forwarded_total",
@@ -50,6 +58,7 @@ var (
 func init() {
 	prometheus.MustRegister(TotalQueries)
 	prometheus.MustRegister(BlockedQueries)
+	prometheus.MustRegister(ThrottledQueries)
 	prometheus.MustRegister(CachedQueries)
 	prometheus.MustRegister(ForwardedQueries)
 	prometheus.MustRegister(DNSLatency)

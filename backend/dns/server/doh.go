@@ -144,6 +144,17 @@ func (s *DNSServer) handleDoHRequest(w http.ResponseWriter, r *http.Request) {
 		Protocol:       model.DoH,
 	}
 
+	if rateLimited, waitSeconds := s.isDNSRateLimited(client.IP); rateLimited {
+		entry := s.writeRateLimitedResponse(req, waitSeconds)
+		go s.WSCom(communicationMessage{IP: clientIP, Client: false, Upstream: false, DNS: true})
+		select {
+		case s.logEntryChannel <- entry:
+		case <-time.After(1 * time.Second):
+			log.Warning("Log entry channel full, dropping rate-limited log entry")
+		}
+		return
+	}
+
 	logEntry := s.processQuery(req)
 
 	go s.WSCom(communicationMessage{IP: clientIP, Client: false, Upstream: false, DNS: true})

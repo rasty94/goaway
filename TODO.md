@@ -52,7 +52,7 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 
 ### Advanced Security
 - [ ] **DNSSEC Validation**: Add support for rigorous DNSSEC validation for outgoing upstream queries to ensure cryptographically secure resolutions.
-- [ ] **Rate Limiting & Throttling**: Add advanced rate-limiting logic per client IP to mitigate DNS amplification or DoS attacks.
+- [x] **Rate Limiting & Throttling**: Added DNS per-client IP throttling (sliding window + temporary block), `REFUSED` responses when exceeded, configurable limits in DNS settings, and Prometheus metric `goaway_dns_throttled_total`.
 - [x] **Group Management (Per-Client Blocking)**: Multi-group backend implemented (default + custom groups) with per-client IP/MAC assignments, group-scoped block/allow domains, and DNS policy enforcement integrated into runtime resolution.
 
 ### Platform & Scaling

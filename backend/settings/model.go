@@ -31,16 +31,24 @@ type PortsConfig struct {
 }
 
 type DNSConfig struct {
-	Status                 Status                 `yaml:"-" json:"status"`
-	Address                string                 `yaml:"address" json:"address"`
-	Gateway                string                 `yaml:"gateway" json:"gateway"`
-	CacheEnabled           bool                   `yaml:"cacheEnabled" json:"cacheEnabled"`
-	CacheTTL               int                    `yaml:"cacheTTL" json:"cacheTTL"`
-	UDPSize                int                    `yaml:"udpSize" json:"udpSize"`
-	TLS                    TLSConfig              `yaml:"tls" json:"tls"`
-	Upstream               UpstreamConfig         `yaml:"upstream" json:"upstream"`
-	Ports                  PortsConfig            `yaml:"ports" json:"ports"`
-	ConditionalForwarders  []ConditionalForwarder `yaml:"conditionalForwarders" json:"conditionalForwarders"`
+	Status                Status                 `yaml:"-" json:"status"`
+	Address               string                 `yaml:"address" json:"address"`
+	Gateway               string                 `yaml:"gateway" json:"gateway"`
+	CacheEnabled          bool                   `yaml:"cacheEnabled" json:"cacheEnabled"`
+	CacheTTL              int                    `yaml:"cacheTTL" json:"cacheTTL"`
+	RateLimit             DNSRateLimitConfig     `yaml:"rateLimit" json:"rateLimit"`
+	UDPSize               int                    `yaml:"udpSize" json:"udpSize"`
+	TLS                   TLSConfig              `yaml:"tls" json:"tls"`
+	Upstream              UpstreamConfig         `yaml:"upstream" json:"upstream"`
+	Ports                 PortsConfig            `yaml:"ports" json:"ports"`
+	ConditionalForwarders []ConditionalForwarder `yaml:"conditionalForwarders" json:"conditionalForwarders"`
+}
+
+type DNSRateLimitConfig struct {
+	Enabled              bool `yaml:"enabled" json:"enabled"`
+	MaxQueries           int  `yaml:"maxQueries" json:"maxQueries"`
+	WindowSeconds        int  `yaml:"windowSeconds" json:"windowSeconds"`
+	BlockDurationSeconds int  `yaml:"blockDurationSeconds" json:"blockDurationSeconds"`
 }
 
 type RateLimitConfig struct {
@@ -69,23 +77,23 @@ type MiscConfig struct {
 }
 
 type RemoteBackupConfig struct {
-	Enabled    bool   `yaml:"enabled" json:"enabled"`
-	Provider   string `yaml:"provider" json:"provider"`   // "s3", "webdav", "local"
-	Endpoint   string `yaml:"endpoint" json:"endpoint"`   // S3 endpoint or WebDAV URL or local path
-	Bucket     string `yaml:"bucket" json:"bucket"`       // S3 bucket name
-	Region     string `yaml:"region" json:"region"`       // S3 region
-	AccessKey  string `yaml:"accessKey" json:"-"`
-	SecretKey  string `yaml:"secretKey" json:"-"`
-	Username   string `yaml:"username" json:"username"`   // WebDAV / SMB username
-	Password   string `yaml:"password" json:"-"`
-	Schedule   string `yaml:"schedule" json:"schedule"`   // "daily", "weekly", "manual"
+	Enabled   bool   `yaml:"enabled" json:"enabled"`
+	Provider  string `yaml:"provider" json:"provider"` // "s3", "webdav", "local"
+	Endpoint  string `yaml:"endpoint" json:"endpoint"` // S3 endpoint or WebDAV URL or local path
+	Bucket    string `yaml:"bucket" json:"bucket"`     // S3 bucket name
+	Region    string `yaml:"region" json:"region"`     // S3 region
+	AccessKey string `yaml:"accessKey" json:"-"`
+	SecretKey string `yaml:"secretKey" json:"-"`
+	Username  string `yaml:"username" json:"username"` // WebDAV / SMB username
+	Password  string `yaml:"password" json:"-"`
+	Schedule  string `yaml:"schedule" json:"schedule"` // "daily", "weekly", "manual"
 }
 
 type Config struct {
-	BinaryPath    string              `yaml:"-" json:"-"`
-	DNS           DNSConfig           `yaml:"dns" json:"dns"`
-	API           APIConfig           `yaml:"api" json:"api"`
-	Logging       LoggingConfig       `yaml:"logging" json:"logging"`
-	Misc          MiscConfig          `yaml:"misc" json:"misc"`
-	RemoteBackup  RemoteBackupConfig  `yaml:"remoteBackup" json:"remoteBackup"`
+	BinaryPath   string             `yaml:"-" json:"-"`
+	DNS          DNSConfig          `yaml:"dns" json:"dns"`
+	API          APIConfig          `yaml:"api" json:"api"`
+	Logging      LoggingConfig      `yaml:"logging" json:"logging"`
+	Misc         MiscConfig         `yaml:"misc" json:"misc"`
+	RemoteBackup RemoteBackupConfig `yaml:"remoteBackup" json:"remoteBackup"`
 }

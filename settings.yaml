@@ -13,6 +13,17 @@ dns:
   # Lower values can result in lesser amount of cached responses, but also the most up-to-date information.
   cacheTTL: 360
 
+  # DNS query throttling per client IP to reduce abuse or amplification attempts.
+  rateLimit:
+    # Enable/disable DNS query throttling
+    enabled: true
+    # Maximum queries accepted per client in the configured sliding window
+    maxQueries: 120
+    # Sliding window size in seconds for query counting
+    windowSeconds: 10
+    # Temporary block duration after exceeding the limit (seconds)
+    blockDurationSeconds: 30
+
   # UDP buffer size for incoming DNS queries (bytes)
   # Standard DNS-over-UDP packet size limit per RFC 1035
   udpSize: 512

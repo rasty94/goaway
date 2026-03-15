@@ -62,6 +62,10 @@ type DNSServer struct {
 	// In-memory cache for resolved DNS records to speed up responses and reduce upstream queries
 	DomainCache sync.Map
 
+	// In-memory per-client DNS rate limiting state used to throttle abusive query bursts.
+	clientRateLimitCache map[string]*clientRateLimitWindow
+	rateLimitLock        sync.Mutex
+
 	// DNSServer delegates database-backed lookups and persistence to these services,
 	// rather than performing raw DB operations itself.
 	RequestService      *request.Service
@@ -109,13 +113,14 @@ func NewDNSServer(config *settings.Config, dbconn *gorm.DB, cert tls.Certificate
 	}
 
 	server := &DNSServer{
-		Config:          config,
-		dbConn:          dbconn,
-		logEntryChannel: make(chan model.RequestLogEntry, 1000),
-		dnsClient:       &client,
-		DomainCache:     sync.Map{},
-		WSQueries:       make(map[*websocket.Conn]bool),
-		WSCommunication: make(map[*websocket.Conn]bool),
+		Config:               config,
+		dbConn:               dbconn,
+		logEntryChannel:      make(chan model.RequestLogEntry, 1000),
+		dnsClient:            &client,
+		DomainCache:          sync.Map{},
+		clientRateLimitCache: make(map[string]*clientRateLimitWindow),
+		WSQueries:            make(map[*websocket.Conn]bool),
+		WSCommunication:      make(map[*websocket.Conn]bool),
 	}
 
 	return server, nil
@@ -147,7 +152,7 @@ func (s *DNSServer) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		IP:       client.IP,
 	})
 
-	entry := s.processQuery(&Request{
+	req := &Request{
 		ResponseWriter: w,
 		Msg:            r,
 		Question:       r.Question[0],
@@ -155,7 +160,21 @@ func (s *DNSServer) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		Client:         client,
 		Prefetch:       false,
 		Protocol:       protocol,
-	})
+	}
+
+	if rateLimited, waitSeconds := s.isDNSRateLimited(client.IP); rateLimited {
+		entry := s.writeRateLimitedResponse(req, waitSeconds)
+		go s.WSCom(communicationMessage{
+			Client:   false,
+			Upstream: false,
+			DNS:      true,
+			IP:       client.IP,
+		})
+		s.logEntryChannel <- entry
+		return
+	}
+
+	entry := s.processQuery(req)
 
 	go s.WSCom(communicationMessage{
 		Client:   false,
