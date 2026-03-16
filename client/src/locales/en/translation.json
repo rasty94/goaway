@@ -219,6 +219,72 @@
         "syncDone": "Backup synchronized",
         "file": "File: {{filename}}"
       }
+    },
+    "dhcp": {
+      "title": "DHCP Server",
+      "description": "Manage the built-in DHCP service and static leases from the dashboard.",
+      "status": {
+        "title": "Runtime status",
+        "loading": "Loading DHCP status...",
+        "running": "DHCP service is running",
+        "stopped": "DHCP service is stopped",
+        "hint": "Save configuration changes before starting the service if you changed the listening or pool settings."
+      },
+      "actions": {
+        "refresh": "Refresh",
+        "saveConfig": "Save DHCP settings",
+        "saving": "Saving...",
+        "start": "Start server",
+        "starting": "Starting...",
+        "stop": "Stop server",
+        "stopping": "Stopping..."
+      },
+      "fields": {
+        "enabled": "Enabled",
+        "address": "Bind address",
+        "interface": "Interface",
+        "ipv4Enabled": "IPv4",
+        "ipv6Enabled": "IPv6",
+        "rangeStart": "Range start",
+        "rangeEnd": "Range end",
+        "router": "Router",
+        "dnsServers": "DNS servers",
+        "domainSearch": "Search domain",
+        "leaseDuration": "Lease duration (seconds)",
+        "portIPv4": "IPv4 port",
+        "portIPv6": "IPv6 port"
+      },
+      "leases": {
+        "title": "Static leases",
+        "description": "Create fixed IP assignments for known devices.",
+        "mac": "MAC address",
+        "ip": "IP address",
+        "hostname": "Hostname",
+        "enabled": "Enabled",
+        "state": "State",
+        "actions": "Actions",
+        "active": "Active",
+        "disabled": "Disabled",
+        "create": "Create lease",
+        "update": "Update lease",
+        "saving": "Saving...",
+        "cancelEdit": "Cancel edit",
+        "edit": "Edit",
+        "delete": "Delete",
+        "empty": "No static leases configured"
+      },
+      "toasts": {
+        "settingsSaved": "DHCP settings saved",
+        "started": "DHCP service started",
+        "stopped": "DHCP service stopped",
+        "startFailed": "Failed to start DHCP service",
+        "stopFailed": "Failed to stop DHCP service",
+        "leaseCreated": "Static lease created",
+        "leaseUpdated": "Static lease updated",
+        "leaseDeleted": "Static lease deleted",
+        "leaseFailed": "Failed to save static lease",
+        "leaseDeleteFailed": "Failed to delete static lease"
+      }
     }
   },
   "upstream": {

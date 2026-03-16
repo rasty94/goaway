@@ -6,6 +6,7 @@ import (
 	"goaway/backend/api"
 	"goaway/backend/api/key"
 	"goaway/backend/blacklist"
+	"goaway/backend/dhcp"
 	"goaway/backend/group"
 	"goaway/backend/logging"
 	"goaway/backend/notification"
@@ -48,6 +49,7 @@ type ServiceRegistry struct {
 	KeyService          *key.Service
 	NotificationService *notification.Service
 	BlacklistService    *blacklist.Service
+	DHCPService         *dhcp.Service
 	GroupService        *group.Service
 	WhitelistService    *whitelist.Service
 }
@@ -143,6 +145,7 @@ func (r *ServiceRegistry) setupAPIServer() {
 		NotificationService: r.NotificationService,
 		UserService:         r.UserService,
 		KeyService:          r.KeyService,
+		DHCPService:         r.DHCPService,
 		BlacklistService:    r.BlacklistService,
 		GroupService:        r.GroupService,
 		WhitelistService:    r.WhitelistService,
@@ -156,6 +159,7 @@ func (r *ServiceRegistry) StartAll() {
 		r.startSecureServers()
 	}
 
+	r.startDHCPService()
 	r.startAPIServer()
 }
 
@@ -202,6 +206,20 @@ func (r *ServiceRegistry) startSecureServers() {
 			r.Context.Config.DNS.TLS.Key,
 		); err != nil {
 			r.errorChan <- ServiceError{Service: "DoH", Err: err}
+		}
+	}()
+}
+
+func (r *ServiceRegistry) startDHCPService() {
+	if r.DHCPService == nil {
+		return
+	}
+
+	r.wg.Add(1)
+	go func() {
+		defer r.wg.Done()
+		if err := r.DHCPService.Start(); err != nil {
+			r.errorChan <- ServiceError{Service: "DHCP", Err: err}
 		}
 	}()
 }

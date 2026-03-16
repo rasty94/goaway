@@ -78,6 +78,7 @@ func (config *Config) Update(updatedSettings Config) {
 	config.DNS.CacheTTL = updatedSettings.DNS.CacheTTL
 	config.DNS.TLS = updatedSettings.DNS.TLS
 	config.DNS.Upstream = updatedSettings.DNS.Upstream
+	config.DHCP = updatedSettings.DHCP
 
 	config.Logging = updatedSettings.Logging
 	config.Misc = updatedSettings.Misc
@@ -127,6 +128,23 @@ func createDefaultSettings(filePath string) (Config, error) {
 				TCPUDP: getEnvAsIntWithDefault("DNS_PORT", 53),
 				DoT:    getEnvAsIntWithDefault("DOT_PORT", 853),
 				DoH:    getEnvAsIntWithDefault("DOH_PORT", 443),
+			},
+		},
+		DHCP: DHCPConfig{
+			Enabled:       false,
+			Address:       "0.0.0.0",
+			Interface:     "",
+			IPv4Enabled:   true,
+			IPv6Enabled:   false,
+			RangeStart:    "192.168.0.100",
+			RangeEnd:      "192.168.0.250",
+			LeaseDuration: 86400,
+			Router:        getDefaultGateway(),
+			DNSServers:    []string{"0.0.0.0"},
+			DomainSearch:  "lan",
+			Ports: DHCPPortsConfig{
+				IPv4: 67,
+				IPv6: 547,
 			},
 		},
 		API: APIConfig{

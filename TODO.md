@@ -47,8 +47,8 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 ## 🔴 High Complexity (Major Undertakings)
 
 ### Core Network Services
-- [ ] **Built-in DHCP Server**: Implement a lightweight native DHCP server in Go (IPv4/IPv6 support) to allow GoAway to natively manage LAN IP assignments and hand out its own IP for DNS automatically.
-- [ ] **Static DHCP Leases**: Allow admins to bind specific IP addresses to MAC addresses persistently via the dashboard (requires the DHCP server module).
+- [ ] **Built-in DHCP Server**: Implement a lightweight native DHCP server in Go (IPv4/IPv6 support) to allow GoAway to natively manage LAN IP assignments and hand out its own IP for DNS automatically. (IPv4 implemented; IPv6 pending)
+- [x] **Static DHCP Leases**: Allow admins to bind specific IP addresses to MAC addresses persistently via the dashboard (requires the DHCP server module).
 
 ### Advanced Security
 - [ ] **DNSSEC Validation**: Add support for rigorous DNSSEC validation for outgoing upstream queries to ensure cryptographically secure resolutions.

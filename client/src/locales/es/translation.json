@@ -219,6 +219,72 @@
         "syncDone": "Copia sincronizada",
         "file": "Archivo: {{filename}}"
       }
+    },
+    "dhcp": {
+      "title": "Servidor DHCP",
+      "description": "Gestiona el servicio DHCP integrado y las concesiones estáticas desde el panel.",
+      "status": {
+        "title": "Estado en ejecución",
+        "loading": "Cargando estado DHCP...",
+        "running": "El servicio DHCP está en ejecución",
+        "stopped": "El servicio DHCP está detenido",
+        "hint": "Guarda la configuración antes de iniciar el servicio si cambiaste la escucha o el rango de asignación."
+      },
+      "actions": {
+        "refresh": "Actualizar",
+        "saveConfig": "Guardar ajustes DHCP",
+        "saving": "Guardando...",
+        "start": "Iniciar servidor",
+        "starting": "Iniciando...",
+        "stop": "Detener servidor",
+        "stopping": "Deteniendo..."
+      },
+      "fields": {
+        "enabled": "Activado",
+        "address": "Dirección de enlace",
+        "interface": "Interfaz",
+        "ipv4Enabled": "IPv4",
+        "ipv6Enabled": "IPv6",
+        "rangeStart": "Inicio del rango",
+        "rangeEnd": "Fin del rango",
+        "router": "Router",
+        "dnsServers": "Servidores DNS",
+        "domainSearch": "Dominio de búsqueda",
+        "leaseDuration": "Duración de concesión (segundos)",
+        "portIPv4": "Puerto IPv4",
+        "portIPv6": "Puerto IPv6"
+      },
+      "leases": {
+        "title": "Concesiones estáticas",
+        "description": "Crea asignaciones IP fijas para dispositivos conocidos.",
+        "mac": "Dirección MAC",
+        "ip": "Dirección IP",
+        "hostname": "Hostname",
+        "enabled": "Activado",
+        "state": "Estado",
+        "actions": "Acciones",
+        "active": "Activa",
+        "disabled": "Desactivada",
+        "create": "Crear concesión",
+        "update": "Actualizar concesión",
+        "saving": "Guardando...",
+        "cancelEdit": "Cancelar edición",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "empty": "No hay concesiones estáticas configuradas"
+      },
+      "toasts": {
+        "settingsSaved": "Ajustes DHCP guardados",
+        "started": "Servicio DHCP iniciado",
+        "stopped": "Servicio DHCP detenido",
+        "startFailed": "No se pudo iniciar el servicio DHCP",
+        "stopFailed": "No se pudo detener el servicio DHCP",
+        "leaseCreated": "Concesión estática creada",
+        "leaseUpdated": "Concesión estática actualizada",
+        "leaseDeleted": "Concesión estática eliminada",
+        "leaseFailed": "No se pudo guardar la concesión estática",
+        "leaseDeleteFailed": "No se pudo eliminar la concesión estática"
+      }
     }
   },
   "upstream": {

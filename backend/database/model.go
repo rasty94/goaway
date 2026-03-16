@@ -151,3 +151,13 @@ type GroupAllowedDomain struct {
 	Domain    string    `gorm:"type:varchar(255);not null;index:idx_group_allowed_domain,unique" json:"domain" validate:"required"`
 	CreatedAt time.Time `json:"createdAt"`
 }
+
+type StaticDHCPLease struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	MAC       string    `gorm:"type:varchar(17);not null;uniqueIndex" json:"mac" validate:"required"`
+	IP        string    `gorm:"type:varchar(45);not null;uniqueIndex" json:"ip" validate:"required"`
+	Hostname  string    `gorm:"type:varchar(255)" json:"hostname"`
+	Enabled   bool      `gorm:"default:true" json:"enabled"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}

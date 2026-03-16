@@ -63,6 +63,19 @@ var migrations = []dbMigration{
 			return nil
 		},
 	},
+	{
+		ID:          "000004_static_dhcp_lease_indexes",
+		Description: "Add explicit indexes for static DHCP leases",
+		Up: func(tx *gorm.DB) error {
+			if err := tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_static_dhcp_leases_mac ON static_dhcp_leases(mac)").Error; err != nil {
+				return err
+			}
+			if err := tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_static_dhcp_leases_ip ON static_dhcp_leases(ip)").Error; err != nil {
+				return err
+			}
+			return nil
+		},
+	},
 }
 
 func RunMigrations(db *gorm.DB) error {

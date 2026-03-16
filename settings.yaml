@@ -53,6 +53,42 @@ dns:
     dot: 853
     doh: 443
 
+dhcp:
+  # Enable or disable the embedded DHCP service.
+  enabled: false
+
+  # Address used by DHCP listeners (IPv4 and/or IPv6 depending on enabled protocol).
+  address: 0.0.0.0
+
+  # Optional network interface to bind in future versions (placeholder for advanced deployments).
+  interface: ""
+
+  # DHCP protocol toggles.
+  ipv4Enabled: true
+  ipv6Enabled: false
+
+  # Dynamic pool range used by DHCP allocator (allocator engine is iterative work).
+  rangeStart: 192.168.0.100
+  rangeEnd: 192.168.0.250
+
+  # Lease duration in seconds.
+  leaseDuration: 86400
+
+  # Router gateway announced by DHCP.
+  router: 192.168.0.1
+
+  # DNS servers announced by DHCP.
+  dnsServers:
+    - 0.0.0.0
+
+  # Optional search domain announced to clients.
+  domainSearch: lan
+
+  # DHCP listener ports.
+  ports:
+    ipv4: 67
+    ipv6: 547
+
 api:
   # Port used for the API/web interface server.
   # Access the dashboard and management features through this port.

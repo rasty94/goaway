@@ -69,7 +69,7 @@ func (m *Manager) shutdown() {
 	m.services.APIServer.IsShuttingDown = true
 
 	var wg sync.WaitGroup
-	
+
 	if m.services.APIServer != nil {
 		wg.Add(1)
 		go func() {
@@ -110,9 +110,17 @@ func (m *Manager) shutdown() {
 		}()
 	}
 
+	if m.services.DHCPService != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			m.services.DHCPService.Stop()
+		}()
+	}
+
 	// DoH Server doesn't have a direct Context-less shutdown like Miekg DNS
 	// So we won't wait for its shutdown strictly here if it takes too long.
-	
+
 	wg.Wait()
 	log.Info("Graceful shutdown completed successfully.")
 	os.Exit(0)

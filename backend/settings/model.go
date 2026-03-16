@@ -76,6 +76,26 @@ type MiscConfig struct {
 	ScheduledBlacklistUpdates bool `yaml:"scheduledBlacklistUpdates" json:"scheduledBlacklistUpdates"`
 }
 
+type DHCPPortsConfig struct {
+	IPv4 int `yaml:"ipv4" json:"ipv4"`
+	IPv6 int `yaml:"ipv6" json:"ipv6"`
+}
+
+type DHCPConfig struct {
+	Enabled       bool            `yaml:"enabled" json:"enabled"`
+	Address       string          `yaml:"address" json:"address"`
+	Interface     string          `yaml:"interface" json:"interface"`
+	IPv4Enabled   bool            `yaml:"ipv4Enabled" json:"ipv4Enabled"`
+	IPv6Enabled   bool            `yaml:"ipv6Enabled" json:"ipv6Enabled"`
+	RangeStart    string          `yaml:"rangeStart" json:"rangeStart"`
+	RangeEnd      string          `yaml:"rangeEnd" json:"rangeEnd"`
+	LeaseDuration int             `yaml:"leaseDuration" json:"leaseDuration"`
+	Router        string          `yaml:"router" json:"router"`
+	DNSServers    []string        `yaml:"dnsServers" json:"dnsServers"`
+	DomainSearch  string          `yaml:"domainSearch" json:"domainSearch"`
+	Ports         DHCPPortsConfig `yaml:"ports" json:"ports"`
+}
+
 type RemoteBackupConfig struct {
 	Enabled   bool   `yaml:"enabled" json:"enabled"`
 	Provider  string `yaml:"provider" json:"provider"` // "s3", "webdav", "local"
@@ -92,6 +112,7 @@ type RemoteBackupConfig struct {
 type Config struct {
 	BinaryPath   string             `yaml:"-" json:"-"`
 	DNS          DNSConfig          `yaml:"dns" json:"dns"`
+	DHCP         DHCPConfig         `yaml:"dhcp" json:"dhcp"`
 	API          APIConfig          `yaml:"api" json:"api"`
 	Logging      LoggingConfig      `yaml:"logging" json:"logging"`
 	Misc         MiscConfig         `yaml:"misc" json:"misc"`

@@ -8,6 +8,7 @@ import (
 	"goaway/backend/api/key"
 	"goaway/backend/audit"
 	"goaway/backend/blacklist"
+	"goaway/backend/dhcp"
 	"goaway/backend/group"
 	"goaway/backend/lifecycle"
 	"goaway/backend/logging"
@@ -72,7 +73,7 @@ func (a *Application) RestartApplication() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	wg.Add(4)
+	wg.Add(5)
 	go func() {
 		defer wg.Done()
 		if err := a.services.UDPServer.Shutdown(); err != nil {
@@ -117,6 +118,14 @@ func (a *Application) RestartApplication() {
 		}
 	}()
 
+	go func() {
+		defer wg.Done()
+		if a.services.DHCPService != nil {
+			a.services.DHCPService.Stop()
+			log.Warning("Stopped DHCP service")
+		}
+	}()
+
 	wg.Wait()
 
 	if len(shutdownErrors) > 0 {
@@ -149,6 +158,7 @@ func (a *Application) Start() error {
 	alertService := alert.NewService(alert.NewRepository(dbConn))
 	auditService := audit.NewService(audit.NewRepository(dbConn))
 	blacklistService := blacklist.NewService(blacklist.NewRepository(dbConn))
+	dhcpService := dhcp.NewService(dhcp.NewRepository(dbConn), a.config)
 	groupService := group.NewService(group.NewRepository(dbConn))
 	keyService := key.NewService(key.NewRepository(dbConn))
 	macService := mac.NewService(mac.NewRepository(dbConn))
@@ -174,6 +184,7 @@ func (a *Application) Start() error {
 
 	a.services = services.NewServiceRegistry(a.context, a.version, a.commit, a.date, a.content)
 	a.services.ResolutionService = resolutionService
+	a.services.DHCPService = dhcpService
 	a.services.BlacklistService = blacklistService
 	a.services.GroupService = groupService
 	a.services.NotificationService = notificationService

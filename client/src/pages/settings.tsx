@@ -18,6 +18,7 @@ import { PasswordModal } from "@/app/settings/PasswordModal";
 import { ImportModal } from "@/app/settings/ImportModal";
 import { LoggingSection } from "@/app/settings/LoggingSection";
 import { RemoteBackupSection } from "@/app/settings/RemoteBackupSection";
+import { DHCPSection } from "@/app/settings/DHCPSection";
 
 export function Settings() {
   const { t } = useTranslation();
@@ -27,10 +28,30 @@ export function Settings() {
       address: "0.0.0.0",
       gateway: "192.168.0.1:53",
       cacheTTL: 3600,
+      rateLimit: {
+        enabled: false,
+        maxQueries: 120,
+        windowSeconds: 60,
+        blockDurationSeconds: 300
+      },
       udpSize: 512,
       tls: { enabled: false, cert: "", key: "" },
       upstream: { preferred: "8.8.8.8:53", fallback: ["1.1.1.1:53"] },
       ports: { udptcp: 53, dot: 853, doh: 443 }
+    },
+    dhcp: {
+      enabled: false,
+      address: "0.0.0.0",
+      interface: "",
+      ipv4Enabled: true,
+      ipv6Enabled: false,
+      rangeStart: "192.168.0.100",
+      rangeEnd: "192.168.0.200",
+      leaseDuration: 86400,
+      router: "192.168.0.1",
+      dnsServers: [],
+      domainSearch: "",
+      ports: { ipv4: 67, ipv6: 547 }
     },
     api: {
       port: 8080,
@@ -338,6 +359,37 @@ export function Settings() {
         </CardTitle>
 
         <RemoteBackupSection />
+      </Card>
+
+      <Card className="p-4 gap-2">
+        <CardTitle className="border-b pb-1">
+          <div className="flex">
+            <div className="mt-1 p-1 mr-2 rounded-lg bg-primary/10 text-primary">
+              <span aria-hidden>DHCP</span>
+            </div>
+            <h2 className="text-xl font-semibold">{t("settings.dhcp.title")}</h2>
+          </div>
+          <p className="mt-1 text-sm font-normal text-muted-foreground">
+            {t("settings.dhcp.description")}
+          </p>
+        </CardTitle>
+
+        <DHCPSection
+          dhcp={preferences.dhcp}
+          onDhcpChange={(update) =>
+            setPreferences((prev) => ({
+              ...prev,
+              dhcp: {
+                ...prev.dhcp,
+                ...update,
+                ports: update.ports
+                  ? { ...prev.dhcp.ports, ...update.ports }
+                  : prev.dhcp.ports
+              }
+            }))
+          }
+          onSaveConfig={saveSettingsCallback}
+        />
       </Card>
 
       <PasswordModal

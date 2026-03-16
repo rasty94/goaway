@@ -9,6 +9,7 @@ import (
 	"goaway/backend/api/key"
 	"goaway/backend/api/ratelimit"
 	"goaway/backend/blacklist"
+	"goaway/backend/dhcp"
 	"goaway/backend/dns/server"
 	_ "goaway/backend/docs"
 	"goaway/backend/group"
@@ -78,6 +79,7 @@ type API struct {
 	ResolutionService   *resolution.Service
 	NotificationService *notification.Service
 	BlacklistService    *blacklist.Service
+	DHCPService         *dhcp.Service
 	GroupService        *group.Service
 	WhitelistService    *whitelist.Service
 
@@ -176,6 +178,7 @@ func (api *API) setupRoutes() {
 	api.registerBlacklistRoutes()
 	api.registerWhitelistRoutes()
 	api.registerGroupRoutes()
+	api.registerDHCPRoutes()
 	api.registerClientRoutes()
 	api.registerAuditRoutes()
 	api.registerDNSRoutes()

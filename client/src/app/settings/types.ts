@@ -1,5 +1,6 @@
 export interface Root {
   dns: Dns;
+  dhcp: Dhcp;
   api: Api;
   logging: Logging;
   misc: Misc;
@@ -10,10 +11,38 @@ export interface Dns {
   address: string;
   gateway: string;
   cacheTTL: number;
+  rateLimit: DnsRateLimit;
   udpSize: number;
   tls: Tls;
   upstream: Upstream;
   ports: Ports;
+}
+
+export interface DnsRateLimit {
+  enabled: boolean;
+  maxQueries: number;
+  windowSeconds: number;
+  blockDurationSeconds: number;
+}
+
+export interface Dhcp {
+  enabled: boolean;
+  address: string;
+  interface: string;
+  ipv4Enabled: boolean;
+  ipv6Enabled: boolean;
+  rangeStart: string;
+  rangeEnd: string;
+  leaseDuration: number;
+  router: string;
+  dnsServers: string[];
+  domainSearch: string;
+  ports: DhcpPorts;
+}
+
+export interface DhcpPorts {
+  ipv4: number;
+  ipv6: number;
 }
 
 export interface Status {
