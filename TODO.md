@@ -49,7 +49,7 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 ### Core Network Services
 - [x] **Native DHCPv4 Server**: Lightweight DHCPv4 implementation to manage LAN IPv4 assignments.
 - [ ] **Native DHCPv6 Server**: Implement DHCPv6 support for IPv6-only or dual-stack networks.
-- [ ] **Full DHCP Web Management**: Enhance the web interface to allow full configuration of DHCP scopes, options, and status monitoring via the dashboard.
+- [x] **Full DHCP Web Management**: Enhance the web interface to allow full configuration of DHCP scopes, options, and status monitoring via the dashboard.
 - [x] **Static DHCP Leases**: Allow admins to bind specific IP addresses to MAC addresses persistently via the dashboard (requires the DHCP server module).
 
 ### Advanced Security
