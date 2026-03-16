@@ -26,6 +26,15 @@ type DHCPStatus = {
   leaseCount: number;
 };
 
+type ActiveDHCPLease = {
+  id: number;
+  mac: string;
+  ip: string;
+  hostname: string;
+  expiresAt: string;
+};
+
+
 type StaticLease = {
   id: number;
   mac: string;
@@ -58,7 +67,9 @@ export function DHCPSection({ dhcp, onDhcpChange, onSaveConfig }: Props) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<DHCPStatus | null>(null);
   const [leases, setLeases] = useState<StaticLease[]>([]);
+  const [activeLeases, setActiveLeases] = useState<ActiveDHCPLease[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [busyAction, setBusyAction] = useState<"start" | "stop" | "save" | null>(null);
   const [leaseForm, setLeaseForm] = useState<LeaseForm>(emptyLease);
   const [editingLeaseId, setEditingLeaseId] = useState<number | null>(null);
@@ -66,9 +77,10 @@ export function DHCPSection({ dhcp, onDhcpChange, onSaveConfig }: Props) {
 
   const refresh = async () => {
     setLoading(true);
-    const [[statusCode, statusResponse], [leasesCode, leasesResponse]] = await Promise.all([
+    const [[statusCode, statusResponse], [leasesCode, leasesResponse], [activeLeasesCode, activeLeasesResponse]] = await Promise.all([
       GetRequest("dhcp/status", true),
-      GetRequest("dhcp/leases", true)
+      GetRequest("dhcp/leases", true),
+      GetRequest("dhcp/activeLeases", true)
     ]);
 
     if (statusCode === 200 && statusResponse) {
@@ -77,6 +89,10 @@ export function DHCPSection({ dhcp, onDhcpChange, onSaveConfig }: Props) {
     if (leasesCode === 200 && Array.isArray(leasesResponse)) {
       setLeases(leasesResponse as StaticLease[]);
     }
+    if (activeLeasesCode === 200 && Array.isArray(activeLeasesResponse)) {
+      setActiveLeases(activeLeasesResponse as ActiveDHCPLease[]);
+    }
+
     setLoading(false);
   };
 
@@ -362,7 +378,7 @@ export function DHCPSection({ dhcp, onDhcpChange, onSaveConfig }: Props) {
         </div>
       </div>
 
-      <div className="space-y-4 rounded-lg border border-border/60 p-4">
+      <div id="static-lease-form" className="space-y-4 rounded-lg border border-border/60 p-4">
         <div>
           <h3 className="text-base font-semibold">{t("settings.dhcp.leases.title")}</h3>
           <p className="text-sm text-muted-foreground">
@@ -501,6 +517,67 @@ export function DHCPSection({ dhcp, onDhcpChange, onSaveConfig }: Props) {
           </Table>
         </div>
       </div>
+
+      <div className="space-y-4 rounded-lg border border-border/60 p-4">
+        <div>
+          <h3 className="text-base font-semibold">{t("settings.dhcp.activeLeases.title")}</h3>
+          <p className="text-sm text-muted-foreground">
+            {t("settings.dhcp.activeLeases.description")}
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("settings.dhcp.activeLeases.mac")}</TableHead>
+                <TableHead>{t("settings.dhcp.activeLeases.ip")}</TableHead>
+                <TableHead>{t("settings.dhcp.activeLeases.hostname")}</TableHead>
+                <TableHead>{t("settings.dhcp.activeLeases.expires")}</TableHead>
+                <TableHead className="text-right">{t("settings.dhcp.leases.actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {activeLeases.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    {t("settings.dhcp.activeLeases.empty")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                activeLeases.map((lease) => (
+                  <TableRow key={lease.id}>
+                    <TableCell className="font-mono text-xs md:text-sm">{lease.mac}</TableCell>
+                    <TableCell className="font-mono text-xs md:text-sm">{lease.ip}</TableCell>
+                    <TableCell>{lease.hostname || "-"}</TableCell>
+                    <TableCell className="text-xs">
+                      {new Date(lease.expiresAt).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setLeaseForm({
+                            mac: lease.mac,
+                            ip: lease.ip,
+                            hostname: lease.hostname || "",
+                            enabled: true
+                          });
+                          document.getElementById('static-lease-form')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                      >
+                        {t("settings.dhcp.activeLeases.convertToStatic")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
+
   );
 }

@@ -74,6 +74,7 @@ type MacAddress struct {
 type User struct {
 	Username  string    `gorm:"primaryKey" json:"username" validate:"required,min=3,max=50"`
 	Password  string    `json:"password" validate:"required,min=8"`
+	Role      string    `gorm:"type:varchar(20);default:'admin'" json:"role" validate:"required,oneof=admin viewer"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -161,3 +162,14 @@ type StaticDHCPLease struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
+
+type ActiveDHCPLease struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	MAC       string    `gorm:"type:varchar(17);not null;uniqueIndex" json:"mac" validate:"required"`
+	IP        string    `gorm:"type:varchar(45);not null;uniqueIndex" json:"ip" validate:"required"`
+	Hostname  string    `gorm:"type:varchar(255)" json:"hostname"`
+	ExpiresAt time.Time `gorm:"index" json:"expiresAt"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+

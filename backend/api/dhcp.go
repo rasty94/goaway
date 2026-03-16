@@ -14,6 +14,7 @@ func (api *API) registerDHCPRoutes() {
 	api.routes.POST("/dhcp/start", api.startDHCP)
 	api.routes.POST("/dhcp/stop", api.stopDHCP)
 
+	api.routes.GET("/dhcp/activeLeases", api.listActiveDHCPLeases)
 	api.routes.GET("/dhcp/leases", api.listStaticDHCPLeases)
 	api.routes.POST("/dhcp/leases", api.createStaticDHCPLease)
 	api.routes.PUT("/dhcp/leases/:id", api.updateStaticDHCPLease)
@@ -150,3 +151,19 @@ func (api *API) deleteStaticDHCPLease(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 }
+
+func (api *API) listActiveDHCPLeases(c *gin.Context) {
+	if api.DHCPService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "dhcp service unavailable"})
+		return
+	}
+
+	leases, err := api.DHCPService.ListActiveLeases()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, leases)
+}
+

@@ -87,6 +87,8 @@ export default function Login({ className, quote, ...props }: LoginProps) {
         if (rememberMe) {
           localStorage.setItem("loginUsername", username);
         }
+        localStorage.setItem("userRole", response.role || "viewer");
+        localStorage.setItem("username", username);
 
         navigate("/");
       } else if (statusCode === 429) {

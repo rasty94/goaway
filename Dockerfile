@@ -18,6 +18,6 @@ WORKDIR /app
 
 COPY updater.sh ./
 
-EXPOSE ${DNS_PORT}/tcp ${DNS_PORT}/udp ${WEBSITE_PORT}/tcp
+EXPOSE ${DNS_PORT}/tcp ${DNS_PORT}/udp ${WEBSITE_PORT}/tcp 67/udp 547/udp
 
 ENTRYPOINT [ "./goaway" ]

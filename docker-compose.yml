@@ -13,6 +13,12 @@ services:
       - "${DNS_PORT:-53}:${DNS_PORT:-53}/udp"
       - "${DNS_PORT:-53}:${DNS_PORT:-53}/tcp"
       - "${WEBSITE_PORT:-8080}:${WEBSITE_PORT:-8080}/tcp"
+      - "67:67/udp"
+      - "547:547/udp"
     cap_add:
       - NET_BIND_SERVICE
       - NET_RAW
+      - NET_ADMIN
+    # Note: For DHCP server to function correctly, host networking is often required:
+    # network_mode: host
+

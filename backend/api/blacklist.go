@@ -18,6 +18,7 @@ func (api *API) registerBlacklistRoutes() {
 	api.routes.GET("/prefetch", api.fetchPrefetchedDomains)
 	api.routes.GET("/domains", api.getBlacklistedDomains)
 	api.routes.GET("/topBlockedDomains", api.getTopBlockedDomains)
+	api.routes.GET("/topPermittedDomains", api.getTopPermittedDomains)
 	api.routes.GET("/getDomainsForList", api.getDomainsForList)
 	api.routes.DELETE("/blacklist", api.removeDomainFromCustom)
 	api.routes.DELETE("/prefetch", api.deletePrefetchedDomain)
@@ -122,6 +123,19 @@ func (api *API) getTopBlockedDomains(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, topBlockedDomains)
+}
+
+func (api *API) getTopPermittedDomains(c *gin.Context) {
+	total, blocked, _, _ := api.BlacklistService.GetRequestMetrics(context.Background())
+	permitted := total - blocked
+	topPermittedDomains, err := api.RequestService.GetTopPermittedDomains(permitted)
+	if err != nil {
+		log.Error("%v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, topPermittedDomains)
 }
 
 func (api *API) getDomainsForList(c *gin.Context) {

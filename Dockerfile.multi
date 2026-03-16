@@ -24,5 +24,5 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=backend-builder /app/goaway .
 
-EXPOSE 53/tcp 53/udp 8080/tcp
+EXPOSE 53/tcp 53/udp 8080/tcp 67/udp 547/udp
 ENTRYPOINT ["./goaway"]

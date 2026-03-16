@@ -28,6 +28,7 @@ type Repository interface {
 	GetClientHistory(clientIP string) ([]models.DomainHistory, error)
 	GetTopBlockedDomains(blockedRequests int) ([]map[string]interface{}, error)
 	GetTopQueriedDomains() ([]map[string]interface{}, error)
+	GetTopPermittedDomains(permittedRequests int) ([]map[string]interface{}, error)
 	GetTopClients() ([]map[string]interface{}, error)
 	CountQueries(search string) (int, error)
 
@@ -473,6 +474,37 @@ func (r *repository) GetTopQueriedDomains() ([]map[string]interface{}, error) {
 	}
 
 	return topQueriedDomains, nil
+}
+
+func (r *repository) GetTopPermittedDomains(permittedRequests int) ([]map[string]interface{}, error) {
+	var rows []struct {
+		Domain string `gorm:"column:domain"`
+		Hits   int    `gorm:"column:hits"`
+	}
+
+	if err := r.db.Table("request_logs").
+		Select("domain, COUNT(*) as hits").
+		Where("blocked = ?", false).
+		Group("domain").
+		Order("hits DESC").
+		Limit(5).
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	var topPermittedDomains []map[string]interface{}
+	for _, r := range rows {
+		freq := 0
+		if permittedRequests > 0 {
+			freq = (r.Hits * 100) / permittedRequests
+		}
+		topPermittedDomains = append(topPermittedDomains, map[string]interface{}{
+			"name":      r.Domain,
+			"hits":      r.Hits,
+			"frequency": freq,
+		})
+	}
+	return topPermittedDomains, nil
 }
 
 func (r *repository) GetTopClients() ([]map[string]interface{}, error) {

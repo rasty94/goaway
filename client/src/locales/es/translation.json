@@ -9,6 +9,7 @@
     "prefetch": "Precarga",
     "upstream": "Servidores",
     "clients": "Clientes",
+    "users": "Usuarios",
     "settings": "Ajustes",
     "changelog": "Cambios",
     "website": "Sitio web",
@@ -32,6 +33,7 @@
       "timeline": "Línea de Tiempo",
       "requestTypes": "Tipos de Consulta",
       "blockedDomains": "Dominios más Bloqueados",
+      "permittedDomains": "Dominios más Permitidos",
       "topBlockedClients": "Clientes más Bloqueados",
       "responseSizes": "Tamaños de Respuesta",
       "total": "Total",
@@ -42,6 +44,7 @@
       "requests": "Peticiones",
       "frequency": "Frecuencia",
       "noBlockedDomains": "No se ha bloqueado ningún dominio",
+      "noPermittedDomains": "No se ha permitido ningún dominio",
       "noBlockedClients": "No hay datos de clientes para mostrar",
       "radarChart": "Gráfico de Radar",
       "pieChart": "Gráfico de Pastel",
@@ -273,6 +276,17 @@
         "delete": "Eliminar",
         "empty": "No hay concesiones estáticas configuradas"
       },
+      "activeLeases": {
+        "title": "Concesiones DHCP Activas",
+        "description": "Direcciones IP asignadas actualmente mediante DHCP dinámico.",
+        "mac": "Dirección MAC",
+        "ip": "Dirección IP",
+        "hostname": "Hostname",
+        "expires": "Expira",
+        "empty": "No hay concesiones dinámicas activas.",
+        "convertToStatic": "Convertir a Estática"
+      },
+
       "toasts": {
         "settingsSaved": "Ajustes DHCP guardados",
         "started": "Servicio DHCP iniciado",
@@ -381,6 +395,28 @@
     "successDelete": "¡{{domain}} fue eliminado!",
     "fetchError": "No se pudieron obtener las resoluciones",
     "requiredFields": "Dominio, Valor y Tipo son obligatorios",
-    "deleteConfirm": "¿Estás seguro de que quieres eliminar {{domain}}?"
+    "deleteConfirm": "Are you sure you want to delete {{domain}}?"
+  },
+  "users": {
+    "title": "Administración de Usuarios",
+    "description": "Gestiona usuarios administradores y observadores. Los administradores tienen acceso total, mientras que los observadores solo pueden ver el panel.",
+    "newUser": "Crear nuevo usuario",
+    "username": "Nombre de usuario",
+    "password": "Contraseña",
+    "role": "Rol",
+    "admin": "Administrador",
+    "viewer": "Observador",
+    "create": "Crear Usuario",
+    "creating": "Creando...",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Estás seguro de que deseas eliminar al usuario {{username}}?",
+    "successCreate": "Usuario {{username}} creado",
+    "successDelete": "Usuario {{username}} eliminado",
+    "fetchError": "No se pudieron obtener los usuarios",
+    "createError": "Error al crear el usuario",
+    "deleteError": "Error al eliminar el usuario",
+    "cannotDeleteAdmin": "No se puede eliminar el usuario administrador por defecto",
+    "adminHint": "Los administradores pueden gestionar ajustes, listas y otros usuarios.",
+    "viewerHint": "Los observadores tienen acceso de solo lectura al panel y los registros."
   }
 }

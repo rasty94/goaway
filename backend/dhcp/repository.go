@@ -13,6 +13,10 @@ type Repository interface {
 	CreateStaticLease(lease *database.StaticDHCPLease) error
 	UpdateStaticLease(id uint, lease *database.StaticDHCPLease) error
 	DeleteStaticLease(id uint) error
+
+	ListActiveLeases() ([]database.ActiveDHCPLease, error)
+	CreateOrUpdateActiveLease(lease *database.ActiveDHCPLease) error
+	DeleteExpiredLeases() error
 }
 
 type repository struct {
@@ -69,3 +73,34 @@ func (r *repository) DeleteStaticLease(id uint) error {
 	}
 	return nil
 }
+
+func (r *repository) ListActiveLeases() ([]database.ActiveDHCPLease, error) {
+	var leases []database.ActiveDHCPLease
+	if err := r.db.Order("expires_at ASC").Find(&leases).Error; err != nil {
+		return nil, fmt.Errorf("failed to query active DHCP leases: %w", err)
+	}
+	return leases, nil
+}
+
+func (r *repository) CreateOrUpdateActiveLease(lease *database.ActiveDHCPLease) error {
+	lease.MAC = strings.ToLower(strings.TrimSpace(lease.MAC))
+	lease.IP = strings.TrimSpace(lease.IP)
+	lease.Hostname = strings.TrimSpace(lease.Hostname)
+
+	// Upsert based on MAC
+	result := r.db.Where("mac = ?", lease.MAC).Assign(database.ActiveDHCPLease{
+		IP:        lease.IP,
+		Hostname:  lease.Hostname,
+		ExpiresAt: lease.ExpiresAt,
+	}).FirstOrCreate(lease)
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to upsert active DHCP lease: %w", result.Error)
+	}
+	return nil
+}
+
+func (r *repository) DeleteExpiredLeases() error {
+	return r.db.Where("expires_at < CURRENT_TIMESTAMP").Delete(&database.ActiveDHCPLease{}).Error
+}
+

@@ -16,7 +16,7 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 ### Dashboard / Frontend
 - [x] **Localization (i18n)**: Fully implemented frontend support for multiple languages (English/Spanish). Integrated across all main pages and components.
 - [x] **Live Query Tail**: Real-time visualization of incoming DNS requests. Multi-client support added to WebSockets and basic tail implemented in HTMX dashboard.
-- [ ] **Advanced Data Visualization**: More detailed charts for top permitted/blocked domains and client activity over time.
+- [x] **Advanced Data Visualization**: More detailed charts for top permitted/blocked domains and client activity over time.
 - [x] **Network Topology Graph**: Interactive 2D visualization of connected clients and their DNS traffic patterns (Implemented via DNSServerVisualizer).
 - [x] **Mobile-First Responsive Audit**: Core dashboard routes and critical UX flows hardened for mobile/touch usage, including responsive layouts and touch-friendly controls.
 - [x] **Go-Native Frontend Migration**: HTMX Alpha dashboard implemented as a Proof of Concept with stats, logs, and resolution management. Zero NodeJS dependency achieved for this mode.
@@ -40,14 +40,16 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 - [x] **Metrics & Observability**: Prometheus metrics exposed at `/metrics` for DNS latency (histogram), queries, blocks, cache hits, and forwarded queries. Compatible with Grafana.
 
 ### Authentication & Users
-- [ ] **Multi-User Administration**: Refactor the auth system to support custom Admin usernames (not just a single password) and allow multiple administrative or view-only users to access the dashboard.
+- [x] **Multi-User Administration**: Refactor the auth system to support custom Admin usernames (not just a single password) and allow multiple administrative or view-only users to access the dashboard.
 
 ---
 
 ## 🔴 High Complexity (Major Undertakings)
 
 ### Core Network Services
-- [ ] **Built-in DHCP Server**: Implement a lightweight native DHCP server in Go (IPv4/IPv6 support) to allow GoAway to natively manage LAN IP assignments and hand out its own IP for DNS automatically. (IPv4 implemented; IPv6 pending)
+- [x] **Native DHCPv4 Server**: Lightweight DHCPv4 implementation to manage LAN IPv4 assignments.
+- [ ] **Native DHCPv6 Server**: Implement DHCPv6 support for IPv6-only or dual-stack networks.
+- [ ] **Full DHCP Web Management**: Enhance the web interface to allow full configuration of DHCP scopes, options, and status monitoring via the dashboard.
 - [x] **Static DHCP Leases**: Allow admins to bind specific IP addresses to MAC addresses persistently via the dashboard (requires the DHCP server module).
 
 ### Advanced Security
@@ -56,6 +58,6 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 - [x] **Group Management (Per-Client Blocking)**: Multi-group backend implemented (default + custom groups) with per-client IP/MAC assignments, group-scoped block/allow domains, and DNS policy enforcement integrated into runtime resolution.
 
 ### Platform & Scaling
-- [ ] **High Availability / Synchronization**: Enable running multiple instances of `goaway` on the same network that can sync blocklists, DHCP leases, allowlists, and local DNS automatically for redundancy (Primary/Secondary setup).
+- [ ] **High Availability / Synchronization**: Enable running multiple instances of `goaway` on the same network that can sync blocklists, DHCP leases, allowlists, and local DNS automatically for redundancy (Primary/Secondary setup). Phase 1 target: passive Primary -> Replica sync via Remote Backup + Teleporter import; full automatic failover remains pending.
 - [ ] **Full Windows / macOS Support**: Move macOS and Windows support from "Beta" to "Full". This involves validating low-level networking behaviors, DHCP broadcasts, and path resolutions specific to these OS environments.
 - [ ] **E2E & Integration Tests**: Set up Docker-based End-to-End integration tests simulating actual client queries, HTTP requests, and verifying database states dynamically.

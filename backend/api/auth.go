@@ -18,6 +18,10 @@ func (api *API) registerAuthRoutes() {
 	api.router.GET("/api/authentication", api.getAuthentication)
 	api.routes.PUT("/password", api.updatePassword)
 
+	api.routes.POST("/users", api.requireAdmin(), api.createUser)
+	api.routes.GET("/users", api.requireAdmin(), api.getUsers)
+	api.routes.DELETE("/users/:username", api.requireAdmin(), api.deleteUser)
+
 	api.routes.POST("/apiKey", api.createAPIKey)
 	api.routes.GET("/apiKey", api.getAPIKeys)
 	api.routes.GET("/deleteApiKey", api.deleteAPIKey)
@@ -57,8 +61,14 @@ func (api *API) handleLogin(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Credentials", "true")
 
+		userObj, _ := api.UserService.GetUser(loginUser.Username)
+		role := "admin"
+		if userObj != nil && userObj.Role != "" {
+			role = userObj.Role
+		}
+
 		setAuthCookie(c.Writer, token)
-		c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
+		c.JSON(http.StatusOK, gin.H{"message": "Login successful", "role": role})
 	} else {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Invalid username or password",
@@ -82,17 +92,19 @@ func (api *API) updatePassword(c *gin.Context) {
 		return
 	}
 
-	if !api.UserService.Authenticate("admin", newCredentials.CurrentPassword) {
+	loggedInUser := c.GetString("username")
+
+	if !api.UserService.Authenticate(loggedInUser, newCredentials.CurrentPassword) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Current password is not valid"})
 		return
 	}
 
-	if err := api.UserService.UpdatePassword("admin", newCredentials.NewPassword); err != nil {
+	if err := api.UserService.UpdatePassword(loggedInUser, newCredentials.NewPassword); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to update password"})
 		return
 	}
 
-	logMsg := "Password changed for user 'admin'"
+	logMsg := fmt.Sprintf("Password changed for user '%s'", loggedInUser)
 	api.DNSServer.AuditService.CreateAudit(&audit.Entry{
 		Topic:   audit.TopicUser,
 		Message: logMsg,
@@ -164,4 +176,88 @@ func (api *API) deleteAPIKey(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Deleted api key!"})
+}
+
+func (api *API) requireAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.GetString("username")
+		userObj, err := api.UserService.GetUser(username)
+		if err != nil || userObj == nil || userObj.Role != "admin" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "admin access required"})
+			return
+		}
+		c.Next()
+	}
+}
+
+func (api *API) roleMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Method == "GET" || c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+
+		// Allow password update for self even if viewer
+		if c.Request.URL.Path == "/api/password" && c.Request.Method == "PUT" {
+			c.Next()
+			return
+		}
+
+		username := c.GetString("username")
+		userObj, err := api.UserService.GetUser(username)
+		if err != nil || userObj == nil || userObj.Role != "admin" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "admin role required for this action"})
+			return
+		}
+		c.Next()
+	}
+}
+
+func (api *API) createUser(c *gin.Context) {
+	var newUser user.User
+	if err := c.BindJSON(&newUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+		return
+	}
+
+	if err := api.UserService.ValidateCredentials(newUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := api.UserService.CreateUser(newUser.Username, newUser.Password, newUser.Role); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to create user"})
+		return
+	}
+
+	api.DNSServer.AuditService.CreateAudit(&audit.Entry{
+		Topic:   audit.TopicUser,
+		Message: fmt.Sprintf("Created new user '%s' with role '%s'", newUser.Username, newUser.Role),
+	})
+
+	c.Status(http.StatusCreated)
+}
+
+func (api *API) getUsers(c *gin.Context) {
+	users, err := api.UserService.GetAllUsers()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch users"})
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+func (api *API) deleteUser(c *gin.Context) {
+	username := c.Param("username")
+	if err := api.UserService.DeleteUser(username); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	api.DNSServer.AuditService.CreateAudit(&audit.Entry{
+		Topic:   audit.TopicUser,
+		Message: fmt.Sprintf("Deleted user '%s'", username),
+	})
+
+	c.Status(http.StatusOK)
 }

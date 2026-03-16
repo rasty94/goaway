@@ -1,4 +1,5 @@
 import FrequencyChartBlockedDomains from "@/app/home/FrequencyChartBlockedDomains";
+import FrequencyChartPermittedDomains from "@/app/home/FrequencyChartPermittedDomains";
 import FrequencyChartTopBlockedClients from "@/app/home/FrequencyChartTopBlockedClients";
 import MetricsCards from "@/app/home/metrics-card";
 import PieChartRequestType from "@/app/home/request-types";
@@ -15,10 +16,13 @@ export function Home() {
         <PieChartRequestType />
       </div>
       <div className="flex w-full mb-5 mt-5 gap-4 flex-col md:flex-row">
-        <div className="w-full md:w-1/2 h-[180px]">
+        <div className="w-full md:w-1/3 h-[180px]">
           <FrequencyChartBlockedDomains />
         </div>
-        <div className="w-full md:w-1/2 h-[180px]">
+        <div className="w-full md:w-1/3 h-[180px]">
+          <FrequencyChartPermittedDomains />
+        </div>
+        <div className="w-full md:w-1/3 h-[180px]">
           <FrequencyChartTopBlockedClients />
         </div>
       </div>

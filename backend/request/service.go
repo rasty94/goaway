@@ -71,6 +71,10 @@ func (s *Service) GetTopBlockedDomains(blockedRequests int) ([]map[string]interf
 	return s.repository.GetTopBlockedDomains(blockedRequests)
 }
 
+func (s *Service) GetTopPermittedDomains(permittedRequests int) ([]map[string]interface{}, error) {
+	return s.repository.GetTopPermittedDomains(permittedRequests)
+}
+
 func (s *Service) GetTopQueriedDomains() ([]map[string]interface{}, error) {
 	return s.repository.GetTopQueriedDomains()
 }

@@ -9,6 +9,7 @@
     "prefetch": "Prefetch",
     "upstream": "Upstream",
     "clients": "Clients",
+    "users": "Users",
     "settings": "Settings",
     "changelog": "Changelog",
     "website": "Website",
@@ -32,6 +33,7 @@
       "timeline": "Query Timeline",
       "requestTypes": "Request Types",
       "blockedDomains": "Top Blocked Domains",
+      "permittedDomains": "Top Permitted Domains",
       "topBlockedClients": "Top Blocked Clients",
       "responseSizes": "Response Sizes",
       "total": "Total",
@@ -42,6 +44,7 @@
       "requests": "Requests",
       "frequency": "Frequency",
       "noBlockedDomains": "No domain has been blocked",
+      "noPermittedDomains": "No domain has been permitted",
       "noBlockedClients": "No client data to show",
       "radarChart": "Radar Chart",
       "pieChart": "Pie Chart",
@@ -273,6 +276,17 @@
         "delete": "Delete",
         "empty": "No static leases configured"
       },
+      "activeLeases": {
+        "title": "Active DHCP Leases",
+        "description": "Currently assigned IP addresses via dynamic DHCP.",
+        "mac": "MAC Address",
+        "ip": "IP Address",
+        "hostname": "Hostname",
+        "expires": "Expires",
+        "empty": "No active dynamic leases.",
+        "convertToStatic": "Convert to Static"
+      },
+
       "toasts": {
         "settingsSaved": "DHCP settings saved",
         "started": "DHCP service started",
@@ -382,5 +396,27 @@
     "fetchError": "Unable to fetch resolutions",
     "requiredFields": "Domain, Value and Type are required",
     "deleteConfirm": "Are you sure you want to delete {{domain}}?"
+  },
+  "users": {
+    "title": "User Administration",
+    "description": "Manage administrative and viewer users. Admin users have full access, while viewers can only see the dashboard.",
+    "newUser": "Create new user",
+    "username": "Username",
+    "password": "Password",
+    "role": "Role",
+    "admin": "Admin",
+    "viewer": "Viewer",
+    "create": "Create User",
+    "creating": "Creating...",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete user {{username}}?",
+    "successCreate": "User {{username}} created",
+    "successDelete": "User {{username}} deleted",
+    "fetchError": "Unable to fetch users",
+    "createError": "Failed to create user",
+    "deleteError": "Failed to delete user",
+    "cannotDeleteAdmin": "Cannot delete the default admin user",
+    "adminHint": "Admins can manage settings, lists, and other users.",
+    "viewerHint": "Viewers have read-only access to the dashboard and logs."
   }
 }

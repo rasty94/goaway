@@ -19,7 +19,7 @@ func NewService(repo Repository) *Service {
 	return &Service{repository: repo}
 }
 
-func (s *Service) CreateUser(username, password string) error {
+func (s *Service) CreateUser(username, password, role string) error {
 	log.Info("Creating a new user with name '%s'", username)
 
 	hashedPassword, err := hashPassword(password)
@@ -28,7 +28,11 @@ func (s *Service) CreateUser(username, password string) error {
 		return err
 	}
 
-	newUser := &database.User{Username: username, Password: hashedPassword}
+	if role == "" {
+		role = "admin"
+	}
+
+	newUser := &database.User{Username: username, Password: hashedPassword, Role: role}
 
 	if err := s.repository.Create(newUser); err != nil {
 		log.Error("Failed to create user: %v", err)
@@ -82,6 +86,21 @@ func (s *Service) UpdatePassword(username, newPassword string) error {
 
 	log.Debug("Password updated successfully for user '%s'", username)
 	return nil
+}
+
+func (s *Service) GetAllUsers() ([]*User, error) {
+	return s.repository.FindAll()
+}
+
+func (s *Service) DeleteUser(username string) error {
+	if username == "admin" {
+		return errors.New("cannot delete default admin user")
+	}
+	return s.repository.Delete(username)
+}
+
+func (s *Service) GetUser(username string) (*User, error) {
+	return s.repository.FindByUsername(username)
 }
 
 func (s *Service) ValidateCredentials(user User) error {

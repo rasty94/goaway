@@ -201,6 +201,7 @@ func (api *API) setupAuthAndMiddleware() {
 	if api.Authentication {
 		api.setupAuth()
 		api.routes.Use(api.authMiddleware())
+		api.routes.Use(api.roleMiddleware())
 	} else {
 		log.Warning("Dashboard authentication is disabled.")
 	}
@@ -211,7 +212,7 @@ func (api *API) setupAuth() {
 		return
 	}
 
-	if err := api.UserService.CreateUser("admin", api.getOrGeneratePassword()); err != nil {
+	if err := api.UserService.CreateUser("admin", api.getOrGeneratePassword(), "admin"); err != nil {
 		log.Error("Unable to create new user: %v", err)
 	}
 }

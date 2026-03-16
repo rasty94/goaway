@@ -172,3 +172,8 @@ func (s *Service) UpdateStaticLease(id uint, lease *database.StaticDHCPLease) er
 func (s *Service) DeleteStaticLease(id uint) error {
 	return s.repository.DeleteStaticLease(id)
 }
+
+func (s *Service) ListActiveLeases() ([]database.ActiveDHCPLease, error) {
+	return s.repository.ListActiveLeases()
+}
+

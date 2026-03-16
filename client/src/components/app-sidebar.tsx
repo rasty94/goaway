@@ -31,6 +31,8 @@ import { ServerStatistics } from "./server-statistics";
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation();
 
+  const userRole = localStorage.getItem("userRole") || "viewer";
+
   const data = {
     navMain: [
       {
@@ -78,6 +80,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/clients",
         icon: UsersIcon
       },
+      ...(userRole === "admin"
+        ? [
+            {
+              title: t("sidebar.users"),
+              url: "/users",
+              icon: UsersIcon
+            }
+          ]
+        : []),
       {
         title: t("sidebar.settings"),
         url: "/settings",
