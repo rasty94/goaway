@@ -43,11 +43,20 @@ func LoadSettings() (Config, error) {
 		return Config{}, fmt.Errorf("invalid settings format: %w", err)
 	}
 
+	changed, err := config.ApplySchemaUpgrades()
+	if err != nil {
+		return Config{}, err
+	}
+
 	binaryPath, err := os.Executable()
 	if err != nil {
 		log.Warning("Unable to find installed binary path, err: %v", err)
 	}
 	config.BinaryPath = binaryPath
+
+	if changed {
+		config.Save()
+	}
 
 	return config, nil
 }
@@ -65,6 +74,7 @@ func (config *Config) Save() {
 }
 
 func (config *Config) Update(updatedSettings Config) {
+	config.SchemaVersion = updatedSettings.SchemaVersion
 	config.API.Port = updatedSettings.API.Port
 	config.API.Authentication = updatedSettings.API.Authentication
 	config.API.RateLimit = updatedSettings.API.RateLimit
@@ -82,6 +92,12 @@ func (config *Config) Update(updatedSettings Config) {
 
 	config.Logging = updatedSettings.Logging
 	config.Misc = updatedSettings.Misc
+	config.RemoteBackup = updatedSettings.RemoteBackup
+	config.HighAvailability = updatedSettings.HighAvailability
+
+	if _, err := config.ApplySchemaUpgrades(); err != nil {
+		log.Error("Could not apply settings schema upgrades: %v", err)
+	}
 
 	log.ToggleLogging(config.Logging.Enabled)
 	log.SetLevel(logging.LogLevel(config.Logging.Level))
@@ -101,6 +117,7 @@ func GenerateSecret() string {
 
 func createDefaultSettings(filePath string) (Config, error) {
 	defaultConfig := Config{
+		SchemaVersion: CurrentSchemaVersion,
 		DNS: DNSConfig{
 			Address:      "0.0.0.0",
 			Gateway:      getDefaultGateway(),

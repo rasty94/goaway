@@ -125,6 +125,7 @@ type HighAvailabilityConfig struct {
 }
 
 type Config struct {
+	SchemaVersion    int                    `yaml:"schemaVersion" json:"schemaVersion"`
 	BinaryPath       string                 `yaml:"-" json:"-"`
 	DNS              DNSConfig              `yaml:"dns" json:"dns"`
 	DHCP             DHCPConfig             `yaml:"dhcp" json:"dhcp"`
