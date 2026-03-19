@@ -10,6 +10,7 @@ type RequestLogEntry struct {
 	ClientInfo        *Client       `json:"client"`
 	Domain            string        `json:"domain"`
 	Status            string        `json:"status"`
+	DNSSECStatus      string        `json:"dnssecStatus"`
 	QueryType         string        `json:"queryType"`
 	Protocol          Protocol      `json:"protocol"`
 	IP                []ResolvedIP  `json:"ip"`
@@ -22,11 +23,12 @@ type RequestLogEntry struct {
 
 func (r *RequestLogEntry) String() string {
 	return fmt.Sprintf(
-		"Time: %d, Client: %v, Domain: %s, Status: %s, Type: %s, Protocol: %s, IPs: %+v, ID: %d, ResponseSize: %d, ResponseTime: %dns, Blocked: %t, Cached: %t",
+		"Time: %d, Client: %v, Domain: %s, Status: %s, DNSSEC: %s, Type: %s, Protocol: %s, IPs: %+v, ID: %d, ResponseSize: %d, ResponseTime: %dns, Blocked: %t, Cached: %t",
 		r.Timestamp.Unix(),
 		r.ClientInfo,
 		r.Domain,
 		r.Status,
+		r.DNSSECStatus,
 		r.QueryType,
 		r.Protocol,
 		r.IP,

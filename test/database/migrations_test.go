@@ -56,13 +56,13 @@ func TestRollbackMigrationsRemovesLatestIndexes(t *testing.T) {
 	db := setupMigrationTestDB(t)
 
 	require.NoError(t, database.RunMigrations(db))
-	require.True(t, sqliteIndexExists(t, db, "idx_static_dhcp_leases_mac"))
-	require.True(t, sqliteIndexExists(t, db, "idx_static_dhcp_leases_ip"))
+	require.True(t, sqliteIndexExists(t, db, "idx_request_logs_dnssec_status"))
 
 	require.NoError(t, database.RollbackMigrations(db, 1))
 
-	assert.False(t, sqliteIndexExists(t, db, "idx_static_dhcp_leases_mac"))
-	assert.False(t, sqliteIndexExists(t, db, "idx_static_dhcp_leases_ip"))
+	assert.False(t, sqliteIndexExists(t, db, "idx_request_logs_dnssec_status"))
+	assert.True(t, sqliteIndexExists(t, db, "idx_static_dhcp_leases_mac"))
+	assert.True(t, sqliteIndexExists(t, db, "idx_static_dhcp_leases_ip"))
 }
 
 func TestRollbackMigrationsRejectsInvalidSteps(t *testing.T) {

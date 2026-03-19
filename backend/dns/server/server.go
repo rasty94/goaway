@@ -80,15 +80,6 @@ type DNSServer struct {
 	WhitelistService    *whitelist.Service
 }
 
-type CachedRecord struct {
-	ExpiresAt   time.Time
-	CachedAt    time.Time
-	Key         string
-	Domain      string
-	IPAddresses []dns.RR
-	OriginalTTL uint32
-}
-
 type Request struct {
 	Sent           time.Time
 	ResponseWriter dns.ResponseWriter

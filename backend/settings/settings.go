@@ -86,6 +86,7 @@ func (config *Config) Update(updatedSettings Config) {
 	config.DNS.Ports = updatedSettings.DNS.Ports
 	config.DNS.UDPSize = updatedSettings.DNS.UDPSize
 	config.DNS.CacheTTL = updatedSettings.DNS.CacheTTL
+	config.DNS.DNSSEC = updatedSettings.DNS.DNSSEC
 	config.DNS.TLS = updatedSettings.DNS.TLS
 	config.DNS.Upstream = updatedSettings.DNS.Upstream
 	config.DHCP = updatedSettings.DHCP
@@ -123,6 +124,10 @@ func createDefaultSettings(filePath string) (Config, error) {
 			Gateway:      getDefaultGateway(),
 			CacheEnabled: true,
 			CacheTTL:     3600,
+			DNSSEC: DNSSECConfig{
+				Enabled: false,
+				Mode:    "off",
+			},
 			RateLimit: DNSRateLimitConfig{
 				Enabled:              true,
 				MaxQueries:           120,

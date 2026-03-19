@@ -118,6 +118,22 @@ var migrations = []dbMigration{
 			return nil
 		},
 	},
+	{
+		ID:          "000005_dnssec_status_index",
+		Description: "Add explicit index for DNSSEC status filtering in request logs",
+		Up: func(tx *gorm.DB) error {
+			if err := tx.Exec("CREATE INDEX IF NOT EXISTS idx_request_logs_dnssec_status ON request_logs(dnssec_status)").Error; err != nil {
+				return err
+			}
+			return nil
+		},
+		Down: func(tx *gorm.DB) error {
+			if err := tx.Exec("DROP INDEX IF EXISTS idx_request_logs_dnssec_status").Error; err != nil {
+				return err
+			}
+			return nil
+		},
+	},
 }
 
 type MigrationStatus struct {

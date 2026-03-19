@@ -27,6 +27,7 @@ func (api *API) registerDNSRoutes() {
 	api.routes.GET("/queryTimestamps", api.getQueryTimestamps)
 	api.routes.GET("/responseSizeTimestamps", api.getResponseSizeTimestamps)
 	api.routes.GET("/queryTypes", api.getQueryTypes)
+	api.routes.POST("/dnssec/diagnose", api.dnssecDiagnose)
 
 	api.routes.DELETE("/queries", api.clearQueries)
 	api.routes.DELETE("/pause", api.clearBlocking)
@@ -140,6 +141,7 @@ func parseQueryParams(c *gin.Context) models.QueryParams {
 		"client":            "client_ip",
 		"ip":                "ip",
 		"status":            "status",
+		"dnssecStatus":      "dnssec_status",
 		"responseTimeNS":    "response_time_ns",
 		"queryType":         "query_type",
 		"blocked":           "blocked",

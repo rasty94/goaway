@@ -114,9 +114,9 @@ func (s *Service) prefetchDomain(prefetchDomain database.Prefetch) {
 		Prefetch: true,
 	}
 
-	answers, ttl, _ := s.DNS.QueryUpstream(request)
+	answers, ttl, _, dnssecStatus := s.DNS.QueryUpstream(request)
 	cacheKey := s.buildCacheKey(question.Name, dns.Type(question.Qtype))
-	s.DNS.CacheRecord(cacheKey, prefetchDomain.Domain, answers, ttl)
+	s.DNS.CacheRecord(cacheKey, prefetchDomain.Domain, answers, ttl, dnssecStatus)
 }
 
 func (s *Service) buildCacheKey(domain string, qtype dns.Type) string {

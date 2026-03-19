@@ -85,7 +85,7 @@ Labels base recomendadas:
 
 ### Pendientes de Alta Prioridad Tecnica
 - [x] Framework de migraciones de esquema (versionado + rollback).
-- [ ] DNSSEC completo con estado secure/insecure/bogus en logs/API.
+- [x] DNSSEC completo con estado secure/insecure/bogus en logs/API.
 - [ ] Soporte total Windows/macOS (de Beta a Full).
 - [ ] DHCPv6 nativo.
 
@@ -128,13 +128,13 @@ Labels base recomendadas:
     - Bootstrap sin dependencia circular.
     - Fallback ordenado entre UDP/TCP/DoT/DoH/DoQ.
 
-- [ ] FEATURE: DNSSEC completo
+- [x] FEATURE: DNSSEC completo
   - Prioridad: p0
   - Labels: feature, dns, security
   - Criterios de aceptacion:
     - Validacion de cadena de confianza.
     - Estado secure/insecure/bogus en logs y API.
-    - Diagnostico por dominio con causa de fallo.
+    - Diagnostico por dominio con endpoint dedicado.
 
 - [ ] FEATURE: Cache serve-stale + prefetch inteligente
   - Prioridad: p0

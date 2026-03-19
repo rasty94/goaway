@@ -6,10 +6,20 @@ import (
 	"github.com/miekg/dns"
 )
 
-func (s *DNSServer) getCachedRecord(cached interface{}) ([]dns.RR, bool) {
+type CachedRecord struct {
+	ExpiresAt    time.Time
+	CachedAt     time.Time
+	Key          string
+	Domain       string
+	DNSSECStatus string
+	IPAddresses  []dns.RR
+	OriginalTTL  uint32
+}
+
+func (s *DNSServer) getCachedRecord(cached interface{}) ([]dns.RR, string, bool) {
 	cachedRecord, ok := cached.(CachedRecord)
 	if !ok {
-		return nil, false
+		return nil, "", false
 	}
 
 	now := time.Now()
@@ -27,7 +37,7 @@ func (s *DNSServer) getCachedRecord(cached interface{}) ([]dns.RR, bool) {
 			}
 		}
 
-		return updatedRecords, true
+		return updatedRecords, cachedRecord.DNSSECStatus, true
 	}
 
 	if cachedRecord.Key != "" {
@@ -35,7 +45,7 @@ func (s *DNSServer) getCachedRecord(cached interface{}) ([]dns.RR, bool) {
 		s.DomainCache.Delete(cachedRecord.Key)
 	}
 
-	return nil, false
+	return nil, "", false
 }
 
 func (s *DNSServer) RemoveCachedDomain(domain string) {
@@ -55,7 +65,7 @@ func (s *DNSServer) RemoveCachedDomain(domain string) {
 	})
 }
 
-func (s *DNSServer) CacheRecord(cacheKey, domain string, ipAddresses []dns.RR, ttl uint32) {
+func (s *DNSServer) CacheRecord(cacheKey, domain string, ipAddresses []dns.RR, ttl uint32, dnssecStatus string) {
 	if len(ipAddresses) == 0 || !s.Config.DNS.CacheEnabled {
 		return
 	}
@@ -70,11 +80,12 @@ func (s *DNSServer) CacheRecord(cacheKey, domain string, ipAddresses []dns.RR, t
 
 	now := time.Now()
 	s.DomainCache.Store(cacheKey, CachedRecord{
-		IPAddresses: ipAddresses,
-		ExpiresAt:   now.Add(cacheTTL),
-		CachedAt:    now,
-		OriginalTTL: ttl,
-		Key:         cacheKey,
-		Domain:      domain,
+		IPAddresses:  ipAddresses,
+		ExpiresAt:    now.Add(cacheTTL),
+		CachedAt:     now,
+		OriginalTTL:  ttl,
+		Key:          cacheKey,
+		Domain:       domain,
+		DNSSECStatus: dnssecStatus,
 	})
 }

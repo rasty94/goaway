@@ -84,11 +84,13 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 	metrics.TotalQueries.WithLabelValues(clientIP, dns.TypeToString[request.Question.Qtype]).Inc()
 
 	if isPTRQuery(request, domainName) {
-		return s.handlePTRQuery(request)
+		entry := s.handlePTRQuery(request)
+		return s.finalizeDNSSECStatus(entry, clientIP)
 	}
 
 	if ip, found := s.reverseHostnameLookup(request.Question.Name); found {
-		return s.respondWithHostnameA(request, ip)
+		entry := s.respondWithHostnameA(request, ip)
+		return s.finalizeDNSSECStatus(entry, clientIP)
 	}
 
 	s.checkAndUpdatePauseStatus()
@@ -96,7 +98,8 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 	if s.shouldBlockQuery(request.Client, domainName, request.Question.Name) {
 		metrics.BlockedQueries.WithLabelValues(clientIP, domainName).Inc()
 		metrics.DNSLatency.WithLabelValues(clientIP, "blocked").Observe(time.Since(start).Seconds())
-		return s.handleBlacklisted(request)
+		entry := s.handleBlacklisted(request)
+		return s.finalizeDNSSECStatus(entry, clientIP)
 	}
 
 	if isLocalLookup(request.Question.Name) {
@@ -105,7 +108,7 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 			log.Debug("Reverse lookup failed for %s: %v", request.Question.Name, err)
 		} else {
 			metrics.DNSLatency.WithLabelValues(clientIP, "local").Observe(time.Since(start).Seconds())
-			return val
+			return s.finalizeDNSSECStatus(val, clientIP)
 		}
 	}
 
@@ -116,6 +119,15 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 		metrics.CachedQueries.WithLabelValues(clientIP, domainName).Inc()
 	}
 	metrics.DNSLatency.WithLabelValues(clientIP, status).Observe(time.Since(start).Seconds())
+	return s.finalizeDNSSECStatus(entry, clientIP)
+}
+
+func (s *DNSServer) finalizeDNSSECStatus(entry model.RequestLogEntry, clientIP string) model.RequestLogEntry {
+	if entry.DNSSECStatus == "" {
+		entry.DNSSECStatus = s.defaultDNSSECStatus()
+	}
+
+	metrics.DNSSECResponses.WithLabelValues(clientIP, entry.DNSSECStatus).Inc()
 	return entry
 }
 
@@ -480,7 +492,7 @@ func (s *DNSServer) respondWithType(request *Request, rType uint16, ip string) m
 }
 
 func (s *DNSServer) forwardPTRQueryUpstream(request *Request) model.RequestLogEntry {
-	answers, _, status := s.QueryUpstream(request)
+	answers, _, status, dnssecStatus := s.QueryUpstream(request)
 	request.Msg.Answer = append(request.Msg.Answer, answers...)
 
 	if rcode, ok := dns.StringToRcode[status]; ok {
@@ -508,6 +520,7 @@ func (s *DNSServer) forwardPTRQueryUpstream(request *Request) model.RequestLogEn
 	return model.RequestLogEntry{
 		Domain:            request.Question.Name,
 		Status:            status,
+		DNSSECStatus:      dnssecStatus,
 		QueryType:         dns.TypeToString[request.Question.Qtype],
 		IP:                resolvedHostnames,
 		ResponseSizeBytes: request.Msg.Len(),
@@ -519,7 +532,7 @@ func (s *DNSServer) forwardPTRQueryUpstream(request *Request) model.RequestLogEn
 }
 
 func (s *DNSServer) handleStandardQuery(request *Request) model.RequestLogEntry {
-	answers, cached, status := s.Resolve(request)
+	answers, cached, status, dnssecStatus := s.Resolve(request)
 	resolved := make([]model.ResolvedIP, 0, len(answers))
 
 	request.Msg.Answer = answers
@@ -617,6 +630,7 @@ func (s *DNSServer) handleStandardQuery(request *Request) model.RequestLogEntry 
 	return model.RequestLogEntry{
 		Domain:            request.Question.Name,
 		Status:            status,
+		DNSSECStatus:      dnssecStatus,
 		QueryType:         dns.TypeToString[request.Question.Qtype],
 		IP:                resolved,
 		ResponseSizeBytes: request.Msg.Len(),
@@ -628,43 +642,47 @@ func (s *DNSServer) handleStandardQuery(request *Request) model.RequestLogEntry 
 	}
 }
 
-func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, string) {
+func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, string, string) {
 	cacheKey := req.Question.Name + ":" + strconv.Itoa(int(req.Question.Qtype))
 	if s.Config.DNS.CacheEnabled {
 		if cached, found := s.DomainCache.Load(cacheKey); found {
-			if ipAddresses, valid := s.getCachedRecord(cached); valid {
-				return ipAddresses, true, dns.RcodeToString[dns.RcodeSuccess]
+			if ipAddresses, dnssecStatus, valid := s.getCachedRecord(cached); valid {
+				if dnssecStatus == "" {
+					dnssecStatus = s.defaultDNSSECStatus()
+				}
+				return ipAddresses, true, dns.RcodeToString[dns.RcodeSuccess], dnssecStatus
 			}
 		}
 	}
 
-	if answers, ttl, status := s.resolveResolution(req.Question.Name); len(answers) > 0 {
-		s.CacheRecord(cacheKey, req.Question.Name, answers, ttl)
-		return answers, false, status
+	if answers, ttl, status, dnssecStatus := s.resolveResolution(req.Question.Name); len(answers) > 0 {
+		s.CacheRecord(cacheKey, req.Question.Name, answers, ttl, dnssecStatus)
+		return answers, false, status, dnssecStatus
 	}
 
-	answers, ttl, status := s.resolveCNAMEChain(req, make(map[string]bool))
+	answers, ttl, status, dnssecStatus := s.resolveCNAMEChain(req, make(map[string]bool))
 	if len(answers) > 0 {
-		s.CacheRecord(cacheKey, req.Question.Name, answers, ttl)
+		s.CacheRecord(cacheKey, req.Question.Name, answers, ttl, dnssecStatus)
 	}
-	return answers, false, status
+	return answers, false, status, dnssecStatus
 }
 
-func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string) {
+func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string, string) {
 	var (
 		records []dns.RR
 		ttl     = uint32(s.Config.DNS.CacheTTL)
 		status  = dns.RcodeToString[dns.RcodeSuccess]
+		dnssecStatus = s.defaultDNSSECStatus()
 	)
 
 	res, err := s.ResolutionService.GetResolution(domain)
 	if err != nil {
 		log.Error("Database lookup error for domain (%s): %v", domain, err)
-		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure]
+		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], dnssecStatus
 	}
 
 	if res.Value == "" {
-		return nil, 0, dns.RcodeToString[dns.RcodeNameError]
+		return nil, 0, dns.RcodeToString[dns.RcodeNameError], dnssecStatus
 	}
 
 	switch strings.ToUpper(res.Type) {
@@ -708,33 +726,36 @@ func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string) 
 		status = dns.RcodeToString[dns.RcodeNameError]
 	}
 
-	return records, ttl, status
+	return records, ttl, status, dnssecStatus
 }
 
-func (s *DNSServer) resolveCNAMEChain(req *Request, visited map[string]bool) ([]dns.RR, uint32, string) {
+func (s *DNSServer) resolveCNAMEChain(req *Request, visited map[string]bool) ([]dns.RR, uint32, string, string) {
 	if visited[req.Question.Name] {
-		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure]
+		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], s.defaultDNSSECStatus()
 	}
 	visited[req.Question.Name] = true
 
-	answers, ttl, status := s.QueryUpstream(req)
+	answers, ttl, status, dnssecStatus := s.QueryUpstream(req)
 	if len(answers) > 0 {
 		for _, answer := range answers {
 			if _, ok := answer.(*dns.CNAME); ok {
-				targetAnswers, targetTTL, targetStatus := s.resolveCNAMEChain(req, visited)
+				targetAnswers, targetTTL, targetStatus, targetDNSSECStatus := s.resolveCNAMEChain(req, visited)
 				if len(targetAnswers) > 0 {
 					minTTL := min(targetTTL, ttl)
-					return append(answers, targetAnswers...), minTTL, targetStatus
+					if targetDNSSECStatus == DNSSECStatusBogus {
+						dnssecStatus = DNSSECStatusBogus
+					}
+					return append(answers, targetAnswers...), minTTL, targetStatus, dnssecStatus
 				}
-				return answers, ttl, status
+				return answers, ttl, status, dnssecStatus
 			}
 		}
 	}
 
-	return answers, ttl, status
+	return answers, ttl, status, dnssecStatus
 }
 
-func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string) {
+func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string, string) {
 	resultCh := make(chan *dns.Msg, 1)
 	errCh := make(chan error, 1)
 
@@ -745,6 +766,9 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string) {
 		upstreamMsg.SetQuestion(req.Question.Name, req.Question.Qtype)
 		upstreamMsg.RecursionDesired = true
 		upstreamMsg.Id = dns.Id()
+		if s.dnssecMode() != "off" {
+			upstreamMsg.SetEdns0(1232, true)
+		}
 
 		upstream := s.Config.DNS.Upstream.Preferred
 
@@ -786,6 +810,10 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string) {
 	select {
 	case in := <-resultCh:
 		go s.WSCom(communicationMessage{IP: "", Client: false, Upstream: false, DNS: true})
+			dnssecStatus := s.classifyDNSSECResponse(in, nil)
+			if s.dnssecMode() == "strict" && dnssecStatus == DNSSECStatusBogus {
+				return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], dnssecStatus
+			}
 
 		status := dns.RcodeToString[dns.RcodeServerFailure]
 		if statusStr, ok := dns.RcodeToString[in.Rcode]; ok {
@@ -808,25 +836,29 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string) {
 			req.Msg.Ns = make([]dns.RR, len(in.Ns))
 			copy(req.Msg.Ns, in.Ns)
 		}
+		req.Msg.AuthenticatedData = in.AuthenticatedData
+		req.Msg.CheckingDisabled = in.CheckingDisabled
 		if len(in.Extra) > 0 {
 			req.Msg.Extra = make([]dns.RR, len(in.Extra))
 			copy(req.Msg.Extra, in.Extra)
 		}
 
-		return in.Answer, ttl, status
+		return in.Answer, ttl, status, dnssecStatus
 
 	case err := <-errCh:
+		dnssecStatus := s.classifyDNSSECResponse(nil, err)
 		log.Warning("Resolution error for domain (%s): %v", req.Question.Name, err)
 		s.NotificationService.SendNotification(
 			notification.SeverityWarning,
 			notification.CategoryDNS,
 			fmt.Sprintf("Resolution error for domain (%s)", req.Question.Name),
 		)
-		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure]
+		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], dnssecStatus
 
 	case <-time.After(5 * time.Second):
+		dnssecStatus := s.classifyDNSSECResponse(nil, fmt.Errorf("timeout"))
 		log.Warning("DNS lookup for %s timed out", req.Question.Name)
-		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure]
+		return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], dnssecStatus
 	}
 }
 

@@ -38,5 +38,23 @@ func (config *Config) ApplySchemaUpgrades() (bool, error) {
 		changed = true
 	}
 
+	mode := strings.ToLower(strings.TrimSpace(config.DNS.DNSSEC.Mode))
+	switch mode {
+	case "", "off":
+		if mode != "off" {
+			changed = true
+		}
+		config.DNS.DNSSEC.Mode = "off"
+		config.DNS.DNSSEC.Enabled = false
+	case "permissive", "strict":
+		if config.DNS.DNSSEC.Mode != mode {
+			changed = true
+		}
+		config.DNS.DNSSEC.Mode = mode
+		config.DNS.DNSSEC.Enabled = true
+	default:
+		return false, fmt.Errorf("invalid dnssec mode: %s", config.DNS.DNSSEC.Mode)
+	}
+
 	return changed, nil
 }

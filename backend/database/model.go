@@ -36,6 +36,7 @@ type RequestLog struct {
 	ClientName        string         `gorm:"type:varchar(255)" json:"clientName"`
 	QueryType         string         `gorm:"type:varchar(10);index:idx_query_type" json:"queryType"`
 	Status            string         `gorm:"type:varchar(20)" json:"status"`
+	DNSSECStatus      string         `gorm:"column:dnssec_status;type:varchar(16);index" json:"dnssecStatus"`
 	Protocol          string         `gorm:"type:varchar(10)" json:"protocol"`
 	ResponseTimeNs    int64          `gorm:"not null" json:"repsonseTimeNS"`
 	ResponseSizeBytes int            `gorm:"index:idx_timestamp_response_size,priority:2" json:"responseSizeBytes"`

@@ -53,6 +53,14 @@ var (
 		},
 		[]string{"client_ip", "status"},
 	)
+
+	DNSSECResponses = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "goaway_dns_dnssec_total",
+			Help: "Total DNS responses grouped by DNSSEC status",
+		},
+		[]string{"client_ip", "dnssec_status"},
+	)
 )
 
 func init() {
@@ -62,4 +70,5 @@ func init() {
 	prometheus.MustRegister(CachedQueries)
 	prometheus.MustRegister(ForwardedQueries)
 	prometheus.MustRegister(DNSLatency)
+	prometheus.MustRegister(DNSSECResponses)
 }

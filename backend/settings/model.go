@@ -36,6 +36,7 @@ type DNSConfig struct {
 	Gateway               string                 `yaml:"gateway" json:"gateway"`
 	CacheEnabled          bool                   `yaml:"cacheEnabled" json:"cacheEnabled"`
 	CacheTTL              int                    `yaml:"cacheTTL" json:"cacheTTL"`
+	DNSSEC                DNSSECConfig           `yaml:"dnssec" json:"dnssec"`
 	RateLimit             DNSRateLimitConfig     `yaml:"rateLimit" json:"rateLimit"`
 	UDPSize               int                    `yaml:"udpSize" json:"udpSize"`
 	TLS                   TLSConfig              `yaml:"tls" json:"tls"`
@@ -49,6 +50,11 @@ type DNSRateLimitConfig struct {
 	MaxQueries           int  `yaml:"maxQueries" json:"maxQueries"`
 	WindowSeconds        int  `yaml:"windowSeconds" json:"windowSeconds"`
 	BlockDurationSeconds int  `yaml:"blockDurationSeconds" json:"blockDurationSeconds"`
+}
+
+type DNSSECConfig struct {
+	Enabled bool   `yaml:"enabled" json:"enabled"`
+	Mode    string `yaml:"mode" json:"mode"` // "off", "permissive", "strict"
 }
 
 type RateLimitConfig struct {
