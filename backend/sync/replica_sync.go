@@ -3,9 +3,17 @@ package sync
 import (
 	"bytes"
 	"context"
+	"encoding/xml"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
+	synchronization "sync"
 	"time"
 
 	"goaway/backend/logging"
@@ -27,6 +35,7 @@ type ReplicaSyncManager struct {
 	config   *settings.Config
 	importer Importer
 	stopCh   chan struct{}
+	stopOnce synchronization.Once
 	interval time.Duration
 }
 
@@ -81,7 +90,9 @@ func (rsm *ReplicaSyncManager) Start() {
 
 // Stop halts the replica sync scheduler.
 func (rsm *ReplicaSyncManager) Stop() {
-	close(rsm.stopCh)
+	rsm.stopOnce.Do(func() {
+		close(rsm.stopCh)
+	})
 }
 
 // SyncNow is a public method to trigger a manual sync cycle.
@@ -206,16 +217,151 @@ func (rsm *ReplicaSyncManager) downloadFromS3() ([]byte, error) {
 
 // downloadFromWebDAV retrieves the latest backup from a WebDAV server.
 func (rsm *ReplicaSyncManager) downloadFromWebDAV() ([]byte, error) {
-	// TODO: Implement WebDAV download logic
-	// For now, return a placeholder error
-	return nil, fmt.Errorf("webdav replica sync not yet implemented")
+	ha := rsm.config.HighAvailability
+	baseURL := strings.TrimSpace(ha.PrimaryBackupEndpoint)
+	if baseURL == "" {
+		return nil, fmt.Errorf("webdav endpoint is required")
+	}
+
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid webdav endpoint: %w", err)
+	}
+	if parsedURL.Scheme == "" {
+		parsedURL.Scheme = "https"
+	}
+
+	davPath := strings.TrimSpace(ha.PrimaryBackupBucket)
+	if davPath != "" {
+		parsedURL.Path = filepath.ToSlash(filepath.Join(parsedURL.Path, davPath))
+	}
+	if !strings.HasSuffix(parsedURL.Path, "/") {
+		parsedURL.Path += "/"
+	}
+
+	propfindReq, err := http.NewRequest(http.MethodGet, parsedURL.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create webdav request: %w", err)
+	}
+	propfindReq.Method = "PROPFIND"
+	propfindReq.Header.Set("Depth", "1")
+	propfindReq.Header.Set("Content-Type", "application/xml")
+	if ha.PrimaryBackupUsername != "" || ha.PrimaryBackupPassword != "" {
+		propfindReq.SetBasicAuth(ha.PrimaryBackupUsername, ha.PrimaryBackupPassword)
+	}
+
+	resp, err := http.DefaultClient.Do(propfindReq)
+	if err != nil {
+		return nil, fmt.Errorf("webdav propfind failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusMultiStatus && resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("webdav propfind returned status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read webdav response: %w", err)
+	}
+
+	latestPath, err := latestBackupFromWebDAV(body)
+	if err != nil {
+		return nil, err
+	}
+
+	fileURL, err := parsedURL.Parse(latestPath)
+	if err != nil {
+		return nil, fmt.Errorf("invalid webdav backup path: %w", err)
+	}
+
+	log.Info("[HA/Replica] Downloading backup from WebDAV: %s", fileURL.String())
+
+	getReq, err := http.NewRequest(http.MethodGet, fileURL.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create webdav get request: %w", err)
+	}
+	if ha.PrimaryBackupUsername != "" || ha.PrimaryBackupPassword != "" {
+		getReq.SetBasicAuth(ha.PrimaryBackupUsername, ha.PrimaryBackupPassword)
+	}
+
+	getResp, err := http.DefaultClient.Do(getReq)
+	if err != nil {
+		return nil, fmt.Errorf("webdav get failed: %w", err)
+	}
+	defer getResp.Body.Close()
+
+	if getResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("webdav get returned status %d", getResp.StatusCode)
+	}
+
+	data, err := io.ReadAll(getResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read webdav backup: %w", err)
+	}
+
+	return data, nil
 }
 
 // downloadFromLocal retrieves the latest backup from a local/mounted directory.
 func (rsm *ReplicaSyncManager) downloadFromLocal() ([]byte, error) {
-	// TODO: Implement local/NFS/SMB download logic
-	// For now, return a placeholder error
-	return nil, fmt.Errorf("local directory replica sync not yet implemented")
+	ha := rsm.config.HighAvailability
+	baseDir := strings.TrimSpace(ha.PrimaryBackupEndpoint)
+	if baseDir == "" {
+		baseDir = strings.TrimSpace(ha.PrimaryBackupBucket)
+	}
+	if baseDir == "" {
+		return nil, fmt.Errorf("local backup directory is required")
+	}
+
+	entries, err := os.ReadDir(baseDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read local backup directory: %w", err)
+	}
+
+	type candidate struct {
+		path    string
+		modTime time.Time
+	}
+
+	candidates := make([]candidate, 0)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasPrefix(name, "goaway-backup-") || !strings.HasSuffix(name, ".zip") {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		candidates = append(candidates, candidate{
+			path:    filepath.Join(baseDir, name),
+			modTime: info.ModTime(),
+		})
+	}
+
+	if len(candidates) == 0 {
+		return nil, fmt.Errorf("no backup found in local directory")
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].modTime.After(candidates[j].modTime)
+	})
+
+	latest := candidates[0]
+	log.Info("[HA/Replica] Downloading backup from local directory: %s", latest.path)
+
+	data, err := os.ReadFile(latest.path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read local backup file: %w", err)
+	}
+
+	return data, nil
 }
 
 // importBackup applies the downloaded backup via Teleporter import logic.
@@ -238,4 +384,77 @@ func (rsm *ReplicaSyncManager) Status() map[string]interface{} {
 		"lastSyncTime": rsm.config.HighAvailability.LastSyncTime,
 		"configured":   rsm.config.HighAvailability.PrimaryBackupProvider != "",
 	}
+}
+
+type webDAVMultiStatus struct {
+	Responses []webDAVResponse `xml:"response"`
+}
+
+type webDAVResponse struct {
+	Href     string            `xml:"href"`
+	PropStat []webDAVPropStats `xml:"propstat"`
+}
+
+type webDAVPropStats struct {
+	Prop webDAVProp `xml:"prop"`
+}
+
+type webDAVProp struct {
+	ContentLength string `xml:"getcontentlength"`
+	LastModified  string `xml:"getlastmodified"`
+}
+
+func latestBackupFromWebDAV(payload []byte) (string, error) {
+	var result webDAVMultiStatus
+	if err := xml.Unmarshal(payload, &result); err != nil {
+		return "", fmt.Errorf("failed to parse webdav response: %w", err)
+	}
+
+	type candidate struct {
+		href     string
+		modTime  time.Time
+		hasMTime bool
+	}
+
+	candidates := make([]candidate, 0)
+	for _, response := range result.Responses {
+		name := filepath.Base(response.Href)
+		if !strings.HasPrefix(name, "goaway-backup-") || !strings.HasSuffix(name, ".zip") {
+			continue
+		}
+
+		item := candidate{href: response.Href}
+		for _, prop := range response.PropStat {
+			if strings.TrimSpace(prop.Prop.ContentLength) == "" {
+				continue
+			}
+
+			size, err := strconv.ParseInt(strings.TrimSpace(prop.Prop.ContentLength), 10, 64)
+			if err != nil || size <= 0 {
+				continue
+			}
+
+			if ts := strings.TrimSpace(prop.Prop.LastModified); ts != "" {
+				if parsed, err := time.Parse(time.RFC1123, ts); err == nil {
+					item.modTime = parsed
+					item.hasMTime = true
+				}
+			}
+		}
+
+		candidates = append(candidates, item)
+	}
+
+	if len(candidates) == 0 {
+		return "", fmt.Errorf("no backup found on webdav endpoint")
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].hasMTime && candidates[j].hasMTime {
+			return candidates[i].modTime.After(candidates[j].modTime)
+		}
+		return candidates[i].href > candidates[j].href
+	})
+
+	return candidates[0].href, nil
 }

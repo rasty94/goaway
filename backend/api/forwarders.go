@@ -8,6 +8,8 @@ import (
 	"goaway/backend/settings"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -150,39 +152,12 @@ func (api *API) teleporterImport(c *gin.Context) {
 	}
 	defer func() { _ = file.Close() }()
 
-	data, err := io.ReadAll(file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read uploaded file"})
+	if err := api.ImportTeleporterData(file, header.Size); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	zr, err := zip.NewReader(bytes.NewReader(data), header.Size)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid zip file"})
-		return
-	}
-
-	for _, f := range zr.File {
-		rc, err := f.Open()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to open %s in zip", f.Name)})
-			return
-		}
-		content, _ := io.ReadAll(rc)
-		_ = rc.Close()
-
-		if f.Name == "settings.json" {
-			var imported settings.Config
-			if err := json.Unmarshal(content, &imported); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid settings.json in backup"})
-				return
-			}
-			api.Config.Update(imported)
-			log.Info("Settings restored from teleporter backup")
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Backup imported. Settings restored. Restart may be required for full effect."})
+	c.JSON(http.StatusOK, gin.H{"message": "Backup imported. Settings and database restored. Restart required to reload database into runtime."})
 }
 
 // ImportTeleporterData is a reusable method for importing teleporter backups
@@ -198,6 +173,11 @@ func (api *API) ImportTeleporterData(reader io.Reader, size int64) error {
 		return fmt.Errorf("invalid zip file: %w", err)
 	}
 
+	var (
+		settingsImported bool
+		dbImported       bool
+	)
+
 	for _, f := range zr.File {
 		rc, err := f.Open()
 		if err != nil {
@@ -212,8 +192,48 @@ func (api *API) ImportTeleporterData(reader io.Reader, size int64) error {
 				return fmt.Errorf("invalid settings.json in backup: %w", err)
 			}
 			api.Config.Update(imported)
+			settingsImported = true
 			log.Info("Settings restored from teleporter backup")
 		}
+
+		if f.Name == "goaway.db" {
+			if err := restoreDatabaseFile(content); err != nil {
+				return fmt.Errorf("failed to restore database: %w", err)
+			}
+			dbImported = true
+			log.Info("Database file restored from teleporter backup")
+		}
+	}
+
+	if !settingsImported {
+		return fmt.Errorf("backup does not include settings.json")
+	}
+	if !dbImported {
+		log.Warning("Teleporter backup does not include goaway.db; runtime database unchanged")
+	}
+
+	return nil
+}
+
+func restoreDatabaseFile(content []byte) error {
+	if len(content) == 0 {
+		return fmt.Errorf("database payload is empty")
+	}
+
+	if err := os.MkdirAll("data", 0755); err != nil {
+		return fmt.Errorf("failed to ensure data directory: %w", err)
+	}
+
+	targetPath := filepath.Join("data", "database.db")
+	tempPath := filepath.Join("data", fmt.Sprintf("database-import-%d.db", time.Now().UnixNano()))
+
+	if err := os.WriteFile(tempPath, content, 0600); err != nil {
+		return fmt.Errorf("failed to write temporary database: %w", err)
+	}
+
+	if err := os.Rename(tempPath, targetPath); err != nil {
+		_ = os.Remove(tempPath)
+		return fmt.Errorf("failed to replace database file: %w", err)
 	}
 
 	return nil

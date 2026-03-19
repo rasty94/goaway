@@ -95,9 +95,9 @@ Response:
 2. **Scheduled Sync**: Background scheduler runs every `replicaSyncInterval` minutes
 3. **Backup Download**: Latest `goaway-backup-*.zip` from Primary's remote storage
 4. **Data Import**: ZIP contains:
-   - `settings.json` - All configuration (DNS, DHCP, API, etc.)
-   - `goaway.db` - Complete database with blocklists, leases, statistics, etc.
-5. **Update Cycle**: Settings and database are imported, `LastSyncTime` timestamp updated
+  - `settings.json` - All configuration (DNS, DHCP, API, etc.)
+  - `goaway.db` - Complete database with blocklists, leases, statistics, etc.
+5. **Update Cycle**: Settings are applied immediately and database file is replaced for next startup; `LastSyncTime` is updated
 6. **Error Handling**: Failed syncs are logged; retry on next cycle
 
 ## Usage Scenarios
@@ -127,7 +127,6 @@ Response:
 ### Planned for Phase 2:
 - Automatic health monitoring & failover
 - Active-Active bidirectional sync
-- WebDAV and local directory downloads
 - Real-time sync via WebSocket
 - Peer-to-peer direct sync
 

@@ -49,4 +49,7 @@ jobs:
           working-directory: ./backend
 
       - name: Go tests
-        run: go test -count=1 ./test/...
+        run: go test -count=1 ./backend/... ./test/...
+
+      - name: E2E smoke tests
+        run: make e2e

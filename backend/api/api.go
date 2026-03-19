@@ -115,6 +115,9 @@ func (api *API) Stop() error {
 
 	// Mark as shutting down to prevent error handling
 	api.IsShuttingDown = true
+	if api.ReplicaSyncManager != nil {
+		api.ReplicaSyncManager.Stop()
+	}
 	// Store server reference before shutdown
 	server := api.server
 
