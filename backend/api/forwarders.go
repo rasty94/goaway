@@ -184,3 +184,37 @@ func (api *API) teleporterImport(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Backup imported. Settings restored. Restart may be required for full effect."})
 }
+
+// ImportTeleporterData is a reusable method for importing teleporter backups
+// Used by both HTTP endpoint and replica sync manager.
+func (api *API) ImportTeleporterData(reader io.Reader, size int64) error {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return fmt.Errorf("failed to read backup data: %w", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), size)
+	if err != nil {
+		return fmt.Errorf("invalid zip file: %w", err)
+	}
+
+	for _, f := range zr.File {
+		rc, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("failed to open %s in zip: %w", f.Name, err)
+		}
+		content, _ := io.ReadAll(rc)
+		_ = rc.Close()
+
+		if f.Name == "settings.json" {
+			var imported settings.Config
+			if err := json.Unmarshal(content, &imported); err != nil {
+				return fmt.Errorf("invalid settings.json in backup: %w", err)
+			}
+			api.Config.Update(imported)
+			log.Info("Settings restored from teleporter backup")
+		}
+	}
+
+	return nil
+}

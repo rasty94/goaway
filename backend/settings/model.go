@@ -109,12 +109,28 @@ type RemoteBackupConfig struct {
 	Schedule  string `yaml:"schedule" json:"schedule"` // "daily", "weekly", "manual"
 }
 
+type HighAvailabilityConfig struct {
+	Enabled                bool      `yaml:"enabled" json:"enabled"`
+	Mode                   string    `yaml:"mode" json:"mode"`                                   // "primary" or "replica"
+	ReplicaSyncInterval    string    `yaml:"replicaSyncInterval" json:"replicaSyncInterval"`     // duration: "5m", "15m", "1h"
+	PrimaryBackupProvider  string    `yaml:"primaryBackupProvider" json:"primaryBackupProvider"` // provider type: "s3", "webdav", "local"
+	PrimaryBackupEndpoint  string    `yaml:"primaryBackupEndpoint" json:"primaryBackupEndpoint"` // endpoint/URL for Primary's remote backup
+	PrimaryBackupBucket    string    `yaml:"primaryBackupBucket" json:"primaryBackupBucket"`     // S3 bucket or path
+	PrimaryBackupRegion    string    `yaml:"primaryBackupRegion" json:"primaryBackupRegion"`     // S3 region (optional)
+	PrimaryBackupAccessKey string    `yaml:"primaryBackupAccessKey" json:"-"`                    // credentials
+	PrimaryBackupSecretKey string    `yaml:"primaryBackupSecretKey" json:"-"`
+	PrimaryBackupUsername  string    `yaml:"primaryBackupUsername" json:"primaryBackupUsername"` // WebDAV/SMB credentials
+	PrimaryBackupPassword  string    `yaml:"primaryBackupPassword" json:"-"`
+	LastSyncTime           time.Time `yaml:"-" json:"lastSyncTime"` // last successful sync timestamp
+}
+
 type Config struct {
-	BinaryPath   string             `yaml:"-" json:"-"`
-	DNS          DNSConfig          `yaml:"dns" json:"dns"`
-	DHCP         DHCPConfig         `yaml:"dhcp" json:"dhcp"`
-	API          APIConfig          `yaml:"api" json:"api"`
-	Logging      LoggingConfig      `yaml:"logging" json:"logging"`
-	Misc         MiscConfig         `yaml:"misc" json:"misc"`
-	RemoteBackup RemoteBackupConfig `yaml:"remoteBackup" json:"remoteBackup"`
+	BinaryPath       string                 `yaml:"-" json:"-"`
+	DNS              DNSConfig              `yaml:"dns" json:"dns"`
+	DHCP             DHCPConfig             `yaml:"dhcp" json:"dhcp"`
+	API              APIConfig              `yaml:"api" json:"api"`
+	Logging          LoggingConfig          `yaml:"logging" json:"logging"`
+	Misc             MiscConfig             `yaml:"misc" json:"misc"`
+	RemoteBackup     RemoteBackupConfig     `yaml:"remoteBackup" json:"remoteBackup"`
+	HighAvailability HighAvailabilityConfig `yaml:"highAvailability" json:"highAvailability"`
 }

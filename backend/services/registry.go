@@ -13,10 +13,11 @@ import (
 	"goaway/backend/prefetch"
 	"goaway/backend/request"
 	"goaway/backend/resolution"
+	"goaway/backend/sync"
 	"goaway/backend/user"
 	"goaway/backend/whitelist"
 	"net/http"
-	"sync"
+	synchronization "sync"
 
 	"github.com/miekg/dns"
 )
@@ -40,7 +41,7 @@ type ServiceRegistry struct {
 	version string
 	date    string
 	commit  string
-	wg      sync.WaitGroup
+	wg      synchronization.WaitGroup
 
 	ResolutionService   *resolution.Service
 	RequestService      *request.Service
@@ -150,6 +151,9 @@ func (r *ServiceRegistry) setupAPIServer() {
 		GroupService:        r.GroupService,
 		WhitelistService:    r.WhitelistService,
 	}
+
+	// Initialize replica sync manager for HA support
+	r.APIServer.ReplicaSyncManager = sync.NewReplicaSyncManager(r.Context.Config, r.APIServer)
 }
 
 func (r *ServiceRegistry) StartAll() {
@@ -236,11 +240,16 @@ func (r *ServiceRegistry) startAPIServer() {
 			r.errorChan <- ServiceError{Service: "API", Err: fmt.Errorf("API server stopped")}
 		}()
 
+		// Start replica sync manager for HA support
+		if r.APIServer.ReplicaSyncManager != nil {
+			r.APIServer.ReplicaSyncManager.Start()
+		}
+
 		r.APIServer.Start(r.content, errorChan)
 	}()
 }
 
-func (r *ServiceRegistry) WaitGroup() *sync.WaitGroup {
+func (r *ServiceRegistry) WaitGroup() *synchronization.WaitGroup {
 	return &r.wg
 }
 

@@ -15,6 +15,7 @@ import (
 	"goaway/backend/group"
 	"goaway/backend/logging"
 	"goaway/backend/notification"
+	"goaway/backend/sync"
 
 	"goaway/backend/prefetch"
 	"goaway/backend/request"
@@ -82,6 +83,7 @@ type API struct {
 	DHCPService         *dhcp.Service
 	GroupService        *group.Service
 	WhitelistService    *whitelist.Service
+	ReplicaSyncManager  *sync.ReplicaSyncManager
 
 	server         *http.Server
 	IsShuttingDown bool
@@ -192,6 +194,7 @@ func (api *API) setupRoutes() {
 	api.registerConditionalForwarderRoutes()
 	api.registerTeleporterRoutes()
 	api.registerRemoteBackupRoutes()
+	api.registerHARoutes()
 
 	// Metrics route
 	api.router.GET("/metrics", gin.WrapH(promhttp.Handler()))

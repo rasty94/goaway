@@ -1,4 +1,4 @@
-.PHONY: publish build lint example-queries dev format test bench docs-serve docs-build
+.PHONY: publish build lint example-queries dev format test bench docs-serve docs-build e2e
 
 DNS_PORT ?= 53
 WEBSITE_PORT ?= 8080
@@ -39,6 +39,8 @@ dev-server:    ; mkdir client/dist ; touch client/dist/.fake ; air .
 
 test: install lint commitlint
 	go test -count=1 -race ./test/...
+
+e2e:			; ./test/e2e/run.sh
 
 bench: 		   ; go run test/benchmark.go -test.bench=.
 bench-profile: ; go run test/benchmark.go -test.bench=. & go tool pprof http://localhost:6060/debug/pprof/profile\?seconds\=5

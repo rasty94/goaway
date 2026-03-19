@@ -22,12 +22,12 @@ func Initialize() *gorm.DB {
 		log.Fatal("failed while initializing database: %w", err)
 	}
 
-	if err := RunMigrations(db); err != nil {
-		log.Fatal("migration runner failed: %w", err)
-	}
-
 	if err := AutoMigrate(db); err != nil {
 		log.Fatal("auto migrate failed: %w", err)
+	}
+
+	if err := RunMigrations(db); err != nil {
+		log.Fatal("migration runner failed: %w", err)
 	}
 
 	return db

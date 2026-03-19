@@ -1,0 +1,25 @@
+services:
+  goaway-e2e:
+    image: golang:1.26.0-alpine
+    container_name: goaway-e2e
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - DNS_PORT=9876
+      - WEBSITE_PORT=9877
+      - PATH=/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    ports:
+      - "9876:9876/udp"
+      - "9876:9876/tcp"
+      - "9877:9877/tcp"
+    cap_add:
+      - NET_BIND_SERVICE
+      - NET_RAW
+      - NET_ADMIN
+    command: >
+      sh -c "
+      mkdir -p client/dist && touch client/dist/.fake &&
+      go build -o tmp/goaway . &&
+      ./tmp/goaway --dns-port=9876 --webserver-port=9877 --log-level=0 --auth=false --dashboard=false
+      "

@@ -58,6 +58,6 @@ After reviewing the `goaway` project architecture, documentation, and drawing in
 - [x] **Group Management (Per-Client Blocking)**: Multi-group backend implemented (default + custom groups) with per-client IP/MAC assignments, group-scoped block/allow domains, and DNS policy enforcement integrated into runtime resolution.
 
 ### Platform & Scaling
-- [ ] **High Availability / Synchronization**: Enable running multiple instances of `goaway` on the same network that can sync blocklists, DHCP leases, allowlists, and local DNS automatically for redundancy (Primary/Secondary setup). Phase 1 target: passive Primary -> Replica sync via Remote Backup + Teleporter import; full automatic failover remains pending.
+- [x] **High Availability / Synchronization**: Enable running multiple instances of `goaway` on the same network that can sync blocklists, DHCP leases, allowlists, and local DNS automatically for redundancy (Primary/Secondary setup). Phase 1 complete: passive Primary -> Replica sync via Remote Backup + Teleporter import with automatic scheduled or manual trigger. See [docs/HA_GUIDE.md](docs/HA_GUIDE.md) for setup. Future: automatic failover, bidirectional sync, P2P, real-time.
 - [ ] **Full Windows / macOS Support**: Move macOS and Windows support from "Beta" to "Full". This involves validating low-level networking behaviors, DHCP broadcasts, and path resolutions specific to these OS environments.
-- [ ] **E2E & Integration Tests**: Set up Docker-based End-to-End integration tests simulating actual client queries, HTTP requests, and verifying database states dynamically.
+- [x] **E2E & Integration Tests**: Set up Docker-based End-to-End integration tests simulating actual client queries, HTTP requests, and verifying database states dynamically.
