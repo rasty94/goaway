@@ -37,6 +37,22 @@ var (
 		[]string{"client_ip", "domain"},
 	)
 
+	StaleQueries = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "goaway_dns_stale_total",
+			Help: "Total number of DNS queries answered from stale cache",
+		},
+		[]string{"client_ip", "domain"},
+	)
+
+	PrefetchHitQueries = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "goaway_dns_prefetch_hit_total",
+			Help: "Total number of DNS queries answered from prefetch entries",
+		},
+		[]string{"client_ip", "domain"},
+	)
+
 	ForwardedQueries = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "goaway_dns_forwarded_total",
@@ -68,6 +84,8 @@ func init() {
 	prometheus.MustRegister(BlockedQueries)
 	prometheus.MustRegister(ThrottledQueries)
 	prometheus.MustRegister(CachedQueries)
+	prometheus.MustRegister(StaleQueries)
+	prometheus.MustRegister(PrefetchHitQueries)
 	prometheus.MustRegister(ForwardedQueries)
 	prometheus.MustRegister(DNSLatency)
 	prometheus.MustRegister(DNSSECResponses)

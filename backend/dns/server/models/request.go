@@ -19,6 +19,8 @@ type RequestLogEntry struct {
 	ResponseTime      time.Duration `json:"responseTimeNS"`
 	Blocked           bool          `json:"blocked"`
 	Cached            bool          `json:"cached"`
+	Stale             bool          `json:"stale"`
+	PrefetchHit       bool          `json:"prefetchHit"`
 }
 
 func (r *RequestLogEntry) String() string {

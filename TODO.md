@@ -136,7 +136,7 @@ Labels base recomendadas:
     - Estado secure/insecure/bogus en logs y API.
     - Diagnostico por dominio con endpoint dedicado.
 
-- [ ] FEATURE: Cache serve-stale + prefetch inteligente
+- [x] FEATURE: Cache serve-stale + prefetch inteligente
   - Prioridad: p0
   - Labels: feature, dns, enhancement
   - Criterios de aceptacion:

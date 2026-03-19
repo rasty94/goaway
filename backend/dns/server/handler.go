@@ -117,6 +117,12 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 	if entry.Cached {
 		status = "cached"
 		metrics.CachedQueries.WithLabelValues(clientIP, domainName).Inc()
+		if entry.Stale {
+			metrics.StaleQueries.WithLabelValues(clientIP, domainName).Inc()
+		}
+		if entry.PrefetchHit {
+			metrics.PrefetchHitQueries.WithLabelValues(clientIP, domainName).Inc()
+		}
 	}
 	metrics.DNSLatency.WithLabelValues(clientIP, status).Observe(time.Since(start).Seconds())
 	return s.finalizeDNSSECStatus(entry, clientIP)
@@ -532,7 +538,7 @@ func (s *DNSServer) forwardPTRQueryUpstream(request *Request) model.RequestLogEn
 }
 
 func (s *DNSServer) handleStandardQuery(request *Request) model.RequestLogEntry {
-	answers, cached, status, dnssecStatus := s.Resolve(request)
+	answers, cached, stale, prefetchHit, status, dnssecStatus := s.Resolve(request)
 	resolved := make([]model.ResolvedIP, 0, len(answers))
 
 	request.Msg.Answer = answers
@@ -637,41 +643,64 @@ func (s *DNSServer) handleStandardQuery(request *Request) model.RequestLogEntry 
 		Timestamp:         request.Sent,
 		ResponseTime:      time.Since(request.Sent),
 		Cached:            cached,
+		Stale:             stale,
+		PrefetchHit:       prefetchHit,
 		ClientInfo:        request.Client,
 		Protocol:          request.Protocol,
 	}
 }
 
-func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, string, string) {
+func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, bool, bool, string, string) {
 	cacheKey := req.Question.Name + ":" + strconv.Itoa(int(req.Question.Qtype))
+	var staleCandidate []dns.RR
+	var staleDNSSECStatus string
+	var staleSource string
+	var hasStaleCandidate bool
+
 	if s.Config.DNS.CacheEnabled {
 		if cached, found := s.DomainCache.Load(cacheKey); found {
-			if ipAddresses, dnssecStatus, valid := s.getCachedRecord(cached); valid {
+			if ipAddresses, dnssecStatus, source, valid := s.getCachedRecord(cached); valid {
 				if dnssecStatus == "" {
 					dnssecStatus = s.defaultDNSSECStatus()
 				}
-				return ipAddresses, true, dns.RcodeToString[dns.RcodeSuccess], dnssecStatus
+				return ipAddresses, true, false, source == "prefetch", dns.RcodeToString[dns.RcodeSuccess], dnssecStatus
+			}
+
+			if staleRecords, dnssecStatus, source, staleValid := s.getStaleRecord(cached); staleValid {
+				staleCandidate = staleRecords
+				staleDNSSECStatus = dnssecStatus
+				staleSource = source
+				hasStaleCandidate = true
 			}
 		}
 	}
 
 	if answers, ttl, status, dnssecStatus := s.resolveResolution(req.Question.Name); len(answers) > 0 {
 		s.CacheRecord(cacheKey, req.Question.Name, answers, ttl, dnssecStatus)
-		return answers, false, status, dnssecStatus
+		return answers, false, false, false, status, dnssecStatus
 	}
 
 	answers, ttl, status, dnssecStatus := s.resolveCNAMEChain(req, make(map[string]bool))
 	if len(answers) > 0 {
 		s.CacheRecord(cacheKey, req.Question.Name, answers, ttl, dnssecStatus)
+		return answers, false, false, false, status, dnssecStatus
 	}
-	return answers, false, status, dnssecStatus
+
+	if hasStaleCandidate && status == dns.RcodeToString[dns.RcodeServerFailure] {
+		if staleDNSSECStatus == "" {
+			staleDNSSECStatus = s.defaultDNSSECStatus()
+		}
+		return staleCandidate, true, true, staleSource == "prefetch", dns.RcodeToString[dns.RcodeSuccess], staleDNSSECStatus
+	}
+
+	return answers, false, false, false, status, dnssecStatus
 }
 
 func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string, string) {
 	var (
-		records []dns.RR
-		ttl     = uint32(s.Config.DNS.CacheTTL)
-		status  = dns.RcodeToString[dns.RcodeSuccess]
+		records      []dns.RR
+		ttl          = uint32(s.Config.DNS.CacheTTL)
+		status       = dns.RcodeToString[dns.RcodeSuccess]
 		dnssecStatus = s.defaultDNSSECStatus()
 	)
 
@@ -810,10 +839,10 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string, strin
 	select {
 	case in := <-resultCh:
 		go s.WSCom(communicationMessage{IP: "", Client: false, Upstream: false, DNS: true})
-			dnssecStatus := s.classifyDNSSECResponse(in, nil)
-			if s.dnssecMode() == "strict" && dnssecStatus == DNSSECStatusBogus {
-				return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], dnssecStatus
-			}
+		dnssecStatus := s.classifyDNSSECResponse(in, nil)
+		if s.dnssecMode() == "strict" && dnssecStatus == DNSSECStatusBogus {
+			return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], dnssecStatus
+		}
 
 		status := dns.RcodeToString[dns.RcodeServerFailure]
 		if statusStr, ok := dns.RcodeToString[in.Rcode]; ok {
