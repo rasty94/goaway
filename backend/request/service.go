@@ -5,26 +5,54 @@ import (
 	"goaway/backend/api/models"
 	model "goaway/backend/dns/server/models"
 	"goaway/backend/logging"
+	"goaway/backend/settings"
+	"net"
 	"time"
 )
 
 type Service struct {
 	repository Repository
+	config     *settings.Config
 }
 
 var log = logging.GetLogger()
 
-func NewService(repo Repository) *Service {
-	return &Service{repository: repo}
+func NewService(repo Repository, cfg *settings.Config) *Service {
+	return &Service{repository: repo, config: cfg}
 }
 
 func (s *Service) SaveRequestLog(entries []model.RequestLogEntry) error {
+	if s.config.Misc.AnonymizeIP {
+		for i := range entries {
+			if entries[i].ClientInfo != nil {
+				entries[i].ClientInfo.IP = MaskIP(entries[i].ClientInfo.IP)
+			}
+		}
+	}
+
 	if err := s.repository.SaveRequestLog(entries); err != nil {
 		return err
 	}
 
 	log.Debug("Saved %d new request log(s)", len(entries))
 	return nil
+}
+
+func MaskIP(ip string) string {
+	addr := net.ParseIP(ip)
+	if addr == nil {
+		return ip
+	}
+	if v4 := addr.To4(); v4 != nil {
+		// Mask last octet
+		v4[3] = 0
+		return v4.String()
+	}
+	// Mask last 64 bits of IPv6
+	for i := 8; i < 16; i++ {
+		addr[i] = 0
+	}
+	return addr.String()
 }
 
 func (s *Service) GetClientNameFromIP(ip string) string {
@@ -111,4 +139,8 @@ func (s *Service) DeleteRequestLogsTimebased(vacuum vacuumFunc, requestThreshold
 	if err := s.repository.DeleteRequestLogsTimebased(vacuum, requestThreshold, maxRetries, retryDelay); err != nil {
 		log.Warning("Error while deleting old request logs: %v", err)
 	}
+}
+
+func (s *Service) DeleteOldLogs(days int) error {
+	return s.repository.DeleteOldLogs(days)
 }

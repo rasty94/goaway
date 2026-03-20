@@ -36,6 +36,7 @@ type Repository interface {
 	UpdateClientBypass(ip string, bypass bool) error
 
 	DeleteRequestLogsTimebased(vacuum vacuumFunc, requestThreshold, maxRetries int, retryDelay time.Duration) error
+	DeleteOldLogs(days int) error
 }
 
 type ClientRequestDetails struct {
@@ -601,4 +602,9 @@ func (r *repository) DeleteRequestLogsTimebased(vacuum vacuumFunc, requestThresh
 	}
 
 	return fmt.Errorf("failed to delete after %d retries", maxRetries)
+}
+
+func (r *repository) DeleteOldLogs(days int) error {
+	cutoff := time.Now().AddDate(0, 0, -days)
+	return r.db.Where("timestamp < ?", cutoff).Delete(&database.RequestLog{}).Error
 }

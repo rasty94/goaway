@@ -4,6 +4,7 @@ import (
 	arp "goaway/backend/dns"
 	"goaway/backend/logging"
 	"goaway/backend/services"
+	"time"
 )
 
 var log = logging.GetLogger()
@@ -25,6 +26,7 @@ func (b *BackgroundJobs) Start(readyChan <-chan struct{}) {
 	b.startScheduledUpdates(readyChan)
 	b.startCacheCleanup(readyChan)
 	b.startPrefetcher(readyChan)
+	b.startLogRetentionCleanup(readyChan)
 }
 
 func (b *BackgroundJobs) startHostnameCachePopulation() {
@@ -72,5 +74,23 @@ func (b *BackgroundJobs) startPrefetcher(readyChan <-chan struct{}) {
 		<-readyChan
 		log.Debug("Starting prefetcher...")
 		b.registry.PrefetchService.Run()
+	}()
+}
+func (b *BackgroundJobs) startLogRetentionCleanup(readyChan <-chan struct{}) {
+	go func() {
+		<-readyChan
+		log.Debug("Starting log retention cleanup routine...")
+		
+		// Run every hour
+		ticker := time.NewTicker(time.Hour)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			retentionDays := b.registry.Context.Config.Misc.StatisticsRetention
+			if retentionDays > 0 {
+				log.Info("Cleaning up logs older than %d days...", retentionDays)
+				b.registry.RequestService.DeleteOldLogs(retentionDays)
+			}
+		}
 	}()
 }

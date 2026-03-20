@@ -23,11 +23,12 @@ func (api *API) authMiddleware() gin.HandlerFunc {
 		}
 
 		if apiKey := c.GetHeader("api-key"); apiKey != "" {
-			if api.KeyService.VerifyKey(apiKey) {
+			if api.KeyService.VerifyKeyScope(apiKey, "read") {
+				c.Set("is_api_key", true)
 				c.Next()
 				return
 			}
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key or insufficient scopes"})
 			return
 		}
 

@@ -88,6 +88,7 @@ type LoggingConfig struct {
 type MiscConfig struct {
 	InAppUpdate               bool `yaml:"inAppUpdate" json:"inAppUpdate"`
 	StatisticsRetention       int  `yaml:"statisticsRetention" json:"statisticsRetention"`
+	AnonymizeIP               bool `yaml:"anonymizeIP" json:"anonymizeIP"`
 	Dashboard                 bool `yaml:"dashboard" json:"dashboard"`
 	ScheduledBlacklistUpdates bool `yaml:"scheduledBlacklistUpdates" json:"scheduledBlacklistUpdates"`
 }

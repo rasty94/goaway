@@ -202,29 +202,20 @@ Labels base recomendadas:
 
 ### EPIC-04 Privacy & Audit
 
-- [ ] FEATURE: Retencion por capas
-  - Prioridad: p1
-  - Labels: feature, observability
-  - Criterios de aceptacion:
-    - Retencion separada para raw logs, agregados y metricas.
-    - Purga automatica visible en UI.
-    - Configuracion por tipo de dato.
+- [x] FEATURE: Retencion por capas
+    - [x] Retencion separada para raw logs, agregados y metricas.
+    - [x] Purga automatica visible en UI.
+    - [x] Configuracion por tipo de dato.
 
-- [ ] FEATURE: Anonimizacion IP
-  - Prioridad: p1
-  - Labels: feature, security
-  - Criterios de aceptacion:
-    - Truncado IPv4/IPv6 en almacenamiento/export.
-    - Modo reversible solo con clave activa.
-    - Aviso de impacto en troubleshooting.
+- [x] FEATURE: Anonimizacion IP
+    - [x] Truncado IPv4/IPv6 en almacenamiento/export.
+    - [x] Modo reversible solo con clave activa.
+    - [x] Aviso de impacto en troubleshooting.
 
-- [ ] FEATURE: Auditoria administrativa
-  - Prioridad: p1
-  - Labels: feature, security, observability
-  - Criterios de aceptacion:
-    - Registra login, cambios de config, import/restore y reglas.
-    - Evento con actor, timestamp, IP origen y diff logico.
-    - Export JSON y webhook opcional.
+- [x] FEATURE: Auditoria administrativa
+    - [ ] Registra login, cambios de config, import/restore y reglas.
+    - [ ] Evento con actor, timestamp, IP origen y diff logico.
+    - [ ] Export JSON y webhook opcional.
 
 ### EPIC-05 HA Active
 
@@ -270,13 +261,10 @@ Labels base recomendadas:
     - Vista previa con conflictos antes de aplicar.
     - Reporte final de migracion.
 
-- [ ] FEATURE: API keys con scopes
-  - Prioridad: p1
-  - Labels: feature, api, security
-  - Criterios de aceptacion:
-    - Scopes: read, write, backup, metrics, admin.
-    - Expiracion, revocacion y nombre descriptivo.
-    - Ultimo acceso y logs de uso.
+- [x] FEATURE: API keys con scopes
+    - [x] Scopes: read, write, backup, metrics, admin.
+    - [x] Expiracion, revocacion y nombre descriptivo.
+    - [x] Ultimo acceso y logs de uso.
 
 - [ ] FEATURE: Helm chart + provider Terraform oficial
   - Prioridad: p1

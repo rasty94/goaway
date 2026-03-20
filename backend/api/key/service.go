@@ -7,6 +7,7 @@ import (
 	"goaway/backend/database"
 	"goaway/backend/logging"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -31,23 +32,26 @@ func NewService(repo Repository) *Service {
 	}
 }
 
-func (s *Service) VerifyKey(apiKey string) bool {
+func (s *Service) VerifyKeyScope(apiKey string, requiredScope string) bool {
 	if err := s.refreshCache(); err != nil {
 		log.Warning("Failed to refresh API key cache: %v", err)
-
-		count, err := s.repository.CountByKey(apiKey)
+		key, err := s.repository.FindByKey(apiKey)
 		if err != nil {
-			log.Warning("Failed to verify API key in database: %v", err)
 			return false
 		}
-		return count > 0
+		return s.hasScope(key.Scopes, requiredScope)
 	}
 
 	s.cacheMu.RLock()
 	defer s.cacheMu.RUnlock()
 
-	for _, value := range s.keyCache {
-		if value.Key == apiKey {
+	key, exists := s.keyCache[apiKey]
+	if !exists {
+		return false
+	}
+
+	for _, s := range key.Scopes {
+		if s == requiredScope || s == "admin" {
 			return true
 		}
 	}
@@ -55,8 +59,19 @@ func (s *Service) VerifyKey(apiKey string) bool {
 	return false
 }
 
-// CreateKey generates and stores a new API key
-func (s *Service) CreateKey(name string) (string, error) {
+func (s *Service) hasScope(scopes string, required string) bool {
+	scs := strings.Split(scopes, ",")
+	for _, sc := range scs {
+		sc = strings.TrimSpace(sc)
+		if sc == required || sc == "admin" {
+			return true
+		}
+	}
+	return false
+}
+
+// CreateKey generates and stores a new API key with optional scopes
+func (s *Service) CreateKey(name string, scopes []string) (string, error) {
 	apiKey, err := generateKey()
 	if err != nil {
 		return "", err
@@ -65,6 +80,7 @@ func (s *Service) CreateKey(name string) (string, error) {
 	newAPIKey := database.APIKey{
 		Name:      name,
 		Key:       apiKey,
+		Scopes:    strings.Join(scopes, ","),
 		CreatedAt: time.Now(),
 	}
 
@@ -76,6 +92,7 @@ func (s *Service) CreateKey(name string) (string, error) {
 	s.keyCache[apiKey] = APIKey{
 		Name:      name,
 		Key:       apiKey,
+		Scopes:    scopes,
 		CreatedAt: newAPIKey.CreatedAt,
 	}
 	s.cacheMu.Unlock()
@@ -154,9 +171,17 @@ func (s *Service) refreshCache() error {
 
 	newCache := make(map[string]APIKey)
 	for _, apiKey := range apiKeys {
+		scopes := make([]string, 0)
+		if apiKey.Scopes != "" {
+			for _, sc := range strings.Split(apiKey.Scopes, ",") {
+				scopes = append(scopes, strings.TrimSpace(sc))
+			}
+		}
+
 		newCache[apiKey.Key] = APIKey{
 			Name:      apiKey.Name,
 			Key:       apiKey.Key,
+			Scopes:    scopes,
 			CreatedAt: apiKey.CreatedAt,
 		}
 	}

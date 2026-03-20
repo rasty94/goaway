@@ -84,6 +84,7 @@ type User struct {
 type APIKey struct {
 	Name      string    `gorm:"primaryKey" json:"name" validate:"required"`
 	Key       string    `gorm:"unique;not null" json:"key" validate:"required"`
+	Scopes    string    `json:"scopes"` // comma separated
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

@@ -166,7 +166,7 @@ func (a *Application) Start() error {
 	notificationService := notification.NewService(notification.NewRepository(dbConn))
 	policyService := policy.NewService(policy.NewRepository(dbConn), blacklistService)
 	prefetchService := prefetch.NewService(prefetch.NewRepository(dbConn), a.context.DNSServer)
-	requestService := request.NewService(request.NewRepository(dbConn))
+	requestService := request.NewService(request.NewRepository(dbConn), a.config)
 	resolutionService := resolution.NewService(resolution.NewRepository(dbConn))
 	userService := user.NewService(user.NewRepository(dbConn))
 	whitelistService := whitelist.NewService(whitelist.NewRepository(dbConn))

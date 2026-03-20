@@ -123,7 +123,8 @@ func (api *API) updatePassword(c *gin.Context) {
 
 func (api *API) createAPIKey(c *gin.Context) {
 	type NewAPIKeyName struct {
-		Name string `json:"name"`
+		Name   string   `json:"name"`
+		Scopes []string `json:"scopes"`
 	}
 
 	body, err := io.ReadAll(c.Request.Body)
@@ -140,7 +141,12 @@ func (api *API) createAPIKey(c *gin.Context) {
 		return
 	}
 
-	apiKey, err := api.KeyService.CreateKey(request.Name)
+	// Default scope if none provided
+	if len(request.Scopes) == 0 {
+		request.Scopes = []string{"read", "admin"}
+	}
+
+	apiKey, err := api.KeyService.CreateKey(request.Name, request.Scopes)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
@@ -149,7 +155,7 @@ func (api *API) createAPIKey(c *gin.Context) {
 	go func() {
 		_ = api.DNSServer.AlertService.SendToAll(context.Background(), alert.Message{
 			Title:    "System",
-			Content:  fmt.Sprintf("New API key created with the name '%s'", request.Name),
+			Content:  fmt.Sprintf("New API key created with the name '%s' and scopes '%v'", request.Name, request.Scopes),
 			Severity: SeverityWarning,
 		})
 	}()
@@ -200,6 +206,15 @@ func (api *API) roleMiddleware() gin.HandlerFunc {
 		// Allow password update for self even if viewer
 		if c.Request.URL.Path == "/api/password" && c.Request.Method == "PUT" {
 			c.Next()
+			return
+		}
+
+		if apiKey := c.GetHeader("api-key"); apiKey != "" {
+			if api.KeyService.VerifyKeyScope(apiKey, "admin") {
+				c.Next()
+				return
+			}
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "admin scope required for this action"})
 			return
 		}
 
