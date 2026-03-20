@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const CurrentSchemaVersion = 1
+const CurrentSchemaVersion = 2
 
 func (config *Config) ApplySchemaUpgrades() (bool, error) {
 	changed := false
@@ -17,6 +17,37 @@ func (config *Config) ApplySchemaUpgrades() (bool, error) {
 	if config.SchemaVersion == 0 {
 		config.SchemaVersion = 1
 		changed = true
+	}
+
+	if config.SchemaVersion == 1 {
+		// Migrate UpstreamConfig to Servers
+		if len(config.DNS.Upstream.Servers) == 0 {
+			if config.DNS.Upstream.Preferred != "" {
+				config.DNS.Upstream.Servers = append(config.DNS.Upstream.Servers, UpstreamServer{
+					Name:     "Preferred (Migrated)",
+					Address:  config.DNS.Upstream.Preferred,
+					Protocol: "udp",
+					Enabled:  true,
+				})
+			}
+			for i, f := range config.DNS.Upstream.Fallback {
+				if f != "" {
+					config.DNS.Upstream.Servers = append(config.DNS.Upstream.Servers, UpstreamServer{
+						Name:     fmt.Sprintf("Fallback %d (Migrated)", i+1),
+						Address:  f,
+						Protocol: "udp",
+						Enabled:  true,
+					})
+				}
+			}
+			config.DNS.Upstream.Preferred = ""
+			config.DNS.Upstream.Fallback = nil
+			config.SchemaVersion = 2
+			changed = true
+		} else {
+			config.SchemaVersion = 2
+			changed = true
+		}
 	}
 
 	if config.SchemaVersion > CurrentSchemaVersion {

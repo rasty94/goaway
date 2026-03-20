@@ -76,28 +76,33 @@ func (m *Matcher) AddBulk(patterns []string) {
 }
 
 func (m *Matcher) Match(domain string) bool {
+	blocked, _ := m.MatchDetailed(domain)
+	return blocked
+}
+
+func (m *Matcher) MatchDetailed(domain string) (bool, string) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	if m.Exact[domain] {
-		return true
+		return true, domain
 	}
 
 	parts := strings.Split(domain, ".")
 	for i := 0; i < len(parts); i++ {
 		sub := strings.Join(parts[i:], ".")
 		if m.Wildcards[sub] {
-			return true
+			return true, "*." + sub
 		}
 	}
 
 	for _, rx := range m.Regexes {
 		if rx.MatchString(domain) {
-			return true
+			return true, "/" + rx.String() + "/"
 		}
 	}
 
-	return false
+	return false, ""
 }
 
 func (m *Matcher) Remove(pattern string) {

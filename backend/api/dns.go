@@ -28,6 +28,7 @@ func (api *API) registerDNSRoutes() {
 	api.routes.GET("/responseSizeTimestamps", api.getResponseSizeTimestamps)
 	api.routes.GET("/queryTypes", api.getQueryTypes)
 	api.routes.POST("/dnssec/diagnose", api.dnssecDiagnose)
+	api.routes.GET("/dns/explain", api.explainDNS)
 
 	api.routes.DELETE("/queries", api.clearQueries)
 	api.routes.DELETE("/pause", api.clearBlocking)
@@ -247,6 +248,23 @@ func (api *API) clearQueries(c *gin.Context) {
 func (api *API) clearBlocking(c *gin.Context) {
 	api.Config.DNS.Status = settings.Status{}
 	c.JSON(http.StatusOK, gin.H{})
+}
+
+func (api *API) explainDNS(c *gin.Context) {
+	domain := c.Query("domain")
+	client := c.Query("client")
+
+	if domain == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "domain parameter is required"})
+		return
+	}
+
+	if client == "" {
+		client = c.ClientIP()
+	}
+
+	explanation := api.DNSServer.Explain(domain, client)
+	c.JSON(http.StatusOK, explanation)
 }
 
 func (api *API) setupWSLiveQueries(dnsServer *server.DNSServer) {

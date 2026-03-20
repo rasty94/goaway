@@ -17,6 +17,15 @@ type Repository interface {
 	ListActiveLeases() ([]database.ActiveDHCPLease, error)
 	CreateOrUpdateActiveLease(lease *database.ActiveDHCPLease) error
 	DeleteExpiredLeases() error
+
+	// DHCPv6
+	ListStaticv6Leases() ([]database.StaticDHCPv6Lease, error)
+	CreateStaticv6Lease(lease *database.StaticDHCPv6Lease) error
+	UpdateStaticv6Lease(id uint, lease *database.StaticDHCPv6Lease) error
+	DeleteStaticv6Lease(id uint) error
+
+	ListActivev6Leases() ([]database.ActiveDHCPv6Lease, error)
+	CreateOrUpdateActivev6Lease(lease *database.ActiveDHCPv6Lease) error
 }
 
 type repository struct {
@@ -101,6 +110,84 @@ func (r *repository) CreateOrUpdateActiveLease(lease *database.ActiveDHCPLease) 
 }
 
 func (r *repository) DeleteExpiredLeases() error {
-	return r.db.Where("expires_at < CURRENT_TIMESTAMP").Delete(&database.ActiveDHCPLease{}).Error
+	err1 := r.db.Where("expires_at < CURRENT_TIMESTAMP").Delete(&database.ActiveDHCPLease{}).Error
+	err2 := r.db.Where("expires_at < CURRENT_TIMESTAMP").Delete(&database.ActiveDHCPv6Lease{}).Error
+	if err1 != nil {
+		return err1
+	}
+	return err2
+}
+
+func (r *repository) ListStaticv6Leases() ([]database.StaticDHCPv6Lease, error) {
+	var leases []database.StaticDHCPv6Lease
+	if err := r.db.Order("created_at DESC").Find(&leases).Error; err != nil {
+		return nil, fmt.Errorf("failed to query static DHCPv6 leases: %w", err)
+	}
+	return leases, nil
+}
+
+func (r *repository) CreateStaticv6Lease(lease *database.StaticDHCPv6Lease) error {
+	lease.DUID = strings.TrimSpace(lease.DUID)
+	lease.IP = strings.TrimSpace(lease.IP)
+	lease.Hostname = strings.TrimSpace(lease.Hostname)
+	if err := r.db.Create(lease).Error; err != nil {
+		return fmt.Errorf("failed to create static DHCPv6 lease: %w", err)
+	}
+	return nil
+}
+
+func (r *repository) UpdateStaticv6Lease(id uint, lease *database.StaticDHCPv6Lease) error {
+	updates := map[string]interface{}{
+		"duid":     strings.TrimSpace(lease.DUID),
+		"ip":       strings.TrimSpace(lease.IP),
+		"hostname": strings.TrimSpace(lease.Hostname),
+		"enabled":  lease.Enabled,
+	}
+
+	result := r.db.Model(&database.StaticDHCPv6Lease{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update static DHCPv6 lease: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("static DHCPv6 lease not found")
+	}
+	return nil
+}
+
+func (r *repository) DeleteStaticv6Lease(id uint) error {
+	result := r.db.Where("id = ?", id).Delete(&database.StaticDHCPv6Lease{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete static DHCPv6 lease: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("static DHCPv6 lease not found")
+	}
+	return nil
+}
+
+func (r *repository) ListActivev6Leases() ([]database.ActiveDHCPv6Lease, error) {
+	var leases []database.ActiveDHCPv6Lease
+	if err := r.db.Order("expires_at ASC").Find(&leases).Error; err != nil {
+		return nil, fmt.Errorf("failed to query active DHCPv6 leases: %w", err)
+	}
+	return leases, nil
+}
+
+func (r *repository) CreateOrUpdateActivev6Lease(lease *database.ActiveDHCPv6Lease) error {
+	lease.DUID = strings.TrimSpace(lease.DUID)
+	lease.IP = strings.TrimSpace(lease.IP)
+	lease.Hostname = strings.TrimSpace(lease.Hostname)
+
+	// Upsert based on DUID/IAID
+	result := r.db.Where("duid = ? AND iaid = ?", lease.DUID, lease.IAID).Assign(database.ActiveDHCPv6Lease{
+		IP:        lease.IP,
+		Hostname:  lease.Hostname,
+		ExpiresAt: lease.ExpiresAt,
+	}).FirstOrCreate(lease)
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to upsert active DHCPv6 lease: %w", result.Error)
+	}
+	return nil
 }
 

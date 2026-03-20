@@ -32,12 +32,13 @@ type Config struct {
 }
 
 type Service struct {
-	repository   Repository
-	httpClient   HTTPClient
-	matcher      *domain.Matcher
-	cacheMu      sync.RWMutex
-	blocklistURL []BlocklistSource
-	config       Config
+	repository       Repository
+	httpClient       HTTPClient
+	matcher          *domain.Matcher
+	categoryMatchers map[string]*domain.Matcher
+	cacheMu          sync.RWMutex
+	blocklistURL     []BlocklistSource
+	config           Config
 }
 
 var (
@@ -72,10 +73,11 @@ var defaultConfig = Config{
 func NewService(repo Repository) *Service {
 	config := defaultConfig
 	service := &Service{
-		repository: repo,
-		httpClient: http.DefaultClient,
-		matcher:    domain.NewMatcher(),
-		config:     config,
+		repository:       repo,
+		httpClient:       http.DefaultClient,
+		matcher:          domain.NewMatcher(),
+		categoryMatchers: make(map[string]*domain.Matcher),
+		config:           config,
 	}
 
 	if len(service.blocklistURL) == 0 {
@@ -137,36 +139,73 @@ func (s *Service) initializeBlockedDomains(ctx context.Context) error {
 }
 
 func (s *Service) PopulateCache(ctx context.Context) error {
+	// 1. Regular Cache
 	domains, err := s.repository.GetAllDomains(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to populate cache: %w", err)
 	}
 
 	newMatcher := domain.NewMatcher()
-	
-	// Add Bulk optimization
 	var cleanDomains []string
 	for _, domainStr := range domains {
 		cleanDomains = append(cleanDomains, strings.TrimSuffix(domainStr, "."))
 	}
 	newMatcher.AddBulk(cleanDomains)
 
+	// 2. Category Cache
+	catDomains, err := s.repository.GetDomainsWithCategory(ctx)
+	if err != nil {
+		log.Warning("Failed to fetch domains with category: %v", err)
+	}
+	newCategoryMatchers := make(map[string]*domain.Matcher)
+	for cat, domains := range catDomains {
+		matcher := domain.NewMatcher()
+		clean := make([]string, len(domains))
+		for i, d := range domains {
+			clean[i] = strings.TrimSuffix(d, ".")
+		}
+		matcher.AddBulk(clean)
+		newCategoryMatchers[cat] = matcher
+	}
+
 	s.cacheMu.Lock()
 	s.matcher = newMatcher
+	s.categoryMatchers = newCategoryMatchers
 	s.cacheMu.Unlock()
 
 	return nil
 }
 
 func (s *Service) IsBlacklisted(domain string) bool {
+	blocked, _ := s.IsBlacklistedDetailed(domain)
+	return blocked
+}
+
+func (s *Service) IsBlacklistedDetailed(domain string) (bool, string) {
 	s.cacheMu.RLock()
 	matcher := s.matcher
 	s.cacheMu.RUnlock()
 
 	if matcher != nil {
-		return matcher.Match(domain)
+		return matcher.MatchDetailed(domain)
 	}
-	return false
+	return false, ""
+}
+
+func (s *Service) IsBlacklistedByCategory(domain, category string) bool {
+	blocked, _ := s.IsBlacklistedByCategoryDetailed(domain, category)
+	return blocked
+}
+
+func (s *Service) IsBlacklistedByCategoryDetailed(domain, category string) (bool, string) {
+	s.cacheMu.RLock()
+	matcher, ok := s.categoryMatchers[category]
+	s.cacheMu.RUnlock()
+
+	if ok && matcher != nil {
+		return matcher.MatchDetailed(domain)
+	}
+	return false, ""
 }
 
 func (s *Service) PopulateWildcardCache(ctx context.Context) error {

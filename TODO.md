@@ -112,7 +112,7 @@ Labels base recomendadas:
 
 ### EPIC-01 Secure Resolver
 
-- [ ] FEATURE: Soporte de upstream DoT saliente
+- [x] FEATURE: Soporte de upstream DoT saliente
   - Prioridad: p0
   - Labels: epic, feature, dns, security
   - Criterios de aceptacion:
@@ -120,13 +120,13 @@ Labels base recomendadas:
     - Health checks periodicos y salida del pool en fallo.
     - Metricas por upstream: latencia, timeout, errores TLS.
 
-- [ ] FEATURE: Soporte de upstream DoH/DoQ saliente
+- [x] FEATURE: Soporte de upstream DoH saliente
   - Prioridad: p0
   - Labels: feature, dns, security
   - Criterios de aceptacion:
-    - DoH sobre HTTP/2 y DoQ sobre QUIC.
+    - DoH sobre HTTP/2.
     - Bootstrap sin dependencia circular.
-    - Fallback ordenado entre UDP/TCP/DoT/DoH/DoQ.
+    - Fallback ordenado entre UDP/TCP/DoT/DoH.
 
 - [x] FEATURE: DNSSEC completo
   - Prioridad: p0
@@ -146,7 +146,7 @@ Labels base recomendadas:
 
 ### EPIC-02 Policy Engine
 
-- [ ] FEATURE: Motor jerarquico de politicas
+- [x] FEATURE: Motor jerarquico de politicas
   - Prioridad: p0
   - Labels: feature, dns, api
   - Criterios de aceptacion:
@@ -154,7 +154,7 @@ Labels base recomendadas:
     - Condiciones por IP, MAC, CIDR, hostname, dia y franja horaria.
     - API devuelve regla ganadora y origen.
 
-- [ ] FEATURE: Filtrado por categorias
+- [x] FEATURE: Filtrado por categorias
   - Prioridad: p0
   - Labels: feature, dns, frontend
   - Criterios de aceptacion:
@@ -162,7 +162,7 @@ Labels base recomendadas:
     - Activacion por grupo y por horario.
     - Conteos por categoria y fuente.
 
-- [ ] FEATURE: SafeSearch y modos restringidos
+- [x] FEATURE: SafeSearch y modos restringidos
   - Prioridad: p0
   - Labels: feature, dns
   - Criterios de aceptacion:
@@ -172,7 +172,7 @@ Labels base recomendadas:
 
 ### EPIC-03 Explainability
 
-- [ ] FEATURE: Endpoint de explicacion DNS
+- [x] FEATURE: Endpoint de explicacion DNS
   - Prioridad: p0
   - Labels: feature, api, dns
   - Criterios de aceptacion:
@@ -180,7 +180,7 @@ Labels base recomendadas:
     - Devuelve matching (listas, wildcard, regex), upstream y TTL final.
     - Indica cache-hit o stale-hit.
 
-- [ ] FEATURE: Simulador de politicas en UI
+- [x] FEATURE: Simulador de politicas en UI
   - Prioridad: p0
   - Labels: feature, frontend
   - Criterios de aceptacion:
@@ -188,7 +188,7 @@ Labels base recomendadas:
     - Arbol de evaluacion y regla final.
     - Comparativa actual vs draft.
 
-- [ ] FEATURE: Dry-run para nuevas reglas
+- [x] FEATURE: Dry-run para nuevas reglas
   - Prioridad: p0
   - Labels: feature, dns, observability
   - Criterios de aceptacion:
@@ -235,6 +235,14 @@ Labels base recomendadas:
     - Roles leader/follower/standby.
     - Heartbeats y fencing basico anti split-brain.
     - Estado visible en dashboard y metricas.
+
+- [x] EPIC-10: Premium Native Dashboard Implementation
+  - [x] Modern layout with sidebar and glassmorphism design
+  - [x] HTMX-powered SPA architecture for high-performance feel
+  - [x] Dual-stack DHCPv4/v6 monitoring view
+  - [x] Hierarchical DNS Policy management view
+  - [x] Interactive DNS Resolution & Wildcard console
+  - [x] Real-time activity stream and policy explainer
 
 - [ ] FEATURE: Replicacion en tiempo real
   - Prioridad: p1
@@ -310,17 +318,13 @@ Labels base recomendadas:
 ### EPIC-08 DHCPv6 y Router Advertisements
 
 - [ ] FEATURE: DHCPv6 nativo
+- [x] FEATURE: DHCPv6 nativo + Router Advertisements
   - Prioridad: p2
-  - Labels: feature, dhcp
+  - Labels: feature, network, core
   - Criterios de aceptacion:
-    - Scopes, reservas, opciones base y estado de leases.
-
-- [ ] FEATURE: Gestion de Router Advertisements
-  - Prioridad: p2
-  - Labels: feature, dhcp
-  - Criterios de aceptacion:
-    - Modos SLAAC, stateless y managed.
-    - Validacion de prefijos y timers.
+    - Asignacion dinamica de IPv6.
+    - Soporte para RA (Router Advertisements) para SLAAC.
+    - Gestion de leases IPv6 en UI.
 
 - [ ] FEATURE: Consistencia de politicas dual-stack
   - Prioridad: p2

@@ -47,20 +47,114 @@ func (s *DNSServer) checkAndUpdatePauseStatus() {
 	}
 }
 
-func (s *DNSServer) shouldBlockQuery(client *model.Client, domainName, fullName string) bool {
-	if client.Bypass {
-		log.Debug("Allowing client '%s' to bypass %s", client.IP, fullName)
-		return false
+func (s *DNSServer) Explain(domainName string, clientIP string) model.ExplainResult {
+	domainName = trimDomainDot(domainName)
+	client := s.getClientInfo(net.ParseIP(clientIP))
+
+	res := model.ExplainResult{
+		Domain:   domainName,
+		ClientIP: client.IP,
+		Status:   dns.RcodeToString[dns.RcodeSuccess],
 	}
 
+	if client.Bypass {
+		res.Action = "allow"
+		res.Reason = "Client is in bypass mode"
+		return res
+	}
+
+	if s.Config.DNS.Status.Paused {
+		res.Action = "allow"
+		res.Reason = "DNS blocking is paused globally"
+		return res
+	}
+
+	// 1. Check Advanced Policy Engine
+	effectivePolicy := s.GroupService.GetEffectivePolicy(client.IP, client.Mac)
+	blocked, action, policyName, pattern, isDryRun, safeSearch, category := s.PolicyService.ShouldBlockDetailed(client.IP, client.Mac, effectivePolicy.GroupIDs, domainName)
+	if action != "" {
+		res.Blocked = blocked
+		res.Action = action
+		if isDryRun {
+			res.Action = action + " (DRY RUN)"
+		}
+		if safeSearch {
+			res.Action += " + SafeSearch"
+		}
+		if category != "" {
+			res.Reason = fmt.Sprintf("Advanced Policy Engine match (category: %s)", category)
+		} else {
+			res.Reason = "Advanced Policy Engine match"
+		}
+		res.PolicyName = policyName
+		res.Matching = []string{pattern}
+		return res
+	}
+
+	// 2. Fallback to Legacy/Global
+	blockedDetail, pattern := s.BlacklistService.IsBlacklistedDetailed(domainName)
+	globalBlocked := blockedDetail
+	globalWhitelisted, whitePattern := s.WhitelistService.IsWhitelistedDetailed(domainName)
+
+	blocked, groupAction, groupPattern := s.GroupService.ShouldBlockDetailed(
+		client.IP,
+		client.Mac,
+		domainName,
+		domainName, // full domain
+		globalBlocked,
+		globalWhitelisted,
+	)
+
+	res.Blocked = blocked
+	res.Action = "allow"
+	res.Reason = groupAction
+	res.Matching = []string{groupPattern}
+
+	if blocked {
+		res.Action = "block"
+	}
+
+	if globalWhitelisted {
+		res.Matching = append(res.Matching, "Global Whitelist: "+whitePattern)
+	}
+	if globalBlocked {
+		res.Matching = append(res.Matching, "Global Blacklist: "+pattern)
+	}
+
+	return res
+}
+
+func (s *DNSServer) checkPolicyDecision(client *model.Client, domainName, fullName string) (bool, bool, string) {
+	if client.Bypass {
+		log.Debug("Allowing client '%s' to bypass %s", client.IP, fullName)
+		return false, false, ""
+	}
+
+	if s.Config.DNS.Status.Paused {
+		return false, false, ""
+	}
+
+	// 1. Check Advanced Policy Engine (EPIC-02)
+	effectivePolicy := s.GroupService.GetEffectivePolicy(client.IP, client.Mac)
+	blocked, action, policyName, isDryRun, safeSearch, category := s.PolicyService.ShouldBlock(client.IP, client.Mac, effectivePolicy.GroupIDs, domainName)
+	if action != "" {
+		if blocked {
+			if isDryRun {
+				log.Debug("[DRY RUN] Policy '%s' would %s %s for %s", policyName, action, domainName, client.IP)
+				return false, safeSearch, category
+			}
+			log.Debug("Advanced Policy Engine: '%s' blocking %s for %s (action: %s, category: %s)", policyName, domainName, client.IP, action, category)
+			return true, safeSearch, category
+		}
+		// Policy allows, but it might have SafeSearch
+		return false, safeSearch, category
+	}
+
+	// 2. Fallback to Legacy Group/Global Logic
 	globalBlocked := s.BlacklistService.IsBlacklisted(domainName)
 	globalWhitelisted := s.WhitelistService.IsWhitelisted(fullName)
 
 	if s.GroupService != nil {
-		if s.Config.DNS.Status.Paused {
-			return false
-		}
-
 		return s.GroupService.ShouldBlock(
 			client.IP,
 			client.Mac,
@@ -68,12 +162,10 @@ func (s *DNSServer) shouldBlockQuery(client *model.Client, domainName, fullName 
 			fullName,
 			globalBlocked,
 			globalWhitelisted,
-		)
+		), false, "" // Legacy doesn't support SafeSearch or カテゴリ counts here
 	}
 
-	return !s.Config.DNS.Status.Paused &&
-		globalBlocked &&
-		!globalWhitelisted
+	return globalBlocked && !globalWhitelisted, false, ""
 }
 
 func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
@@ -95,11 +187,23 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 
 	s.checkAndUpdatePauseStatus()
 
-	if s.shouldBlockQuery(request.Client, domainName, request.Question.Name) {
+	blocked, safeSearch, category := s.checkPolicyDecision(request.Client, domainName, request.Question.Name)
+
+	if blocked {
 		metrics.BlockedQueries.WithLabelValues(clientIP, domainName).Inc()
+		if category != "" {
+			metrics.CategoriesBlocked.WithLabelValues(clientIP, category).Inc()
+		}
 		metrics.DNSLatency.WithLabelValues(clientIP, "blocked").Observe(time.Since(start).Seconds())
 		entry := s.handleBlacklisted(request)
 		return s.finalizeDNSSECStatus(entry, clientIP)
+	}
+
+	if safeSearch {
+		if val, redirected := s.applySafeSearch(request); redirected {
+			metrics.DNSLatency.WithLabelValues(clientIP, "safesearch").Observe(time.Since(start).Seconds())
+			return s.finalizeDNSSECStatus(val, clientIP)
+		}
 	}
 
 	if isLocalLookup(request.Question.Name) {
@@ -799,37 +903,45 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string, strin
 			upstreamMsg.SetEdns0(1232, true)
 		}
 
-		upstream := s.Config.DNS.Upstream.Preferred
+		var in *dns.Msg
+		var err error
 
-		// Conditional forwarding: check for domain-specific upstreams
+		// Check conditional forwarders first
 		queryDomain := strings.TrimSuffix(req.Question.Name, ".")
+		isForwarded := false
 		for _, cf := range s.Config.DNS.ConditionalForwarders {
 			cfDomain := strings.TrimSuffix(cf.Domain, ".")
 			if queryDomain == cfDomain || strings.HasSuffix(queryDomain, "."+cfDomain) {
-				upstream = cf.Upstream
-				log.Debug("Conditional forwarding %s -> %s", queryDomain, upstream)
+				log.Debug("Conditional forwarding %s -> %s", queryDomain, cf.Upstream)
+				in, err = s.exchangeWithProtocol(upstreamMsg, cf.Upstream, "udp")
+				isForwarded = true
 				break
 			}
 		}
 
-		if s.dnsClient.Net == "tcp-tls" {
-			host, port, err := net.SplitHostPort(upstream)
-			if err != nil {
-				upstream = net.JoinHostPort(upstream, "853")
-			} else if port == "53" {
-				upstream = net.JoinHostPort(host, "853")
+		if !isForwarded {
+			// Iterate over enabled upstreams
+			for _, upstream := range s.Config.DNS.Upstream.Servers {
+				if !upstream.Enabled {
+					continue
+				}
+
+				log.Debug("Sending query to '%s' (%s) using %s", upstream.Name, upstream.Address, upstream.Protocol)
+				in, err = s.exchangeWithProtocol(upstreamMsg, upstream.Address, upstream.Protocol)
+				if err == nil && in != nil {
+					break
+				}
+				log.Warning("Upstream '%s' failed: %v", upstream.Name, err)
 			}
 		}
 
-		log.Debug("Sending query using '%s' as upstream", upstream)
-		in, _, err := s.dnsClient.Exchange(upstreamMsg, upstream)
 		if err != nil {
 			errCh <- err
 			return
 		}
 
 		if in == nil {
-			errCh <- fmt.Errorf("nil response from upstream")
+			errCh <- fmt.Errorf("no response from any upstream")
 			return
 		}
 
@@ -1017,5 +1129,78 @@ func (s *DNSServer) handleBlacklisted(request *Request) model.RequestLogEntry {
 		Cached:            false,
 		ClientInfo:        request.Client,
 		Protocol:          request.Protocol,
+	}
+}
+
+func (s *DNSServer) applySafeSearch(request *Request) (model.RequestLogEntry, bool) {
+	domain := strings.ToLower(trimDomainDot(request.Question.Name))
+	qType := request.Question.Qtype
+
+	if qType != dns.TypeA && qType != dns.TypeAAAA {
+		return model.RequestLogEntry{}, false
+	}
+
+	var targetIP string
+
+	if strings.Contains(domain, "google.") {
+		targetIP = "216.239.38.120"
+	} else if strings.Contains(domain, "youtube.") || strings.HasSuffix(domain, "youtubei.googleapis.com") || strings.HasSuffix(domain, "youtube.googleapis.com") {
+		targetIP = "216.239.38.119"
+	} else if strings.Contains(domain, "bing.com") {
+		targetIP = "204.79.197.220"
+	} else if strings.Contains(domain, "duckduckgo.com") {
+		targetIP = "52.142.124.215"
+	}
+
+	if targetIP == "" {
+		return model.RequestLogEntry{}, false
+	}
+
+	if qType == dns.TypeAAAA {
+		if strings.Contains(domain, "google.") || strings.Contains(domain, "youtube.") {
+			targetIP = "2001:4860:4802:32::78"
+		} else {
+			return s.respondWithNoData(request), true
+		}
+	}
+
+	request.Msg.Response = true
+	request.Msg.Rcode = dns.RcodeSuccess
+	
+	hdr := dns.RR_Header{Name: request.Question.Name, Rrtype: qType, Class: dns.ClassINET, Ttl: 60}
+	var rr dns.RR
+	if qType == dns.TypeA {
+		rr = &dns.A{Hdr: hdr, A: net.ParseIP(targetIP)}
+	} else {
+		rr = &dns.AAAA{Hdr: hdr, AAAA: net.ParseIP(targetIP)}
+	}
+	
+	request.Msg.Answer = []dns.RR{rr}
+	_ = request.ResponseWriter.WriteMsg(request.Msg)
+
+	return model.RequestLogEntry{
+		Domain:            request.Question.Name,
+		Status:            dns.RcodeToString[dns.RcodeSuccess],
+		QueryType:         dns.TypeToString[qType],
+		IP:                []model.ResolvedIP{{IP: targetIP, RType: dns.TypeToString[qType]}},
+		ResponseSizeBytes: request.Msg.Len(),
+		Timestamp:         request.Sent,
+		ResponseTime:      time.Since(request.Sent),
+		Blocked:           false,
+		ClientInfo:        request.Client,
+		Protocol:          request.Protocol,
+	}, true
+}
+
+func (s *DNSServer) respondWithNoData(request *Request) model.RequestLogEntry {
+	request.Msg.Response = true
+	request.Msg.Rcode = dns.RcodeSuccess
+	_ = request.ResponseWriter.WriteMsg(request.Msg)
+	return model.RequestLogEntry{
+		Domain:    request.Question.Name,
+		Status:    dns.RcodeToString[dns.RcodeSuccess],
+		QueryType: dns.TypeToString[request.Question.Qtype],
+		Timestamp: request.Sent,
+		ClientInfo: request.Client,
 	}
 }

@@ -3,177 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoAway - Native Dashboard</title>
+    <title>GoAway - Premium DNS Dashboard</title>
     <script src="https://unpkg.com/htmx.org@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0c0a09; color: #fafaf9; }
-        .glass { background: rgba(28, 25, 23, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(63, 63, 70, 0.4); }
-        .stat-card { transition: transform 0.2s; }
-        .stat-card:hover { transform: translateY(-2px); border-color: rgba(59, 130, 246, 0.5); }
-        .input-dark { background: rgba(38, 38, 38, 0.5); border: 1px solid rgba(63, 63, 70, 0.5); color: white; border-radius: 0.5rem; padding: 0.5rem 0.75rem; width: 100%; outline: none; }
-        .input-dark:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        :root {
+            --bg-dark: #09090b;
+            --card-bg: rgba(24, 24, 27, 0.4);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --glass-border: rgba(63, 63, 70, 0.4);
+        }
+        body { 
+            background-color: var(--bg-dark); 
+            color: #fafaf9; 
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+        }
+        .glass { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(16px); 
+            border: 1px solid var(--glass-border); 
+        }
+        .sidebar-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
+        }
+        .sidebar-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid var(--accent-blue);
+            color: white;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+        
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
     </style>
 </head>
-<body class="p-8 font-sans" hx-boost="true">
-    <div class="max-w-6xl mx-auto space-y-8">
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <h1 class="text-4xl font-black bg-gradient-to-r from-white to-stone-500 bg-clip-text text-transparent">
-                    GoAway Native
-                    <span class="text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full ml-3 align-middle uppercase tracking-widest">HTMX Dashboard</span>
-                </h1>
-                <p class="text-stone-400 mt-2 font-medium">Running with zero NodeJS dependencies. Blazing fast SSR.</p>
-            </div>
+<body class="flex h-screen w-full" hx-boost="true">
+    <!-- Sidebar -->
+    <aside class="w-64 glass border-r border-stone-800 flex flex-col shrink-0 z-20">
+        <div class="p-8">
             <div class="flex items-center gap-3">
-                <div hx-get="/api/native/cache/status" hx-trigger="load" hx-swap="outerHTML">
-                    <button class="glass px-4 py-2 rounded-lg text-xs font-bold animate-pulse">Checking Cache...</button>
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+                    <i data-lucide="shield" class="text-white w-6 h-6"></i>
                 </div>
-                <a href="/" class="glass px-4 py-2 rounded-lg text-sm font-semibold hover:bg-stone-800 transition-colors">Switch to React UI</a>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight text-white leading-tight">GoAway</h1>
+                    <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Enterprise DNS</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <button hx-get="/api/native/view/overview" hx-target="#main-content" 
+                    class="sidebar-item active w-full flex items-center gap-4 px-4 py-3 rounded-xl text-stone-400 font-semibold group">
+                <i data-lucide="layout-dashboard" class="w-5 h-5 group-hover:text-blue-400 transition-colors"></i>
+                <span>Dashboard</span>
+            </button>
+            <button hx-get="/api/native/view/dns" hx-target="#main-content" 
+                    class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-stone-400 font-semibold group">
+                <i data-lucide="globe" class="w-5 h-5 group-hover:text-blue-400 transition-colors"></i>
+                <span>DNS Mgmt</span>
+            </button>
+            <button hx-get="/api/native/view/dhcp" hx-target="#main-content" 
+                    class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-stone-400 font-semibold group">
+                <i data-lucide="cpu" class="w-5 h-5 group-hover:text-blue-400 transition-colors"></i>
+                <span>DHCP Leases</span>
+            </button>
+            <button hx-get="/api/native/view/policies" hx-target="#main-content" 
+                    class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-stone-400 font-semibold group">
+                <i data-lucide="lock" class="w-5 h-5 group-hover:text-blue-400 transition-colors"></i>
+                <span>Policies</span>
+            </button>
+            <div class="pt-8 pb-4 px-4">
+                <p class="text-[10px] font-black text-stone-600 uppercase tracking-widest">Configuration</p>
+            </div>
+            <button hx-get="/api/native/view/settings" hx-target="#main-content" 
+                    class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-stone-400 font-semibold group">
+                <i data-lucide="settings" class="w-5 h-5 group-hover:text-blue-400 transition-colors"></i>
+                <span>Settings</span>
+            </button>
+        </nav>
+
+        <div class="p-6">
+            <div class="glass p-4 rounded-2xl border-stone-800 bg-blue-500/5">
+                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-tighter mb-1">System Health</p>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-stone-300">Secure & Online</span>
+                    <span class="w-2 h-2 bg-green-500 rounded-full shadow-lg shadow-green-500/40"></span>
+                </div>
+                <div class="w-full bg-stone-800 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-blue-600 h-full w-[85%] rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 bg-stone-950/20">
+        <!-- Top Bar -->
+        <header class="h-20 shrink-0 border-b border-stone-800 flex items-center justify-between px-10 glass z-10">
+            <div class="flex items-center gap-6">
+                <h2 id="page-title" class="text-xl font-bold text-white">Network Overview</h2>
+                <div class="h-6 w-px bg-stone-800"></div>
+                <div id="cache-indicator" hx-get="/api/native/cache/status" hx-trigger="load" hx-swap="outerHTML"></div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="glass p-2.5 rounded-xl text-stone-400 hover:text-white transition-colors">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                </button>
+                <a href="/" class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all border border-stone-800">
+                    Switch to React
+                </a>
             </div>
         </header>
 
-        <!-- Navigation Placeholder -->
-        <nav class="flex gap-1 bg-stone-900/50 p-1 rounded-xl w-fit border border-stone-800">
-            <button class="px-6 py-2 rounded-lg text-sm font-bold bg-stone-800 text-white shadow-lg">Overview</button>
-            <button class="px-6 py-2 rounded-lg text-sm font-medium text-stone-400 hover:text-white hover:bg-stone-800 transition-all">Clients</button>
-            <button class="px-6 py-2 rounded-lg text-sm font-medium text-stone-400 hover:text-white hover:bg-stone-800 transition-all">Settings</button>
-        </nav>
-
-        <!-- Stats Grid -->
-        <div id="stats-container" 
-             hx-get="/api/native/stats" 
-             hx-trigger="load, every 5s" 
-             hx-swap="innerHTML"
-             class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="glass p-6 rounded-2xl animate-pulse h-32"></div>
-            <div class="glass p-6 rounded-2xl animate-pulse h-32"></div>
-            <div class="glass p-6 rounded-2xl animate-pulse h-32"></div>
-            <div class="glass p-6 rounded-2xl animate-pulse h-32"></div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Resolutions Management -->
-            <div class="lg:col-span-2 space-y-6">
-                <div class="glass rounded-2xl overflow-hidden shadow-2xl border-stone-800">
-                    <div class="px-6 py-5 border-b border-stone-800 bg-stone-900/30">
-                        <h3 class="font-bold text-lg text-white">DNS Resolutions</h3>
-                        <p class="text-xs text-stone-500 mt-1">Map custom domains to internal addresses</p>
-                    </div>
-                    
-                    <!-- Add Resolution Form -->
-                    <div class="p-6 bg-stone-900/20 border-b border-stone-800">
-                        <form hx-post="/api/native/resolutions" 
-                              hx-swap="none" 
-                              hx-on::after-request="this.reset()"
-                              class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black uppercase text-stone-500 tracking-widest pl-1">Domain</label>
-                                <input type="text" name="domain" placeholder="example.local." class="input-dark text-sm" required>
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black uppercase text-stone-500 tracking-widest pl-1">Target Value</label>
-                                <input type="text" name="value" placeholder="192.168.1.100" class="input-dark text-sm" required>
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black uppercase text-stone-500 tracking-widest pl-1">Type</label>
-                                <select name="type" class="input-dark text-sm">
-                                    <option value="A">A</option>
-                                    <option value="AAAA">AAAA</option>
-                                    <option value="CNAME">CNAME</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm h-10">
-                                Add Record
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm border-collapse">
-                            <thead class="bg-stone-900/50 text-stone-500 uppercase text-[10px] font-black tracking-[0.2em]">
-                                <tr>
-                                    <th class="px-6 py-4">Domain</th>
-                                    <th class="px-6 py-4">Target</th>
-                                    <th class="px-6 py-4">Type</th>
-                                    <th class="px-6 py-4 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resolutions-list" 
-                                   hx-get="/api/native/resolutions" 
-                                   hx-trigger="load, refreshResolutions from:body" 
-                                   hx-swap="innerHTML">
-                                <tr><td colspan="4" class="p-10 text-center animate-pulse text-stone-600 uppercase text-xs font-black tracking-widest">Loading records...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Discovered Clients -->
-                <div class="glass rounded-2xl overflow-hidden shadow-2xl border-stone-800">
-                    <div class="px-6 py-5 border-b border-stone-800 bg-stone-900/30">
-                        <h3 class="font-bold text-lg text-white">Discovered Clients</h3>
-                        <p class="text-xs text-stone-500 mt-1">Local devices found via ARP scanning</p>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm border-collapse">
-                            <thead class="bg-stone-900/50 text-stone-500 uppercase text-[10px] font-black tracking-[0.2em]">
-                                <tr>
-                                    <th class="px-6 py-4">IP Address</th>
-                                    <th class="px-6 py-4">MAC Address</th>
-                                    <th class="px-6 py-4 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody hx-get="/api/native/clients" 
-                                   hx-trigger="load, every 60s" 
-                                   hx-swap="innerHTML">
-                                <tr><td colspan="3" class="p-10 text-center animate-pulse text-stone-600 uppercase text-xs font-black tracking-widest">Scanning network...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Live Traffic Sidebar -->
-            <div class="lg:col-span-1">
-                <div class="glass rounded-2xl overflow-hidden shadow-2xl border-stone-800 flex flex-col h-[600px]">
-                    <div class="px-6 py-5 border-b border-stone-800 bg-stone-900/30 flex justify-between items-center shrink-0">
-                        <div>
-                            <h3 class="font-bold text-lg text-white">Live Stream</h3>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 bg-green-500 rounded-full animate-blink"></span>
-                        </div>
-                    </div>
-                    <div class="overflow-y-auto flex-1 custom-scrollbar">
-                        <table class="w-full text-left text-[11px] border-collapse">
-                            <tbody id="live-logs" 
-                                   hx-get="/api/native/logs" 
-                                   hx-trigger="every 3s" 
-                                   hx-swap="afterbegin">
-                                <!-- Content streamed here -->
-                            </tbody>
-                        </table>
-                    </div>
+        <!-- Dynamic Content Area -->
+        <div id="main-content" 
+             hx-get="/api/native/view/overview" 
+             hx-trigger="load"
+             class="flex-1 overflow-y-auto p-10 custom-scrollbar">
+            <!-- Partials rendered here -->
+            <div class="flex items-center justify-center h-full">
+                <div class="flex flex-col items-center gap-4">
+                    <div class="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p class="text-stone-500 font-bold uppercase tracking-widest text-xs">Initializing Dashboard...</p>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <footer class="mt-16 text-center text-stone-600 text-xs font-medium uppercase tracking-widest py-8">
-        GoAway &copy; 2024 • Powered by HTMX & Go
-    </footer>
+    <script>
+        // Lucide icons initialization
+        lucide.createIcons();
 
-    <style>
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        .animate-blink { animation: blink 1.5s infinite; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #262626; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #404040; }
-    </style>
+        // Handle sidebar active states
+        document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+            if (evt.detail.target.id === 'main-content') {
+                lucide.createIcons();
+                // Update active state in sidebar
+                document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+                const trigger = evt.detail.elt;
+                if (trigger.classList.contains('sidebar-item')) {
+                    trigger.classList.add('active');
+                }
+            }
+        });
+    </script>
 </body>
 </html>

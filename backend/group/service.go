@@ -322,6 +322,11 @@ func (s *Service) GetAssignmentsByIdentifier(identifier, identifierType string) 
 }
 
 func (s *Service) ShouldBlock(ip, mac, domainName, fullDomain string, globalBlocked, globalWhitelisted bool) bool {
+	blocked, _, _ := s.ShouldBlockDetailed(ip, mac, domainName, fullDomain, globalBlocked, globalWhitelisted)
+	return blocked
+}
+
+func (s *Service) ShouldBlockDetailed(ip, mac, domainName, fullDomain string, globalBlocked, globalWhitelisted bool) (bool, string, string) {
 	groupIDs := s.getGroupIDsForClient(ip, mac)
 	domainName = normalizeDomain(domainName)
 	fullDomain = normalizeDomain(fullDomain)
@@ -330,7 +335,9 @@ func (s *Service) ShouldBlock(ip, mac, domainName, fullDomain string, globalBloc
 	defer s.cacheMu.RUnlock()
 
 	groupBlocked := false
+	groupBlockedReason := ""
 	groupAllowed := false
+	groupAllowedReason := ""
 	globalEnabledByGroup := false
 
 	for _, groupID := range groupIDs {
@@ -343,22 +350,38 @@ func (s *Service) ShouldBlock(ip, mac, domainName, fullDomain string, globalBloc
 			globalEnabledByGroup = true
 		}
 
-		if matcher, ok := s.blockedByGroup[groupID]; ok && matcher.Match(domainName) {
-			groupBlocked = true
+		if matcher, ok := s.blockedByGroup[groupID]; ok {
+			if matched, pattern := matcher.MatchDetailed(domainName); matched {
+				groupBlocked = true
+				groupBlockedReason = fmt.Sprintf("Group: %s, List: Blocked domains, Pattern: %s", group.Name, pattern)
+			}
 		}
 
-		if matcher, ok := s.allowedByGroup[groupID]; ok && (matcher.Match(domainName) || matcher.Match(fullDomain)) {
-			groupAllowed = true
+		if matcher, ok := s.allowedByGroup[groupID]; ok {
+			if matched, pattern := matcher.MatchDetailed(domainName); matched {
+				groupAllowed = true
+				groupAllowedReason = fmt.Sprintf("Group: %s, List: Allowed domains, Pattern: %s", group.Name, pattern)
+			} else if matched, pattern := matcher.MatchDetailed(fullDomain); matched {
+				groupAllowed = true
+				groupAllowedReason = fmt.Sprintf("Group: %s, List: Allowed domains (full), Pattern: %s", group.Name, pattern)
+			}
 		}
 	}
 
-	if globalWhitelisted || groupAllowed {
-		return false
+	if globalWhitelisted {
+		return false, "Global Whitelist", fullDomain
+	}
+	if groupAllowed {
+		return false, "Group Allowed", groupAllowedReason
 	}
 
-	if (globalEnabledByGroup && globalBlocked) || groupBlocked {
-		return true
+	if groupBlocked {
+		return true, "Group Blocked", groupBlockedReason
 	}
 
-	return false
+	if globalEnabledByGroup && globalBlocked {
+		return true, "Global Blacklist", domainName
+	}
+
+	return false, "", ""
 }

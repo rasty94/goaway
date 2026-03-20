@@ -10,6 +10,7 @@ import (
 	"goaway/backend/group"
 	"goaway/backend/logging"
 	"goaway/backend/notification"
+	"goaway/backend/policy"
 	"goaway/backend/prefetch"
 	"goaway/backend/request"
 	"goaway/backend/resolution"
@@ -52,6 +53,7 @@ type ServiceRegistry struct {
 	BlacklistService    *blacklist.Service
 	DHCPService         *dhcp.Service
 	GroupService        *group.Service
+	PolicyService       *policy.Service
 	WhitelistService    *whitelist.Service
 }
 
@@ -149,6 +151,7 @@ func (r *ServiceRegistry) setupAPIServer() {
 		DHCPService:         r.DHCPService,
 		BlacklistService:    r.BlacklistService,
 		GroupService:        r.GroupService,
+		PolicyService:       r.PolicyService,
 		WhitelistService:    r.WhitelistService,
 	}
 

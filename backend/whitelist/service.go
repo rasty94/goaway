@@ -60,5 +60,10 @@ func (s *Service) RemoveDomain(d string) error {
 }
 
 func (s *Service) IsWhitelisted(d string) bool {
-	return s.Matcher.Match(d)
+	whitelisted, _ := s.IsWhitelistedDetailed(d)
+	return whitelisted
+}
+
+func (s *Service) IsWhitelistedDetailed(d string) (bool, string) {
+	return s.Matcher.MatchDetailed(d)
 }

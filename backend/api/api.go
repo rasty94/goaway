@@ -17,6 +17,7 @@ import (
 	"goaway/backend/notification"
 	"goaway/backend/sync"
 
+	"goaway/backend/policy"
 	"goaway/backend/prefetch"
 	"goaway/backend/request"
 	"goaway/backend/resolution"
@@ -82,6 +83,7 @@ type API struct {
 	BlacklistService    *blacklist.Service
 	DHCPService         *dhcp.Service
 	GroupService        *group.Service
+	PolicyService       *policy.Service
 	WhitelistService    *whitelist.Service
 	ReplicaSyncManager  *sync.ReplicaSyncManager
 

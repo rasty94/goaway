@@ -1,0 +1,93 @@
+<div id="dns-view" class="space-y-10 animate-fade-in">
+    <!-- Header -->
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-4xl font-black text-white tracking-tight">DNS Management</h2>
+            <p class="text-stone-500 font-medium mt-1">Local resolution and wildcard overrides.</p>
+        </div>
+        <div class="flex gap-4">
+            <button class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-8 rounded-2xl transition-all shadow-xl shadow-blue-600/20 text-xs uppercase tracking-widest">
+                Import CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Record Form (Global for both tables) -->
+    <div class="glass rounded-[2.5rem] p-10 border-stone-800 shadow-2xl relative overflow-hidden">
+        <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        <h3 class="text-lg font-bold text-white uppercase tracking-tight mb-8">Add New Record</h3>
+        <form hx-post="/api/native/resolutions" 
+              hx-swap="none" 
+              hx-on::after-request="this.reset()"
+              class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div class="space-y-3">
+                <label class="text-[10px] font-black uppercase text-stone-500 tracking-widest pl-1">Domain Name</label>
+                <input type="text" name="domain" placeholder="nas.local." class="w-full bg-stone-900/40 border border-stone-800/80 rounded-2xl px-5 py-4 focus:border-blue-500/50 outline-none transition-all text-sm font-medium text-white shadow-inner" required>
+            </div>
+            <div class="space-y-3">
+                <label class="text-[10px] font-black uppercase text-stone-500 tracking-widest pl-1">Target IP / Value</label>
+                <input type="text" name="value" placeholder="192.168.1.10" class="w-full bg-stone-900/40 border border-stone-800/80 rounded-2xl px-5 py-4 focus:border-blue-500/50 outline-none transition-all text-sm font-medium text-white shadow-inner" required>
+            </div>
+            <div class="space-y-3">
+                <label class="text-[10px] font-black uppercase text-stone-500 tracking-widest pl-1">Record Type</label>
+                <select name="type" class="w-full bg-stone-900/40 border border-stone-800/80 rounded-2xl px-5 py-4 focus:border-blue-500/50 outline-none transition-all text-sm font-black uppercase text-white shadow-inner appearance-none cursor-pointer">
+                    <option value="A">A Record</option>
+                    <option value="AAAA">AAAA (IPv6)</option>
+                    <option value="CNAME">CNAME Alias</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-xl shadow-blue-600/20 text-xs uppercase tracking-widest h-[54px] flex items-center justify-center gap-2 group">
+                Add Record <i data-lucide="plus" class="w-4 h-4 group-hover:scale-125 transition-transform"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <!-- Resolutions List -->
+        <div class="glass rounded-[2.5rem] border-stone-800 overflow-hidden shadow-2xl">
+            <div class="px-10 py-8 border-b border-stone-800 bg-stone-900/10">
+                <h3 class="text-xl font-bold text-white tracking-tight mb-1">Standard Records</h3>
+                <p class="text-[10px] font-black text-stone-600 uppercase tracking-widest">Static Host Overrides</p>
+            </div>
+            <div class="overflow-x-auto min-h-[400px]">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead class="bg-stone-900/30 text-stone-600 uppercase text-[10px] font-black tracking-[0.2em] h-12">
+                        <tr>
+                            <th class="px-10 py-4">Domain</th>
+                            <th class="px-10 py-4">Target IP</th>
+                            <th class="px-10 py-4">Type</th>
+                            <th class="px-10 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody hx-get="/api/native/resolutions" hx-trigger="load, refreshResolutions from:body" hx-swap="innerHTML">
+                        <tr><td colspan="4" class="p-10 text-center text-stone-700 uppercase text-[10px] font-black tracking-widest animate-pulse">Syncing DNS Records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Wildcard List -->
+        <div class="glass rounded-[2.5rem] border-stone-800 overflow-hidden shadow-2xl">
+            <div class="px-10 py-8 border-b border-stone-800 bg-stone-900/10 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight leading-none mb-1">Wildcard Overrides</h3>
+                    <p class="text-[10px] font-black text-stone-600 uppercase tracking-widest">Global domain pattern blocking</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto min-h-[400px]">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead class="bg-stone-900/30 text-stone-600 uppercase text-[10px] font-black tracking-[0.2em] h-12">
+                        <tr>
+                            <th class="px-10 py-4">Pattern</th>
+                            <th class="px-10 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody hx-get="/api/native/wildcards" hx-trigger="load, refreshWildcards from:body" hx-swap="innerHTML">
+                        <tr><td colspan="2" class="p-10 text-center text-stone-700 uppercase text-[10px] font-black tracking-widest animate-pulse">Scanning Wildcards...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>lucide.createIcons();</script>
+</div>

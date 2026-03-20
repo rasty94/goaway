@@ -35,6 +35,7 @@ type DomainRepository interface {
 	DeleteDomain(ctx context.Context, domain string) error
 	DeleteDomainsBySourceID(ctx context.Context, sourceID uint) error
 	DeleteCustomDomain(ctx context.Context, domain string, sourceID uint) error
+	GetDomainsWithCategory(ctx context.Context) (map[string][]string, error)
 }
 
 type StatsRepository interface {
@@ -318,11 +319,28 @@ func (r *repository) DeleteCustomDomain(ctx context.Context, domain string, sour
 		return fmt.Errorf("failed to delete domain '%s': %w", domain, result.Error)
 	}
 
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("domain '%s' not found in custom blacklist", domain)
+	return nil
+}
+
+func (r *repository) GetDomainsWithCategory(ctx context.Context) (map[string][]string, error) {
+	var rowResults []struct {
+		Domain   string
+		Category string
+	}
+	err := r.db.WithContext(ctx).Table("blacklists").
+		Select("blacklists.domain, sources.category").
+		Joins("JOIN sources ON blacklists.source_id = sources.id").
+		Where("sources.category IS NOT NULL AND sources.category != ''").
+		Scan(&rowResults).Error
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	res := make(map[string][]string)
+	for _, row := range rowResults {
+		res[row.Category] = append(res[row.Category], row.Domain)
+	}
+	return res, nil
 }
 
 func (r *repository) GetAllSourceStats(ctx context.Context) ([]SourceWithCount, error) {

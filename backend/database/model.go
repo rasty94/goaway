@@ -8,6 +8,7 @@ type Source struct {
 	ID          uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	Name        string    `json:"name" validate:"required"`
 	URL         string    `gorm:"unique;not null" json:"url" validate:"required,url"`
+	Category    string    `gorm:"type:varchar(64)" json:"category"`
 	Active      bool      `gorm:"default:true" json:"active"`
 	LastUpdated time.Time `gorm:"not null" json:"lastUpdated"`
 	CreatedAt   time.Time `json:"createdAt"`
@@ -174,3 +175,64 @@ type ActiveDHCPLease struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+type StaticDHCPv6Lease struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	DUID      string    `gorm:"not null;uniqueIndex" json:"duid" validate:"required"`
+	IP        string    `gorm:"not null;uniqueIndex" json:"ip" validate:"required,ip"`
+	Hostname  string    `gorm:"type:varchar(255)" json:"hostname"`
+	Enabled   bool      `gorm:"default:true" json:"enabled"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type ActiveDHCPv6Lease struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	DUID      string    `gorm:"not null;index" json:"duid" validate:"required"`
+	IAID      uint32    `gorm:"not null" json:"iaid"`
+	IP        string    `gorm:"not null;uniqueIndex" json:"ip" validate:"required,ip"`
+	Hostname  string    `gorm:"type:varchar(255)" json:"hostname"`
+	ExpiresAt time.Time `gorm:"index" json:"expiresAt"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type Policy struct {
+	ID          uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name        string    `gorm:"uniqueIndex;not null" json:"name" validate:"required"`
+	Description string    `json:"description"`
+	Enabled     bool      `gorm:"default:true" json:"enabled"`
+	IsDryRun    bool      `gorm:"default:false" json:"isDryRun"`
+	SafeSearch  bool      `gorm:"default:false" json:"safeSearch"`
+	Priority    int       `gorm:"default:0" json:"priority"`
+	Action      string    `gorm:"type:varchar(20);default:'block'" json:"action" validate:"required,oneof=allow block nxdomain null"`
+	ScheduleID  *uint     `json:"scheduleID"`
+	Schedule    *Schedule `gorm:"foreignKey:ScheduleID" json:"schedule"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type Schedule struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name      string    `gorm:"uniqueIndex;not null" json:"name" validate:"required"`
+	Days      string    `json:"days"`      // comma separated: "mon,tue,wed,thu,fri,sat,sun"
+	StartTime string    `json:"startTime"` // e.g., "08:00"
+	EndTime   string    `json:"endTime"`   // e.g., "17:00"
+	TimeZone  string    `gorm:"default:'Local'" json:"timeZone"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type PolicyAssignment struct {
+	ID             uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	PolicyID       uint      `gorm:"not null;index" json:"policyID"`
+	Policy         Policy    `gorm:"foreignKey:PolicyID;constraint:OnDelete:CASCADE" json:"policy"`
+	Identifier     string    `gorm:"type:varchar(255);not null;index" json:"identifier"`
+	IdentifierType string    `gorm:"type:varchar(16);not null" json:"identifierType"` // ip, mac, group, cidr
+	CreatedAt      time.Time `json:"createdAt"`
+}
+
+type PolicyCategory struct {
+	ID       uint   `gorm:"primaryKey;autoIncrement" json:"id"`
+	PolicyID uint   `gorm:"not null;index" json:"policyID"`
+	Category string `gorm:"type:varchar(64);not null" json:"category"` // ads, trackers, malware, adult, gambling, social
+}

@@ -53,5 +53,12 @@ func AutoMigrate(db *gorm.DB) error {
 		&GroupBlockedDomain{},
 		&GroupAllowedDomain{},
 		&StaticDHCPLease{},
+		&ActiveDHCPLease{},
+		&StaticDHCPv6Lease{},
+		&ActiveDHCPv6Lease{},
+		&Policy{},
+		&Schedule{},
+		&PolicyAssignment{},
+		&PolicyCategory{},
 	)
 }

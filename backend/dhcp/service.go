@@ -1,6 +1,7 @@
 package dhcp
 
 import (
+	"encoding/binary"
 	"fmt"
 	"goaway/backend/database"
 	"goaway/backend/logging"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/insomniacslk/dhcp/dhcpv4"
+	"github.com/insomniacslk/dhcp/dhcpv6"
 )
 
 var log = logging.GetLogger()
@@ -23,6 +25,7 @@ type Service struct {
 	mu        sync.Mutex
 	running   bool
 	listeners []net.PacketConn
+	ra        *RouterAdvertiser
 }
 
 func NewService(repo Repository, cfg *settings.Config) *Service {
@@ -40,7 +43,7 @@ func (s *Service) Start() error {
 		return nil
 	}
 
-	listeners := make([]net.PacketConn, 0, 2)
+	s.listeners = nil
 
 	if s.config.DHCP.IPv4Enabled {
 		addr := net.JoinHostPort(s.config.DHCP.Address, strconv.Itoa(s.config.DHCP.Ports.IPv4))
@@ -48,33 +51,37 @@ func (s *Service) Start() error {
 		if err != nil {
 			return fmt.Errorf("failed to start DHCPv4 listener on %s: %w", addr, err)
 		}
-		listeners = append(listeners, conn)
+		s.listeners = append(s.listeners, conn)
+		go s.serveLoopv4(conn)
 	}
 
 	if s.config.DHCP.IPv6Enabled {
+		// DHCPv6 listens on [::]:547
 		addr := net.JoinHostPort("::", strconv.Itoa(s.config.DHCP.Ports.IPv6))
 		conn, err := net.ListenPacket("udp6", addr)
 		if err != nil {
-			for _, c := range listeners {
-				_ = c.Close()
-			}
+			s.Stop()
 			return fmt.Errorf("failed to start DHCPv6 listener on %s: %w", addr, err)
 		}
-		listeners = append(listeners, conn)
+		s.listeners = append(s.listeners, conn)
+		go s.serveLoopv6(conn)
+
+		// Start Router Advertisements
+		_, prefix, _ := net.ParseCIDR(s.config.DHCP.RangeStartV6 + "/64") // Simplified prefix derivation
+		if prefix != nil {
+			s.ra = NewRouterAdvertiser(s.config.DHCP.Interface, *prefix, s.getDNSServersv6())
+			if err := s.ra.Start(); err != nil {
+				log.Warning("Failed to start Router Advertisement service: %v", err)
+			}
+		}
 	}
 
-	if len(listeners) == 0 {
+	if len(s.listeners) == 0 {
 		return fmt.Errorf("dhcp is enabled but no protocol listener is configured")
 	}
 
-	s.listeners = listeners
 	s.running = true
-
-	for _, conn := range listeners {
-		go s.serveLoop(conn)
-	}
-
-	log.Info("DHCP service started with %d listener(s)", len(listeners))
+	log.Info("DHCP service started with %d listener(s)", len(s.listeners))
 	return nil
 }
 
@@ -86,6 +93,10 @@ func (s *Service) Stop() {
 		_ = conn.Close()
 	}
 	s.listeners = nil
+	if s.ra != nil {
+		s.ra.Stop()
+		s.ra = nil
+	}
 	s.running = false
 }
 
@@ -100,7 +111,7 @@ func (s *Service) IsRunning() bool {
 	return s.running
 }
 
-func (s *Service) serveLoop(conn net.PacketConn) {
+func (s *Service) serveLoopv4(conn net.PacketConn) {
 	buf := make([]byte, 2048)
 	for {
 		_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
@@ -118,7 +129,6 @@ func (s *Service) serveLoop(conn net.PacketConn) {
 			return
 		}
 
-		// Full DHCP offer/ack packet processing
 		packet, err := dhcpv4.FromBytes(buf[:n])
 		if err != nil {
 			log.Debug("Failed to parse DHCPv4 packet: %v", err)
@@ -126,6 +136,34 @@ func (s *Service) serveLoop(conn net.PacketConn) {
 		}
 
 		go s.handleIPv4(conn, addr, packet)
+	}
+}
+
+func (s *Service) serveLoopv6(conn net.PacketConn) {
+	buf := make([]byte, 2048)
+	for {
+		_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+		n, addr, err := conn.ReadFrom(buf)
+		if err != nil {
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				s.mu.Lock()
+				running := s.running
+				s.mu.Unlock()
+				if !running {
+					return
+				}
+				continue
+			}
+			return
+		}
+
+		packet, err := dhcpv6.FromBytes(buf[:n])
+		if err != nil {
+			log.Debug("Failed to parse DHCPv6 packet: %v", err)
+			continue
+		}
+
+		go s.handleIPv6(conn, addr, packet)
 	}
 }
 
@@ -166,6 +204,215 @@ func (s *Service) handleIPv4(conn net.PacketConn, addr net.Addr, packet *dhcpv4.
 			log.Error("Failed to send DHCPv4 reply: %v", err)
 		}
 	}
+}
+
+func (s *Service) handleIPv6(conn net.PacketConn, addr net.Addr, packet dhcpv6.DHCPv6) {
+	msg, err := packet.GetInnerMessage()
+	if err != nil {
+		log.Debug("Failed to get inner DHCPv6 message: %v", err)
+		return
+	}
+
+	log.Debug("Received DHCPv6 %s from %s", msg.Type(), addr.String())
+
+	var reply dhcpv6.DHCPv6
+
+	switch msg.Type() {
+	case dhcpv6.MessageTypeSolicit:
+		reply, err = s.handleSolicit(msg)
+	case dhcpv6.MessageTypeRequest, dhcpv6.MessageTypeRenew, dhcpv6.MessageTypeRebind:
+		reply, err = s.handleRequestv6(msg)
+	case dhcpv6.MessageTypeRelease:
+		// Not implemented yet
+		return
+	default:
+		log.Debug("Unsupported DHCPv6 message type: %s", msg.Type())
+		return
+	}
+
+	if err != nil {
+		log.Error("DHCPv6 error handling %s: %v", msg.Type(), err)
+		return
+	}
+
+	if reply != nil {
+		if _, err := conn.WriteTo(reply.ToBytes(), addr); err != nil {
+			log.Error("Failed to send DHCPv6 reply: %v", err)
+		}
+	}
+}
+
+func (s *Service) handleSolicit(msg *dhcpv6.Message) (dhcpv6.DHCPv6, error) {
+	opt := msg.Options.GetOne(dhcpv6.OptionClientID)
+	if opt == nil {
+		return nil, fmt.Errorf("solicit missing client ID")
+	}
+
+	ianaOpt := msg.Options.OneIANA()
+	if ianaOpt == nil {
+		return nil, fmt.Errorf("solicit missing IA_NA")
+	}
+
+	iaid := binary.BigEndian.Uint32(ianaOpt.IaId[:])
+	ip, err := s.allocateIP6(opt.String(), iaid, "")
+	if err != nil {
+		return nil, err
+	}
+
+	reply, err := dhcpv6.NewAdvertiseFromSolicit(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add IA_NA with assigned IP
+	newIANA := &dhcpv6.OptIANA{
+		IaId: ianaOpt.IaId,
+		Options: dhcpv6.IdentityOptions{
+			Options: dhcpv6.Options{
+				&dhcpv6.OptIAAddress{
+					IPv6Addr:          ip,
+					PreferredLifetime: 3600,
+					ValidLifetime:     7200,
+				},
+			},
+		},
+	}
+	reply.AddOption(newIANA)
+
+	// Add DNS Servers
+	dnsIps := s.getDNSServersv6()
+	if len(dnsIps) > 0 {
+		reply.AddOption(dhcpv6.OptDNS(dnsIps...))
+	}
+
+	return reply, nil
+}
+
+func (s *Service) handleRequestv6(msg *dhcpv6.Message) (dhcpv6.DHCPv6, error) {
+	opt := msg.Options.GetOne(dhcpv6.OptionClientID)
+	if opt == nil {
+		return nil, fmt.Errorf("request missing client ID")
+	}
+
+	ianaOpt := msg.Options.OneIANA()
+	if ianaOpt == nil {
+		return nil, fmt.Errorf("request missing IA_NA")
+	}
+
+	// Expecting address inside IA_NA
+	var requestedIP net.IP
+	for _, opt := range ianaOpt.Options.Options {
+		if addrOpt, ok := opt.(*dhcpv6.OptIAAddress); ok {
+			requestedIP = addrOpt.IPv6Addr
+			break
+		}
+	}
+
+	iaid := binary.BigEndian.Uint32(ianaOpt.IaId[:])
+	if requestedIP == nil {
+		var err error
+		requestedIP, err = s.allocateIP6(opt.String(), iaid, "")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	reply, err := dhcpv6.NewReplyFromMessage(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add IA_NA with confirmed IP
+	newIANA := &dhcpv6.OptIANA{
+		IaId: ianaOpt.IaId,
+		Options: dhcpv6.IdentityOptions{
+			Options: dhcpv6.Options{
+				&dhcpv6.OptIAAddress{
+					IPv6Addr:          requestedIP,
+					PreferredLifetime: 3600,
+					ValidLifetime:     7200,
+				},
+			},
+		},
+	}
+	reply.AddOption(newIANA)
+
+	// Add DNS Servers
+	dnsIps := s.getDNSServersv6()
+	if len(dnsIps) > 0 {
+		reply.AddOption(dhcpv6.OptDNS(dnsIps...))
+	}
+
+	return reply, nil
+}
+
+func (s *Service) getDNSServersv6() []net.IP {
+	var ips []net.IP
+	for _, srv := range s.config.DHCP.DNSServersV6 {
+		ip := net.ParseIP(srv)
+		if ip != nil && ip.To16() != nil {
+			ips = append(ips, ip)
+		}
+	}
+	return ips
+}
+
+func (s *Service) allocateIP6(duid string, iaid uint32, hostname string) (net.IP, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// 1. Check static v6 leases
+	staticLeases, _ := s.repository.ListStaticv6Leases()
+	for _, l := range staticLeases {
+		if l.DUID == duid && l.Enabled {
+			return net.ParseIP(l.IP), nil
+		}
+	}
+
+	// 2. Check existing active v6 leases
+	activeLeases, _ := s.repository.ListActivev6Leases()
+	for _, l := range activeLeases {
+		if l.DUID == duid && l.IAID == iaid {
+			l.ExpiresAt = time.Now().Add(time.Duration(s.config.DHCP.LeaseDuration) * time.Second)
+			_ = s.repository.CreateOrUpdateActivev6Lease(&l)
+			return net.ParseIP(l.IP), nil
+		}
+	}
+
+	// 3. Find new IP in range (simplified IPv6 range handling)
+	// For now, we'll just use a sub-prefix of the server's IPv6 or a configured range.
+	// But let's follow the pattern if possible.
+	// DHCPv6 range is usually /64.
+	start := net.ParseIP(s.config.DHCP.RangeStartV6)
+	end := net.ParseIP(s.config.DHCP.RangeEndV6)
+	if start == nil || end == nil {
+		return nil, fmt.Errorf("invalid DHCPv6 range")
+	}
+
+	usedIPs := make(map[string]bool)
+	for _, l := range activeLeases {
+		if l.ExpiresAt.After(time.Now()) {
+			usedIPs[net.ParseIP(l.IP).String()] = true
+		}
+	}
+
+	for ip := cloneIP(start); !ip.Equal(nextIP(end)); ip = nextIP(ip) {
+		if !usedIPs[ip.String()] {
+			newLease := &database.ActiveDHCPv6Lease{
+				DUID:      duid,
+				IAID:      iaid,
+				IP:        ip.String(),
+				Hostname:  hostname,
+				ExpiresAt: time.Now().Add(time.Duration(s.config.DHCP.LeaseDuration) * time.Second),
+			}
+			if err := s.repository.CreateOrUpdateActivev6Lease(newLease); err != nil {
+				return nil, err
+			}
+			return ip, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no available IPv6 addresses in range")
 }
 
 func (s *Service) handleDiscover(packet *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, error) {
@@ -435,5 +682,13 @@ func (s *Service) DeleteStaticLease(id uint) error {
 
 func (s *Service) ListActiveLeases() ([]database.ActiveDHCPLease, error) {
 	return s.repository.ListActiveLeases()
+}
+
+func (s *Service) ListActivev6Leases() ([]database.ActiveDHCPv6Lease, error) {
+	return s.repository.ListActivev6Leases()
+}
+
+func (s *Service) ListStaticv6Leases() ([]database.StaticDHCPv6Lease, error) {
+	return s.repository.ListStaticv6Leases()
 }
 

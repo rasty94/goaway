@@ -14,6 +14,7 @@ import (
 	"goaway/backend/logging"
 	"goaway/backend/mac"
 	"goaway/backend/notification"
+	"goaway/backend/policy"
 	"goaway/backend/prefetch"
 	"goaway/backend/request"
 	"goaway/backend/resolution"
@@ -163,6 +164,7 @@ func (a *Application) Start() error {
 	keyService := key.NewService(key.NewRepository(dbConn))
 	macService := mac.NewService(mac.NewRepository(dbConn))
 	notificationService := notification.NewService(notification.NewRepository(dbConn))
+	policyService := policy.NewService(policy.NewRepository(dbConn), blacklistService)
 	prefetchService := prefetch.NewService(prefetch.NewRepository(dbConn), a.context.DNSServer)
 	requestService := request.NewService(request.NewRepository(dbConn))
 	resolutionService := resolution.NewService(resolution.NewRepository(dbConn))
@@ -175,6 +177,7 @@ func (a *Application) Start() error {
 	a.context.DNSServer.GroupService = groupService
 	a.context.DNSServer.MACService = macService
 	a.context.DNSServer.NotificationService = notificationService
+	a.context.DNSServer.PolicyService = policyService
 	a.context.DNSServer.RequestService = requestService
 	a.context.DNSServer.UserService = userService
 	a.context.DNSServer.ResolutionService = resolutionService
@@ -187,6 +190,7 @@ func (a *Application) Start() error {
 	a.services.DHCPService = dhcpService
 	a.services.BlacklistService = blacklistService
 	a.services.GroupService = groupService
+	a.services.PolicyService = policyService
 	a.services.NotificationService = notificationService
 	a.services.PrefetchService = prefetchService
 	a.services.RequestService = requestService

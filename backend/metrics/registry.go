@@ -77,6 +77,14 @@ var (
 		},
 		[]string{"client_ip", "dnssec_status"},
 	)
+
+	CategoriesBlocked = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "goaway_dns_categories_blocked_total",
+			Help: "Total number of DNS queries blocked by category",
+		},
+		[]string{"client_ip", "category"},
+	)
 )
 
 func init() {
@@ -89,4 +97,5 @@ func init() {
 	prometheus.MustRegister(ForwardedQueries)
 	prometheus.MustRegister(DNSLatency)
 	prometheus.MustRegister(DNSSECResponses)
+	prometheus.MustRegister(CategoriesBlocked)
 }

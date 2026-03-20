@@ -14,9 +14,19 @@ type TLSConfig struct {
 	Key     string `yaml:"key" json:"key"`
 }
 
+type UpstreamServer struct {
+	Name     string `yaml:"name" json:"name"`
+	Address  string `yaml:"address" json:"address"`
+	Protocol string `yaml:"protocol" json:"protocol"` // "udp", "tcp", "dot", "doh", "doq"
+	Enabled  bool   `yaml:"enabled" json:"enabled"`
+}
+
 type UpstreamConfig struct {
-	Preferred string   `yaml:"preferred" json:"preferred"`
-	Fallback  []string `yaml:"fallback" json:"fallback"`
+	Servers []UpstreamServer `yaml:"servers" json:"servers"`
+
+	// Legacy fields for migration
+	Preferred string   `yaml:"preferred,omitempty" json:"preferred,omitempty"`
+	Fallback  []string `yaml:"fallback,omitempty" json:"fallback,omitempty"`
 }
 
 type ConditionalForwarder struct {
@@ -95,9 +105,12 @@ type DHCPConfig struct {
 	IPv6Enabled   bool            `yaml:"ipv6Enabled" json:"ipv6Enabled"`
 	RangeStart    string          `yaml:"rangeStart" json:"rangeStart"`
 	RangeEnd      string          `yaml:"rangeEnd" json:"rangeEnd"`
+	RangeStartV6  string          `yaml:"rangeStartV6" json:"rangeStartV6"`
+	RangeEndV6    string          `yaml:"rangeEndV6" json:"rangeEndV6"`
 	LeaseDuration int             `yaml:"leaseDuration" json:"leaseDuration"`
 	Router        string          `yaml:"router" json:"router"`
 	DNSServers    []string        `yaml:"dnsServers" json:"dnsServers"`
+	DNSServersV6  []string        `yaml:"dnsServersV6" json:"dnsServersV6"`
 	DomainSearch  string          `yaml:"domainSearch" json:"domainSearch"`
 	Ports         DHCPPortsConfig `yaml:"ports" json:"ports"`
 }

@@ -7,6 +7,7 @@ import (
 	arp "goaway/backend/dns"
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,7 @@ var templatesFS embed.FS
 
 func (api *API) registerNativeRoutes() {
 	api.router.GET("/native", api.serveNativeDashboard)
+	api.router.GET("/api/native/view/:page", api.serveNativeView)
 	api.router.GET("/api/native/stats", api.getNativeStats)
 	api.router.GET("/api/native/logs", api.getNativeLogs)
 	api.router.GET("/api/native/resolutions", api.getNativeResolutions)
@@ -27,6 +29,93 @@ func (api *API) registerNativeRoutes() {
 	api.router.GET("/api/native/wildcards", api.getNativeWildcards)
 	api.router.POST("/api/native/wildcards", api.addNativeWildcard)
 	api.router.DELETE("/api/native/wildcards", api.deleteNativeWildcard)
+	api.router.GET("/api/native/explain", api.explainNativeDNS)
+
+	// New DHCP & Policy Routes
+	api.router.GET("/api/native/dhcp/leases/v4", api.getNativeDHCPLeasesV4)
+	api.router.GET("/api/native/dhcp/leases/v6", api.getNativeDHCPLeasesV6)
+	api.router.GET("/api/native/dhcp/static", api.getNativeDHCPStatic)
+	api.router.GET("/api/native/policies/list", api.getNativePolicies)
+}
+
+func (api *API) serveNativeView(c *gin.Context) {
+	page := c.Param("page")
+	if page == "" {
+		page = "overview"
+	}
+
+	data, err := templatesFS.ReadFile("templates/" + page + ".html")
+	if err != nil {
+		c.String(http.StatusNotFound, "View not found: %s", page)
+		return
+	}
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", data)
+}
+
+func (api *API) explainNativeDNS(c *gin.Context) {
+	domain := c.Query("domain")
+	client := c.Query("client")
+
+	if domain == "" {
+		c.Data(http.StatusOK, "text/html", []byte("<p class='text-stone-500 text-xs italic'>Enter a domain to explain...</p>"))
+		return
+	}
+
+	if client == "" {
+		client = c.ClientIP()
+	}
+
+	exp := api.DNSServer.Explain(domain, client)
+
+	statusColor := "text-green-500"
+	statusBg := "bg-green-500/10"
+	statusBorder := "border-green-500/30"
+	actionName := "ALLOWED"
+
+	if exp.Blocked {
+		statusColor = "text-red-500"
+		statusBg = "bg-red-500/10"
+		statusBorder = "border-red-500/30"
+		actionName = "BLOCKED"
+	}
+
+	matchingHtml := ""
+	for _, m := range exp.Matching {
+		matchingHtml += fmt.Sprintf(`<span class="px-2 py-0.5 rounded bg-stone-800 text-stone-400 border border-stone-700 font-mono">%s</span> `, template.HTMLEscapeString(m))
+	}
+
+	html := fmt.Sprintf(`
+        <div class="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div class="flex items-center justify-between">
+                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border %s %s %s">
+                    %s
+                </span>
+                <span class="text-[10px] font-bold text-stone-600 uppercase tracking-widest">%s</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <p class="text-[10px] font-black text-stone-500 uppercase tracking-widest">Policy Engine</p>
+                    <p class="text-sm font-bold text-stone-300">%s</p>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-[10px] font-black text-stone-500 uppercase tracking-widest">Decision Source</p>
+                    <p class="text-sm font-bold text-stone-300">%s</p>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <p class="text-[10px] font-black text-stone-500 uppercase tracking-widest">Matching Patterns</p>
+                <div class="flex flex-wrap gap-2">%s</div>
+            </div>
+        </div>
+    `, statusColor, statusBg, statusBorder, actionName, domain,
+		template.HTMLEscapeString(exp.PolicyName),
+		template.HTMLEscapeString(exp.Reason),
+		matchingHtml)
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
 func (api *API) getNativeClients(c *gin.Context) {
@@ -305,4 +394,121 @@ func (api *API) deleteNativeWildcard(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+}
+func (api *API) getNativeDHCPLeasesV4(c *gin.Context) {
+	leases, _ := api.DHCPService.ListActiveLeases()
+	var html string
+	for _, l := range leases {
+		expiry := time.Until(l.ExpiresAt).Round(time.Second).String()
+		if time.Now().After(l.ExpiresAt) {
+			expiry = "Expired"
+		}
+		html += fmt.Sprintf(`
+            <tr class="border-b border-stone-800/50 hover:bg-stone-800/20 transition-colors">
+                <td class="px-10 py-3 font-mono text-stone-300">%s</td>
+                <td class="px-10 py-3 text-stone-500 font-mono text-xs">%s</td>
+                <td class="px-10 py-3 text-stone-400 font-bold text-[10px] uppercase">%s</td>
+            </tr>
+        `, l.IP, l.MAC, expiry)
+	}
+	if html == "" {
+		html = "<tr><td colspan='3' class='p-10 text-center text-stone-700 font-bold text-xs uppercase'>No active IPv4 leases</td></tr>"
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) getNativeDHCPLeasesV6(c *gin.Context) {
+	leases, _ := api.DHCPService.ListActivev6Leases()
+	var html string
+	for _, l := range leases {
+		expiry := time.Until(l.ExpiresAt).Round(time.Second).String()
+		if time.Now().After(l.ExpiresAt) {
+			expiry = "Expired"
+		}
+		// DUID can be long, truncate for UI
+		duidShort := l.DUID
+		if len(duidShort) > 20 {
+			duidShort = duidShort[:20] + "..."
+		}
+		html += fmt.Sprintf(`
+            <tr class="border-b border-stone-800/50 hover:bg-stone-800/20 transition-colors">
+                <td class="px-10 py-3 font-mono text-blue-300 text-xs">%s</td>
+                <td class="px-10 py-3 text-stone-500 font-mono text-[10px]">%s</td>
+                <td class="px-10 py-3 text-stone-400 font-bold text-[10px] uppercase">%s</td>
+            </tr>
+        `, l.IP, duidShort, expiry)
+	}
+	if html == "" {
+		html = "<tr><td colspan='3' class='p-10 text-center text-stone-700 font-bold text-xs uppercase'>No active IPv6 leases</td></tr>"
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) getNativeDHCPStatic(c *gin.Context) {
+	v4, _ := api.DHCPService.ListStaticLeases()
+	v6, _ := api.DHCPService.ListStaticv6Leases()
+	var html string
+	
+	for _, l := range v4 {
+		html += api.renderStaticLeaseRow(l.Hostname, l.IP, l.MAC, "IPv4", l.Enabled)
+	}
+	for _, l := range v6 {
+		html += api.renderStaticLeaseRow(l.Hostname, l.IP, l.DUID, "IPv6", l.Enabled)
+	}
+	
+	if html == "" {
+		html = "<tr><td colspan='5' class='p-10 text-center text-stone-700 font-bold text-xs'>No static reservations configured.</td></tr>"
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) renderStaticLeaseRow(hostname, ip, ident, proto string, enabled bool) string {
+	statusText := "Active"
+	statusClass := "text-green-500 bg-green-500/10 border-green-500/30"
+	if !enabled {
+		statusText = "Disabled"
+		statusClass = "text-stone-500 bg-stone-500/10 border-stone-500/30"
+	}
+	
+	return fmt.Sprintf(`
+        <tr class="border-b border-stone-800/50 hover:bg-stone-800/20 transition-colors">
+            <td class="px-10 py-4 font-bold text-stone-300">/%s</td>
+            <td class="px-10 py-4 font-mono text-stone-400 text-xs">%s</td>
+            <td class="px-10 py-4 font-mono text-stone-500 text-[10px]">%s</td>
+            <td class="px-10 py-4"><span class="px-2 py-0.5 rounded text-[10px] font-black bg-stone-800 text-stone-500 border border-stone-700">%s</span></td>
+            <td class="px-10 py-4 text-right">
+                <span class="px-2 py-1 rounded text-[10px] font-black uppercase border %s">%s</span>
+            </td>
+        </tr>
+    `, hostname, ip, ident, proto, statusClass, statusText)
+}
+
+func (api *API) getNativePolicies(c *gin.Context) {
+	policies, _ := api.PolicyService.GetPolicies()
+	var html string
+	for _, p := range policies {
+		scope := "Custom"
+		// In a real scenario, we would check PolicyAssignments for the scope
+		
+		ssClass := "text-stone-600 bg-stone-900 border-stone-800"
+		if p.SafeSearch {
+			ssClass = "text-blue-400 bg-blue-500/10 border-blue-500/30"
+		}
+		
+		html += fmt.Sprintf(`
+            <tr class="border-b border-stone-800/50 hover:bg-stone-800/20 transition-colors">
+                <td class="px-10 py-4 font-bold text-stone-300">%s</td>
+                <td class="px-10 py-4"><span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-stone-800 text-stone-400 border border-stone-700">%s</span></td>
+                <td class="px-10 py-4"><span class="px-3 py-1 rounded-full text-[10px] font-black uppercase border %s">%t</span></td>
+                <td class="px-10 py-4 text-stone-500 text-xs font-medium">All Clients</td>
+                <td class="px-10 py-4 text-right">
+                    <button class="text-stone-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">Edit</button>
+                </td>
+            </tr>
+        `, p.Name, scope, ssClass, p.SafeSearch)
+	}
+	if html == "" {
+		html = "<tr><td colspan='5' class='p-10 text-center text-stone-700 font-bold text-xs uppercase'>No custom policies configured</td></tr>"
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }

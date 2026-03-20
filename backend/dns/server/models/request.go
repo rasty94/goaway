@@ -71,3 +71,15 @@ type ResponseSizeSummary struct {
 	MinResponseSizeBytes int       `json:"min_response_size_bytes"`
 	MaxResponseSizeBytes int       `json:"max_response_size_bytes"`
 }
+
+type ExplainResult struct {
+	Domain       string   `json:"domain"`
+	ClientIP     string   `json:"clientIP"`
+	Blocked      bool     `json:"blocked"`
+	Action       string   `json:"action"`
+	Reason       string   `json:"reason"`
+	PolicyName   string   `json:"policyName"`
+	Matching     []string `json:"matching"`
+	Status       string   `json:"status"`
+	DNSSECStatus string   `json:"dnssecStatus"`
+}

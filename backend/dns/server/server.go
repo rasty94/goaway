@@ -11,6 +11,7 @@ import (
 	"goaway/backend/logging"
 	"goaway/backend/mac"
 	"goaway/backend/notification"
+	"goaway/backend/policy"
 	"goaway/backend/request"
 	"goaway/backend/resolution"
 	"goaway/backend/settings"
@@ -78,6 +79,7 @@ type DNSServer struct {
 	BlacklistService    *blacklist.Service
 	GroupService        *group.Service
 	WhitelistService    *whitelist.Service
+	PolicyService       *policy.Service
 }
 
 type Request struct {
