@@ -187,6 +187,7 @@ func (a *Application) Start() error {
 
 	a.services = services.NewServiceRegistry(a.context, a.version, a.commit, a.date, a.content)
 	a.services.ResolutionService = resolutionService
+	a.services.AuditService = auditService
 	a.services.DHCPService = dhcpService
 	a.services.BlacklistService = blacklistService
 	a.services.GroupService = groupService

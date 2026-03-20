@@ -19,6 +19,7 @@ const (
 	TopicLogs       Topic = "logs"
 	TopicSettings   Topic = "settings"
 	TopicDatabase   Topic = "database"
+	TopicDHCP       Topic = "dhcp"
 )
 
 type Entry struct {

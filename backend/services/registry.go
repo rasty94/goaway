@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"goaway/backend/api"
 	"goaway/backend/api/key"
+	"goaway/backend/audit"
 	"goaway/backend/blacklist"
 	"goaway/backend/dhcp"
 	"goaway/backend/group"
@@ -46,6 +47,7 @@ type ServiceRegistry struct {
 
 	ResolutionService   *resolution.Service
 	RequestService      *request.Service
+	AuditService        *audit.Service
 	PrefetchService     *prefetch.Service
 	UserService         *user.Service
 	KeyService          *key.Service
@@ -144,6 +146,7 @@ func (r *ServiceRegistry) setupAPIServer() {
 
 		ResolutionService:   r.ResolutionService,
 		RequestService:      r.RequestService,
+		AuditService:        r.AuditService,
 		PrefetchService:     r.PrefetchService,
 		NotificationService: r.NotificationService,
 		UserService:         r.UserService,

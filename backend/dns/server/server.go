@@ -80,6 +80,17 @@ type DNSServer struct {
 	GroupService        *group.Service
 	WhitelistService    *whitelist.Service
 	PolicyService       *policy.Service
+	
+	IsPaused            bool
+	
+	UpstreamHealth      sync.Map // server -> *UpstreamHealth
+}
+
+type UpstreamHealth struct {
+	Server    string        `json:"server"`
+	Status    string        `json:"status"`
+	Latency   time.Duration `json:"latency"`
+	LastCheck time.Time     `json:"lastCheck"`
 }
 
 type Request struct {
@@ -120,6 +131,9 @@ func NewDNSServer(config *settings.Config, dbconn *gorm.DB, cert tls.Certificate
 }
 
 func (s *DNSServer) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
+	if s.IsPaused {
+		return
+	}
 	if !s.validQuery(w, r) {
 		return
 	}

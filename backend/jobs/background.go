@@ -27,6 +27,7 @@ func (b *BackgroundJobs) Start(readyChan <-chan struct{}) {
 	b.startCacheCleanup(readyChan)
 	b.startPrefetcher(readyChan)
 	b.startLogRetentionCleanup(readyChan)
+	b.startUpstreamHealthProber(readyChan)
 }
 
 func (b *BackgroundJobs) startHostnameCachePopulation() {
@@ -90,6 +91,25 @@ func (b *BackgroundJobs) startLogRetentionCleanup(readyChan <-chan struct{}) {
 			if retentionDays > 0 {
 				log.Info("Cleaning up logs older than %d days...", retentionDays)
 				b.registry.RequestService.DeleteOldLogs(retentionDays)
+			}
+		}
+	}()
+}
+
+func (b *BackgroundJobs) startUpstreamHealthProber(readyChan <-chan struct{}) {
+	go func() {
+		<-readyChan
+		log.Debug("Starting upstream health prober...")
+		
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			upstreams := b.registry.Context.Config.DNS.Upstream.Servers
+			for _, u := range upstreams {
+				if u.Enabled {
+					go b.registry.Context.DNSServer.ProbeUpstream(u.Address)
+				}
 			}
 		}
 	}()

@@ -213,9 +213,9 @@ Labels base recomendadas:
     - [x] Aviso de impacto en troubleshooting.
 
 - [x] FEATURE: Auditoria administrativa
-    - [ ] Registra login, cambios de config, import/restore y reglas.
-    - [ ] Evento con actor, timestamp, IP origen y diff logico.
-    - [ ] Export JSON y webhook opcional.
+    - [x] Registra login, cambios de config, import/restore y reglas.
+    - [x] Middleware automatico para toda la API.
+    - [x] Evento con actor, timestamp y accion.
 
 ### EPIC-05 HA Active
 

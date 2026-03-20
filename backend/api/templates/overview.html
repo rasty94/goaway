@@ -27,6 +27,68 @@
         <div class="glass p-8 rounded-3xl animate-pulse h-32 border-stone-800"></div>
     </div>
 
+    <!-- Service Toggles & Health -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Toggles -->
+        <div class="glass rounded-[2rem] p-8 border-stone-800 flex flex-col gap-6">
+            <div class="flex items-center gap-2 mb-2">
+                <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+                <h3 class="text-lg font-bold text-white uppercase tracking-tight">System Controls</h3>
+            </div>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 bg-stone-900/20 rounded-2xl border border-stone-800">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center border border-blue-500/20">
+                            <i data-lucide="globe" class="w-5 h-5 text-blue-500"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-white">DNS Filtering</p>
+                            <p class="text-[10px] font-black text-stone-500 uppercase tracking-widest">Main Resolver Engine</p>
+                        </div>
+                    </div>
+                    <button hx-post="/api/native/dns/toggle" hx-swap="none"
+                            class="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-[10px] font-black uppercase text-stone-300 border border-stone-700 transition-all">
+                        Toggle
+                    </button>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-stone-900/20 rounded-2xl border border-stone-800">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-purple-600/10 flex items-center justify-center border border-purple-500/20">
+                            <i data-lucide="cpu" class="w-5 h-5 text-purple-500"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-white">DHCP Server</p>
+                            <p class="text-[10px] font-black text-stone-500 uppercase tracking-widest">Local Network Management</p>
+                        </div>
+                    </div>
+                    <button hx-post="/api/native/dhcp/toggle" hx-swap="none"
+                            class="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-[10px] font-black uppercase text-stone-300 border border-stone-700 transition-all">
+                        Toggle
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upstream Health -->
+        <div class="glass rounded-[2rem] p-8 border-stone-800 flex flex-col h-full">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="server" class="w-4 h-4 text-blue-400"></i>
+                    <h3 class="text-lg font-bold text-white uppercase tracking-tight">Upstream Health</h3>
+                </div>
+                <div class="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                    <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Pings Every 60s</span>
+                </div>
+            </div>
+            <div id="upstream-health" hx-get="/api/native/health/upstreams" hx-trigger="load, every 30s" class="space-y-4 flex-1">
+                <!-- Health rows will be rendered here -->
+                <div class="p-6 text-center">
+                    <p class="text-[10px] font-black text-stone-600 uppercase tracking-[0.2em] animate-pulse">Probing Providers...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <!-- Chart Section -->
         <div class="xl:col-span-2 glass rounded-[2.5rem] p-8 border-stone-800 flex flex-col h-[450px]">

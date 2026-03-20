@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"goaway/backend/audit"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -78,6 +79,32 @@ func (api *API) authMiddleware() gin.HandlerFunc {
 
 		c.Set("username", username)
 		c.Next()
+	}
+}
+
+func (api *API) auditMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Method == "GET" || c.Request.Method == "OPTIONS" || c.Request.Method == "HEAD" {
+			c.Next()
+			return
+		}
+
+		c.Next()
+
+		if c.Writer.Status() >= 200 && c.Writer.Status() < 300 {
+			username := c.GetString("username")
+			if username == "" && c.GetBool("is_api_key") {
+				username = "APIKey"
+			}
+			if username == "" {
+				username = "system"
+			}
+
+			api.AuditService.CreateAudit(&audit.Entry{
+				Topic:   audit.TopicAPI,
+				Message: fmt.Sprintf("User %s performed %s on %s", username, c.Request.Method, c.Request.URL.Path),
+			})
+		}
 	}
 }
 

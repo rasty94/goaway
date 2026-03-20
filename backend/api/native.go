@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"goaway/backend/api/models"
 	arp "goaway/backend/dns"
+	"goaway/backend/dns/server"
+	"goaway/backend/audit"
 	"html/template"
 	"net/http"
 	"time"
@@ -33,9 +35,12 @@ func (api *API) registerNativeRoutes() {
 
 	// New DHCP & Policy Routes
 	api.router.GET("/api/native/dhcp/leases/v4", api.getNativeDHCPLeasesV4)
-	api.router.GET("/api/native/dhcp/leases/v6", api.getNativeDHCPLeasesV6)
-	api.router.GET("/api/native/dhcp/static", api.getNativeDHCPStatic)
-	api.router.GET("/api/native/policies/list", api.getNativePolicies)
+	api.routes.GET("/api/native/dhcp/leases/v6", api.getNativeDHCPLeasesV6)
+	api.routes.GET("/api/native/dhcp/static", api.getNativeDHCPStatic)
+	api.routes.GET("/api/native/policies/list", api.getNativePolicies)
+	api.routes.POST("/api/native/dns/toggle", api.toggleDNS)
+	api.routes.POST("/api/native/dhcp/toggle", api.toggleDHCP)
+	api.routes.GET("/api/native/health/upstreams", api.getNativeUpstreamHealth)
 }
 
 func (api *API) serveNativeView(c *gin.Context) {
@@ -509,6 +514,73 @@ func (api *API) getNativePolicies(c *gin.Context) {
 	}
 	if html == "" {
 		html = "<tr><td colspan='5' class='p-10 text-center text-stone-700 font-bold text-xs uppercase'>No custom policies configured</td></tr>"
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+func (api *API) toggleDNS(c *gin.Context) {
+	api.DNSServer.IsPaused = !api.DNSServer.IsPaused
+	status := "Running"
+	if api.DNSServer.IsPaused {
+		status = "Paused"
+	}
+	api.AuditService.CreateAudit(&audit.Entry{
+		Topic:   audit.TopicDNS,
+		Message: fmt.Sprintf("DNS Service %s", status),
+	})
+	c.JSON(http.StatusOK, gin.H{"status": status})
+}
+
+func (api *API) toggleDHCP(c *gin.Context) {
+	if api.DHCPService.IsRunning() {
+		api.DHCPService.Stop()
+	} else {
+		if err := api.DHCPService.Start(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	status := "Stopped"
+	if api.DHCPService.IsRunning() {
+		status = "Running"
+	}
+	api.AuditService.CreateAudit(&audit.Entry{
+		Topic:   audit.TopicDHCP,
+		Message: fmt.Sprintf("DHCP Service %s", status),
+	})
+	c.JSON(http.StatusOK, gin.H{"status": status})
+}
+
+func (api *API) getNativeUpstreamHealth(c *gin.Context) {
+	var html string
+	api.DNSServer.UpstreamHealth.Range(func(key, value interface{}) bool {
+		h := value.(*server.UpstreamHealth)
+		statusColor := "text-emerald-500"
+		if h.Status == "Slow" {
+			statusColor = "text-yellow-500"
+		} else if h.Status == "Unreachable" {
+			statusColor = "text-red-500"
+		}
+		
+		html += fmt.Sprintf(`
+            <div class="flex items-center justify-between p-4 bg-stone-900/10 rounded-2xl border border-stone-800/50">
+                <div class="flex items-center gap-4">
+                    <div class="w-2 h-2 rounded-full %s animate-pulse bg-current shadow-[0_0_10px_currentColor]"></div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold text-stone-300 truncate max-w-[150px]">%s</p>
+                        <p class="text-[9px] font-black text-stone-600 uppercase tracking-widest">%s</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-mono font-bold text-stone-400">%dms</p>
+                    <p class="text-[9px] font-black text-stone-600 uppercase tracking-tighter">Latency</p>
+                </div>
+            </div>
+        `, statusColor, h.Server, h.Status, h.Latency.Milliseconds())
+		return true
+	})
+	
+	if html == "" {
+		html = "<div class='p-10 text-center'><p class='text-[10px] font-black text-stone-700 uppercase tracking-widest'>No analysis data yet</p></div>"
 	}
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }

@@ -84,3 +84,45 @@ func (s *DNSServer) exchangeDoH(msg *dns.Msg, url string) (*dns.Msg, error) {
 
 	return response, nil
 }
+
+func (s *DNSServer) ProbeUpstream(server string) *UpstreamHealth {
+	msg := new(dns.Msg)
+	msg.SetQuestion(dns.Fqdn("."), dns.TypeNS)
+	msg.RecursionDesired = true
+
+	parts := strings.Split(server, ":")
+	proto := "udp"
+	addr := server
+	if len(parts) > 1 && (parts[0] == "https" || parts[0] == "http") {
+		proto = "doh"
+	} else if len(parts) > 1 {
+		// handle proto:addr or addr:port
+		// simpler: if it contains '/', it's DoH URL. if it contains tls://, it's DoT.
+		if strings.Contains(server, "://") {
+			p := strings.Split(server, "://")
+			proto = p[0]
+			addr = p[1]
+		}
+	}
+
+	start := time.Now()
+	_, err := s.exchangeWithProtocol(msg, addr, proto)
+	latency := time.Since(start)
+
+	status := "Healthy"
+	if err != nil {
+		status = "Unreachable"
+		log.Debug("Upstream %s is Unreachable: %v", server, err)
+	} else if latency > 500*time.Millisecond {
+		status = "Slow"
+	}
+
+	health := &UpstreamHealth{
+		Server:    server,
+		Status:    status,
+		Latency:   latency,
+		LastCheck: time.Now(),
+	}
+	s.UpstreamHealth.Store(server, health)
+	return health
+}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"goaway/backend/api/key"
 	"goaway/backend/api/ratelimit"
+	"goaway/backend/audit"
 	"goaway/backend/blacklist"
 	"goaway/backend/dhcp"
 	"goaway/backend/dns/server"
@@ -85,6 +86,7 @@ type API struct {
 	GroupService        *group.Service
 	PolicyService       *policy.Service
 	WhitelistService    *whitelist.Service
+	AuditService        *audit.Service
 	ReplicaSyncManager  *sync.ReplicaSyncManager
 
 	server         *http.Server
@@ -210,6 +212,7 @@ func (api *API) setupAuthAndMiddleware() {
 		api.setupAuth()
 		api.routes.Use(api.authMiddleware())
 		api.routes.Use(api.roleMiddleware())
+		api.routes.Use(api.auditMiddleware())
 	} else {
 		log.Warning("Dashboard authentication is disabled.")
 	}
