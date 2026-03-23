@@ -3,6 +3,7 @@ package settings
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -79,7 +80,7 @@ func TestLoadSettingsPersistsUpgradedSchema(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read upgraded settings failed: %v", err)
 	}
-	if !strings.Contains(string(data), "schemaVersion: 1") {
+	if !strings.Contains(string(data), "schemaVersion: "+strconv.Itoa(CurrentSchemaVersion)) {
 		t.Fatalf("expected upgraded settings file to contain schemaVersion")
 	}
 }

@@ -524,7 +524,7 @@ docker pull pommee/goaway:version`;
                   This information might be outdated, in that case refer to the{" "}
                   <a
                     className="font-bold underline"
-                    href="https://github.com/pommee/goaway/blob/main/README.md"
+                    href="https://github.com/rasty94/goaway/blob/main/README.md"
                     target="_blank"
                   >
                     repository README

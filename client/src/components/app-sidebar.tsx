@@ -109,7 +109,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
       {
         title: t("sidebar.github"),
-        url: "https://github.com/pommee/goaway",
+        url: "https://github.com/rasty94/goaway",
         icon: GithubLogoIcon,
         blank: "_blank"
       },

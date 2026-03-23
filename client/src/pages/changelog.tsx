@@ -119,7 +119,7 @@ const Changelog = () => {
             return {
               hash,
               message,
-              url: `https://github.com/pommee/goaway/commit/${hash}`
+              url: `https://github.com/rasty94/goaway/commit/${hash}`
             };
           }
 

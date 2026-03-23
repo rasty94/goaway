@@ -59,7 +59,7 @@ Flags:
 
 ### Configuration File
 
-Settings are stored in [settings.yaml](https://github.com/pommee/goaway/blob/main/settings.yaml). You can customize blocking rules, upstream DNS servers, and other options through the web dashboard or by editing this file directly.
+Settings are stored in [settings.yaml](https://github.com/rasty94/goaway/blob/main/settings.yaml). You can customize blocking rules, upstream DNS servers, and other options through the web dashboard or by editing this file directly.
 
 ### Examples
 

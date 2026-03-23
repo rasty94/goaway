@@ -1,6 +1,6 @@
 site_name: GoAway
 repo_name: GoAway
-repo_url: https://github.com/pommee/goaway
+repo_url: https://github.com/rasty94/goaway
 
 theme:
   name: material
@@ -35,7 +35,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/pommee/goaway
+      link: https://github.com/rasty94/goaway
 
 plugins:
   - search:

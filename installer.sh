@@ -40,7 +40,7 @@ main() {
     downloaded_file="${downloadFolder}/${file_name}"
 
     echo "[1/3] Downloading ${file_name} to ${downloadFolder}"
-    asset_path="https://github.com/pommee/goaway/releases/download/v${version}/${file_name}"
+    asset_path="https://github.com/rasty94/goaway/releases/download/v${version}/${file_name}"
 
     if ! curl --silent --head --fail "$asset_path" > /dev/null; then
         echo "ERROR: Unable to find a release asset called ${file_name}"

@@ -1,6 +1,6 @@
 services:
   goaway:
-    image: pommee/goaway:latest
+    image: goaway:local
     container_name: goaway
     restart: unless-stopped
     # volumes:

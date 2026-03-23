@@ -1166,7 +1166,7 @@ func (s *DNSServer) applySafeSearch(request *Request) (model.RequestLogEntry, bo
 
 	request.Msg.Response = true
 	request.Msg.Rcode = dns.RcodeSuccess
-	
+
 	hdr := dns.RR_Header{Name: request.Question.Name, Rrtype: qType, Class: dns.ClassINET, Ttl: 60}
 	var rr dns.RR
 	if qType == dns.TypeA {
@@ -1174,7 +1174,7 @@ func (s *DNSServer) applySafeSearch(request *Request) (model.RequestLogEntry, bo
 	} else {
 		rr = &dns.AAAA{Hdr: hdr, AAAA: net.ParseIP(targetIP)}
 	}
-	
+
 	request.Msg.Answer = []dns.RR{rr}
 	_ = request.ResponseWriter.WriteMsg(request.Msg)
 
@@ -1197,10 +1197,10 @@ func (s *DNSServer) respondWithNoData(request *Request) model.RequestLogEntry {
 	request.Msg.Rcode = dns.RcodeSuccess
 	_ = request.ResponseWriter.WriteMsg(request.Msg)
 	return model.RequestLogEntry{
-		Domain:    request.Question.Name,
-		Status:    dns.RcodeToString[dns.RcodeSuccess],
-		QueryType: dns.TypeToString[request.Question.Qtype],
-		Timestamp: request.Sent,
+		Domain:     request.Question.Name,
+		Status:     dns.RcodeToString[dns.RcodeSuccess],
+		QueryType:  dns.TypeToString[request.Question.Qtype],
+		Timestamp:  request.Sent,
 		ClientInfo: request.Client,
 	}
 }

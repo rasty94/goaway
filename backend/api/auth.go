@@ -58,9 +58,6 @@ func (api *API) handleLogin(c *gin.Context) {
 			return
 		}
 
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Credentials", "true")
-
 		userObj, _ := api.UserService.GetUser(loginUser.Username)
 		role := "admin"
 		if userObj != nil && userObj.Role != "" {

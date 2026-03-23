@@ -5,7 +5,7 @@ When contributing to this repository, please first discuss the change you wish t
 ### Standards for contributions
 
 - Your reported issue has been approved by a project maintainer to be implemented.
-- All commits must be semantic, [read more here](https://www.conventionalcommits.org/en/v1.0.0/). You can find the accepted types [here](https://github.com/pommee/goaway/blob/main/.releaserc.json).
+- All commits must be semantic, [read more here](https://www.conventionalcommits.org/en/v1.0.0/). You can find the accepted types [here](https://github.com/rasty94/goaway/blob/main/.releaserc.json).
 - Tests, linting of server/client code and commits must all pass.
 
 ### Our Responsibilities

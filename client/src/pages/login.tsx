@@ -87,17 +87,19 @@ export default function Login({ className, quote, ...props }: LoginProps) {
         if (rememberMe) {
           localStorage.setItem("loginUsername", username);
         }
-        localStorage.setItem("userRole", response.role || "viewer");
+        if (response) {
+          localStorage.setItem("userRole", response.role || "viewer");
+        }
         localStorage.setItem("username", username);
 
         navigate("/");
       } else if (statusCode === 429) {
         toast.warning("Rate limit exceeded", {
-          description: `Retry again in ${response.retryAfterSeconds} seconds`
+          description: `Retry again in ${response?.retryAfterSeconds || "some"} seconds`
         });
         return;
       } else {
-        toast.warning("Login failed", { description: response.error });
+        toast.warning("Login failed", { description: response?.error || "Invalid credentials or server error" });
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -255,7 +257,7 @@ export default function Login({ className, quote, ...props }: LoginProps) {
             </p>
             <p className="mt-1">
               <a
-                href="https://github.com/pommee/goaway"
+                href="https://github.com/rasty94/goaway"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 hover:underline transition-all duration-200"

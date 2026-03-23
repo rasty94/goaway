@@ -63,13 +63,13 @@ The installer will:
 4. Set up necessary permissions
 
 **Manual Installation:**
-Download binaries directly from the [releases page](https://github.com/pommee/goaway/releases).
+Download binaries directly from the [releases page](https://github.com/rasty94/goaway/releases).
 
 ### Option 3: Build from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/pommee/goaway.git
+git clone https://github.com/rasty94/goaway.git
 cd goaway
 
 # Build the frontend
@@ -86,7 +86,7 @@ go build -o goaway
 
 !!! warning "Paused"
 
-    Proxmox script support was removed due to the early stage of the project, will likely be back in the future once the first major release is published. Read more [here](https://github.com/pommee/goaway/issues/109).
+    Proxmox script support was removed due to the early stage of the project, will likely be back in the future once the first major release is published. Read more [here](https://github.com/rasty94/goaway/issues/109).
 
 > ~~If you are planning on running via Proxmox, then there is a helper-script available [here](https://community-scripts.github.io/ProxmoxVE/scripts?id=goaway), created by [Proxmox VE Helper-Scripts (Community Edition)](https://github.com/community-scripts/ProxmoxVE).  
 > Great alternative if you don't want to go through an as manual process and prefer not to use Docker.~~

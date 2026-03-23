@@ -105,7 +105,7 @@ function AboutDialog() {
               {(responseData?.commit && (
                 <a
                   href={
-                    "https://github.com/pommee/goaway/commit/" +
+                    "https://github.com/rasty94/goaway/commit/" +
                     responseData?.commit
                   }
                   target="_blank"

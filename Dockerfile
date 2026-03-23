@@ -1,4 +1,4 @@
-FROM alpine:3.22
+FROM alpine:3.23
 
 ARG GOAWAY_VERSION=""
 ARG DNS_PORT=53

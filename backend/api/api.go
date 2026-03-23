@@ -95,7 +95,6 @@ type API struct {
 
 func (api *API) Start(content embed.FS, errorChannel chan struct{}) {
 	api.initializeRouter()
-	api.configureCORS()
 	api.setupRoutes()
 	api.RateLimiter = ratelimit.NewRateLimiter(
 		api.Config.API.RateLimit.Enabled,
@@ -148,33 +147,51 @@ func (api *API) initializeRouter() {
 	gin.SetMode(gin.ReleaseMode)
 	api.router = gin.New()
 
+	// CORS MUST be the very first middleware to handle preflights correctly
+	api.configureCORS()
+
 	// Ignore compression on this route as otherwise it has problems with exposing the Content-Length header
 	ignoreCompression := gzip.WithExcludedPaths([]string{"/api/exportDatabase"})
 	api.router.Use(gzip.Gzip(gzip.DefaultCompression, ignoreCompression))
-	api.routes = api.router.Group("/api")
 }
 
 func (api *API) configureCORS() {
 	var (
 		corsConfig = cors.Config{
-			AllowOrigins:     []string{},
+			AllowOriginFunc: func(origin string) bool {
+				// Allow all origins from localhost and 127.0.0.1 on any port for development
+				if strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1") {
+					return true
+				}
+				// Allow the specific dashboard origins
+				allowedOrigins := []string{
+					"http://localhost:8080",
+					"http://localhost:18080",
+					"http://localhost:8081",
+					"http://127.0.0.1:8080",
+					"http://127.0.0.1:18080",
+					"http://127.0.0.1:8081",
+				}
+				for _, o := range allowedOrigins {
+					if o == origin {
+						return true
+					}
+				}
+				return false
+			},
 			AllowMethods:     []string{"POST", "GET", "PUT", "PATCH", "DELETE", "OPTIONS"},
-			AllowHeaders:     []string{"Content-Type", "Authorization", "Cookie"},
+			AllowHeaders:     []string{"Content-Type", "Authorization", "Cookie", "X-Requested-With", "Accept", "Origin"},
 			ExposeHeaders:    []string{"Set-Cookie"},
 			AllowCredentials: true,
 			MaxAge:           12 * time.Hour,
 		}
 	)
 
-	if api.Config.Misc.Dashboard {
-		corsConfig.AllowOrigins = append(corsConfig.AllowOrigins, "*")
-	} else {
-		log.Warning("Dashboard UI is disabled")
-		corsConfig.AllowOrigins = append(corsConfig.AllowOrigins, "http://localhost:8081")
-		api.routes.Use(cors.New(corsConfig))
-	}
-
 	api.router.Use(cors.New(corsConfig))
+
+	// Initialize the /api route group here so it inherits all middleware (like CORS) added to the main router
+	api.routes = api.router.Group("/api")
+
 	api.setupAuthAndMiddleware()
 }
 
