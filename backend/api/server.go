@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"goaway/backend/dns/server"
+	"goaway/backend/metrics"
 	"goaway/backend/updater"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/miekg/dns"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 )
@@ -25,10 +27,84 @@ func (api *API) registerServerRoutes() {
 	api.router.GET("/api/server", api.handleServer)
 	api.router.GET("/api/dnsMetrics", api.handleMetrics)
 	api.router.GET("/api/topDestinations", api.topDestinations)
+	api.router.GET("/api/health", api.handleHealth)
+	api.router.GET("/api/health/deep", api.handleHealthDeep)
 
 	// Authenticated routes
 	api.routes.GET("/runUpdate", api.runUpdate)
 	api.routes.GET("/restart", api.restart)
+}
+
+func (api *API) handleHealth(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"time":   time.Now().UTC(),
+	})
+}
+
+func (api *API) handleHealthDeep(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+	defer cancel()
+
+	dbOK := false
+	if api.DBConn != nil {
+		if sqlDB, err := api.DBConn.DB(); err == nil {
+			dbOK = sqlDB.PingContext(ctx) == nil
+		}
+	}
+
+	dnsOK := api.checkDNSHealth(ctx)
+
+	metrics.ServiceHealth.WithLabelValues("db").Set(boolToGauge(dbOK))
+	metrics.ServiceHealth.WithLabelValues("dns").Set(boolToGauge(dnsOK))
+
+	if dbOK && dnsOK {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+			"db":     "ok",
+			"dns":    "ok",
+			"time":   time.Now().UTC(),
+		})
+		return
+	}
+
+	status := gin.H{
+		"status": "degraded",
+		"db":     map[bool]string{true: "ok", false: "failed"}[dbOK],
+		"dns":    map[bool]string{true: "ok", false: "failed"}[dnsOK],
+		"time":   time.Now().UTC(),
+	}
+
+	c.JSON(http.StatusServiceUnavailable, status)
+}
+
+func (api *API) checkDNSHealth(ctx context.Context) bool {
+	if api.Config == nil {
+		return false
+	}
+
+	addr := fmt.Sprintf("127.0.0.1:%d", api.Config.DNS.Ports.TCPUDP)
+	msg := new(dns.Msg)
+	msg.SetQuestion("example.com.", dns.TypeA)
+
+	client := &dns.Client{Net: "udp", Timeout: 2 * time.Second}
+	in, _, err := client.ExchangeContext(ctx, msg, addr)
+	if err != nil {
+		return false
+	}
+
+	if in == nil {
+		return false
+	}
+
+	return in.Rcode == dns.RcodeSuccess || in.Rcode == dns.RcodeNameError
+}
+
+func boolToGauge(value bool) float64 {
+	if value {
+		return 1
+	}
+	return 0
 }
 
 func (api *API) handleServer(c *gin.Context) {

@@ -85,6 +85,14 @@ var (
 		},
 		[]string{"client_ip", "category"},
 	)
+
+	ServiceHealth = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "goaway_service_health",
+			Help: "Service health status per component (1=healthy, 0=unhealthy)",
+		},
+		[]string{"component"},
+	)
 )
 
 func init() {
@@ -98,4 +106,5 @@ func init() {
 	prometheus.MustRegister(DNSLatency)
 	prometheus.MustRegister(DNSSECResponses)
 	prometheus.MustRegister(CategoriesBlocked)
+	prometheus.MustRegister(ServiceHealth)
 }
