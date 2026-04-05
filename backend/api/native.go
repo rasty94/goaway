@@ -1,12 +1,14 @@
 package api
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"goaway/backend/api/models"
+	"goaway/backend/audit"
+	"goaway/backend/cluster"
 	arp "goaway/backend/dns"
 	"goaway/backend/dns/server"
-	"goaway/backend/audit"
 	"html/template"
 	"net/http"
 	"time"
@@ -41,6 +43,7 @@ func (api *API) registerNativeRoutes() {
 	api.routes.POST("/api/native/dns/toggle", api.toggleDNS)
 	api.routes.POST("/api/native/dhcp/toggle", api.toggleDHCP)
 	api.routes.GET("/api/native/health/upstreams", api.getNativeUpstreamHealth)
+	api.router.GET("/api/native/dashboard/cluster", api.getNativeCluster)
 }
 
 func (api *API) serveNativeView(c *gin.Context) {
@@ -583,4 +586,47 @@ func (api *API) getNativeUpstreamHealth(c *gin.Context) {
 		html = "<div class='p-10 text-center'><p class='text-[10px] font-black text-stone-700 uppercase tracking-widest'>No analysis data yet</p></div>"
 	}
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (api *API) getNativeCluster(c *gin.Context) {
+	if api.ClusterManager == nil {
+		c.String(http.StatusServiceUnavailable, "Cluster Manager not initialized")
+		return
+	}
+
+	nodes := api.ClusterManager.GetNodes()
+	count := 0
+	for _, n := range nodes {
+		if !n.Unreachable {
+			count++
+		}
+	}
+	
+	activeNodes := count + 1
+
+	data := struct {
+		SelfRole    string
+		ActiveNodes int
+		ClusterID   string
+		Nodes       []*cluster.ClusterNode
+	}{
+		SelfRole:    api.Config.HighAvailability.Mode,
+		ActiveNodes: activeNodes,
+		ClusterID:   api.Config.HighAvailability.ClusterID,
+		Nodes:       nodes,
+	}
+
+	tmpl, err := template.ParseFS(templatesFS, "templates/cluster.html")
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Template error: %v", err)
+		return
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		c.String(http.StatusInternalServerError, "Execution error: %v", err)
+		return
+	}
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", buf.Bytes())
 }

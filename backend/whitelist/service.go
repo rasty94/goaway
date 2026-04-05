@@ -2,12 +2,14 @@ package whitelist
 
 import (
 	"goaway/backend/domain"
+	"goaway/backend/cluster"
 	"goaway/backend/logging"
 )
 
 type Service struct {
 	repository Repository
 	Matcher    *domain.Matcher
+	replicator cluster.Replicator
 }
 
 var log = logging.GetLogger()
@@ -26,6 +28,10 @@ func NewService(repo Repository) *Service {
 	return service
 }
 
+func (s *Service) SetReplicator(r cluster.Replicator) {
+	s.replicator = r
+}
+
 func (s *Service) AddDomain(d string) error {
 	err := s.repository.AddDomain(d)
 	if err != nil {
@@ -33,6 +39,14 @@ func (s *Service) AddDomain(d string) error {
 	}
 
 	s.Matcher.Add(d)
+
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventWhitelistAdd,
+			Payload: map[string]string{"domain": d},
+		})
+	}
+
 	return nil
 }
 
@@ -56,6 +70,14 @@ func (s *Service) RemoveDomain(d string) error {
 	}
 
 	s.Matcher.Remove(d)
+
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventWhitelistRemove,
+			Payload: map[string]string{"domain": d},
+		})
+	}
+
 	return nil
 }
 

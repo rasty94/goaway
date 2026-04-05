@@ -91,6 +91,11 @@
                 <i data-lucide="lock" class="w-5 h-5 group-hover:text-blue-400 transition-colors"></i>
                 <span>Policies</span>
             </button>
+            <button hx-get="/api/native/dashboard/cluster" hx-target="#main-content" 
+                    class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-stone-400 font-semibold group">
+                <i data-lucide="server" class="w-5 h-5 group-hover:text-blue-400 transition-colors"></i>
+                <span>HA Cluster</span>
+            </button>
             <div class="pt-8 pb-4 px-4">
                 <p class="text-[10px] font-black text-stone-600 uppercase tracking-widest">Configuration</p>
             </div>

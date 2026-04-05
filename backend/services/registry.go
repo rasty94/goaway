@@ -16,6 +16,7 @@ import (
 	"goaway/backend/request"
 	"goaway/backend/resolution"
 	"goaway/backend/sync"
+	"goaway/backend/cluster"
 	"goaway/backend/user"
 	"goaway/backend/whitelist"
 	"net/http"
@@ -57,6 +58,7 @@ type ServiceRegistry struct {
 	GroupService        *group.Service
 	PolicyService       *policy.Service
 	WhitelistService    *whitelist.Service
+	ClusterService      *cluster.Service
 }
 
 type ServiceError struct {
@@ -160,6 +162,13 @@ func (r *ServiceRegistry) setupAPIServer() {
 
 	// Initialize replica sync manager for HA support
 	r.APIServer.ReplicaSyncManager = sync.NewReplicaSyncManager(r.Context.Config, r.APIServer)
+
+	r.ClusterService = cluster.NewService(r.Context.Config, "local-node") // Using temporary fixed ID
+	r.APIServer.ClusterManager = r.ClusterService
+	
+	r.BlacklistService.SetReplicator(r.ClusterService)
+	r.WhitelistService.SetReplicator(r.ClusterService)
+	r.GroupService.SetReplicator(r.ClusterService)
 }
 
 func (r *ServiceRegistry) StartAll() {
@@ -249,6 +258,11 @@ func (r *ServiceRegistry) startAPIServer() {
 		// Start replica sync manager for HA support
 		if r.APIServer.ReplicaSyncManager != nil {
 			r.APIServer.ReplicaSyncManager.Start()
+		}
+
+		// Start the new active clustering service
+		if r.ClusterService != nil {
+			r.ClusterService.Start()
 		}
 
 		r.APIServer.Start(r.content, errorChan)

@@ -1,8 +1,12 @@
 package api
 
 import (
+	"context"
+	"fmt"
+	"goaway/backend/cluster"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +22,12 @@ func (api *API) registerHARoutes() {
 		haRoutes.GET("/config", api.getHAConfig)
 		haRoutes.POST("/config", api.saveHAConfig)
 		haRoutes.POST("/sync-now", api.triggerHASync)
+		haRoutes.GET("/cluster", api.getClusterStatus)
 	}
+
+	// Internal clustering heartbeat (no auth required if verified separately or over TLS)
+	api.router.POST("/api/native/cluster/heartbeat", api.handleHeartbeat)
+	api.router.POST("/api/native/cluster/replicate", api.handleReplication)
 }
 
 // getHAConfig returns current HA configuration
@@ -160,4 +169,163 @@ func (api *API) triggerHASync(c *gin.Context) {
 	}()
 
 	c.JSON(http.StatusOK, gin.H{"message": "HA sync triggered"})
+}
+
+func (api *API) handleHeartbeat(c *gin.Context) {
+	var req cluster.HeartbeatRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid heartbeat request"})
+		return
+	}
+
+	// In a real scenario, we would verify the SourceID and Timestamp/Signature
+	// For now, we just reply with our current status
+	resp := cluster.HeartbeatResponse{
+		ID:        "local-node", // Should match initialized ID
+		Role:      cluster.NodeRole(api.Config.HighAvailability.Mode),
+		Timestamp: time.Now(),
+		Status:    "online",
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+func (api *API) getClusterStatus(c *gin.Context) {
+	if api.ClusterManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "cluster manager not initialized"})
+		return
+	}
+
+	nodes := api.ClusterManager.GetNodes()
+	c.JSON(http.StatusOK, nodes)
+}
+
+func (api *API) handleReplication(c *gin.Context) {
+	var event cluster.ReplicatedEvent
+	if err := c.BindJSON(&event); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid replication event"})
+		return
+	}
+
+	log.Info("[HA/Replication] Received event: %s", event.Type)
+
+	// Dispatch event to appropriate service
+	var err error
+	switch event.Type {
+	case cluster.EventBlacklistAdd:
+		err = api.handleBlacklistReplication(event.Payload)
+	case cluster.EventBlacklistRemove:
+		err = api.handleBlacklistRemoveReplication(event.Payload)
+	case cluster.EventWhitelistAdd:
+		err = api.handleWhitelistReplication(event.Payload)
+	case cluster.EventWhitelistRemove:
+		err = api.handleWhitelistRemoveReplication(event.Payload)
+	case cluster.EventGroupCreate:
+		err = api.handleGroupCreateReplication(event.Payload)
+	case cluster.EventGroupDelete:
+		err = api.handleGroupDeleteReplication(event.Payload)
+	// Add other cases as needed
+	default:
+		log.Warning("[HA/Replication] Unhandled event type: %s", event.Type)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (api *API) handleBlacklistReplication(payload interface{}) error {
+	// Payload is likely map[string]interface{} from JSON
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid blacklist payload")
+	}
+
+	domainStr, _ := m["domain"].(string)
+	if domainStr == "" {
+		return fmt.Errorf("empty domain in replication")
+	}
+
+	// Add without re-broadcasting
+	return api.BlacklistService.AddBlacklistedDomain(context.Background(), domainStr)
+}
+
+func (api *API) handleBlacklistRemoveReplication(payload interface{}) error {
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid blacklist remove payload")
+	}
+
+	domainStr, _ := m["domain"].(string)
+	if domainStr == "" {
+		return fmt.Errorf("empty domain in replication")
+	}
+
+	return api.BlacklistService.RemoveDomain(context.Background(), domainStr)
+}
+
+func (api *API) handleWhitelistReplication(payload interface{}) error {
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid whitelist payload")
+	}
+
+	domainStr, _ := m["domain"].(string)
+	if domainStr == "" {
+		return fmt.Errorf("empty domain in replication")
+	}
+
+	return api.WhitelistService.AddDomain(domainStr)
+}
+
+func (api *API) handleWhitelistRemoveReplication(payload interface{}) error {
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid whitelist remove payload")
+	}
+
+	domainStr, _ := m["domain"].(string)
+	if domainStr == "" {
+		return fmt.Errorf("empty domain in replication")
+	}
+
+	return api.WhitelistService.RemoveDomain(domainStr)
+}
+
+func (api *API) handleGroupCreateReplication(payload interface{}) error {
+	// For Group creation, we can try to JSON decode it back to database.ClientGroup
+	// But let's keep it simple for now and just extra fields
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid group payload")
+	}
+
+	name, _ := m["name"].(string)
+	desc, _ := m["description"].(string)
+	global, _ := m["useGlobalPolicies"].(bool)
+
+	if name == "" {
+		return fmt.Errorf("empty group name in replication")
+	}
+
+	_, err := api.GroupService.CreateGroup(name, desc, global)
+	return err
+}
+
+func (api *API) handleGroupDeleteReplication(payload interface{}) error {
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid group delete payload")
+	}
+
+	// JSON numbers are often float64
+	idVal, _ := m["id"].(float64)
+	if idVal == 0 {
+		return fmt.Errorf("missing id in group delete")
+	}
+
+	return api.GroupService.DeleteGroup(uint(idVal))
 }

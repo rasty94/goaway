@@ -130,18 +130,25 @@ type RemoteBackupConfig struct {
 }
 
 type HighAvailabilityConfig struct {
-	Enabled                bool      `yaml:"enabled" json:"enabled"`
-	Mode                   string    `yaml:"mode" json:"mode"`                                   // "primary" or "replica"
-	ReplicaSyncInterval    string    `yaml:"replicaSyncInterval" json:"replicaSyncInterval"`     // duration: "5m", "15m", "1h"
-	PrimaryBackupProvider  string    `yaml:"primaryBackupProvider" json:"primaryBackupProvider"` // provider type: "s3", "webdav", "local"
-	PrimaryBackupEndpoint  string    `yaml:"primaryBackupEndpoint" json:"primaryBackupEndpoint"` // endpoint/URL for Primary's remote backup
-	PrimaryBackupBucket    string    `yaml:"primaryBackupBucket" json:"primaryBackupBucket"`     // S3 bucket or path
-	PrimaryBackupRegion    string    `yaml:"primaryBackupRegion" json:"primaryBackupRegion"`     // S3 region (optional)
-	PrimaryBackupAccessKey string    `yaml:"primaryBackupAccessKey" json:"-"`                    // credentials
-	PrimaryBackupSecretKey string    `yaml:"primaryBackupSecretKey" json:"-"`
-	PrimaryBackupUsername  string    `yaml:"primaryBackupUsername" json:"primaryBackupUsername"` // WebDAV/SMB credentials
-	PrimaryBackupPassword  string    `yaml:"primaryBackupPassword" json:"-"`
-	LastSyncTime           time.Time `yaml:"-" json:"lastSyncTime"` // last successful sync timestamp
+	Enabled      bool      `yaml:"enabled" json:"enabled"`
+	Mode         string    `yaml:"mode" json:"mode"`           // "primary" or "replica"
+	ClusterID    string    `yaml:"clusterId" json:"clusterId"` // Unique ID for the cluster
+	Priority     int       `yaml:"priority" json:"priority"`   // Higher priority = better candidate for Primary
+	Peers        []string  `yaml:"peers" json:"peers"`         // List of peer node API endpoints (e.g. http://192.168.1.10:8080)
+	HeartbeatURL string    `yaml:"heartbeatUrl" json:"heartbeatUrl"`
+
+	// Passive Pull-Sync (Phase 1 legacy/fallback)
+	ReplicaSyncInterval    string `yaml:"replicaSyncInterval" json:"replicaSyncInterval"`
+	PrimaryBackupProvider  string `yaml:"primaryBackupProvider" json:"primaryBackupProvider"`
+	PrimaryBackupEndpoint  string `yaml:"primaryBackupEndpoint" json:"primaryBackupEndpoint"`
+	PrimaryBackupBucket    string `yaml:"primaryBackupBucket" json:"primaryBackupBucket"`
+	PrimaryBackupRegion    string `yaml:"primaryBackupRegion" json:"primaryBackupRegion"`
+	PrimaryBackupAccessKey string `yaml:"primaryBackupAccessKey" json:"-"`
+	PrimaryBackupSecretKey string `yaml:"primaryBackupSecretKey" json:"-"`
+	PrimaryBackupUsername  string `yaml:"primaryBackupUsername" json:"primaryBackupUsername"`
+	PrimaryBackupPassword  string `yaml:"primaryBackupPassword" json:"-"`
+
+	LastSyncTime time.Time `yaml:"-" json:"lastSyncTime"`
 }
 
 type Config struct {

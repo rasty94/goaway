@@ -12,6 +12,7 @@ import (
 	"goaway/backend/blacklist"
 	"goaway/backend/dhcp"
 	"goaway/backend/dns/server"
+	"goaway/backend/cluster"
 	_ "goaway/backend/docs"
 	"goaway/backend/group"
 	"goaway/backend/logging"
@@ -88,6 +89,7 @@ type API struct {
 	WhitelistService    *whitelist.Service
 	AuditService        *audit.Service
 	ReplicaSyncManager  *sync.ReplicaSyncManager
+	ClusterManager      *cluster.Service
 
 	server         *http.Server
 	IsShuttingDown bool

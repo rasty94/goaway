@@ -3,6 +3,7 @@ package group
 import (
 	"fmt"
 	"goaway/backend/database"
+	"goaway/backend/cluster"
 	"goaway/backend/domain"
 	"goaway/backend/logging"
 	"slices"
@@ -27,7 +28,9 @@ type Service struct {
 	assignments    map[string][]uint
 	blockedByGroup map[uint]*domain.Matcher
 	allowedByGroup map[uint]*domain.Matcher
+	replicator     cluster.Replicator
 }
+
 
 type EffectivePolicy struct {
 	GroupIDs            []uint   `json:"groupIDs"`
@@ -53,6 +56,10 @@ func NewService(repo Repository) *Service {
 	}
 
 	return s
+}
+
+func (s *Service) SetReplicator(r cluster.Replicator) {
+	s.replicator = r
 }
 
 func (s *Service) ensureDefaultGroup() error {
@@ -180,6 +187,13 @@ func (s *Service) CreateGroup(name, description string, useGlobalPolicies bool) 
 		return nil, err
 	}
 
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventGroupCreate,
+			Payload: group,
+		})
+	}
+
 	return group, nil
 }
 
@@ -187,7 +201,16 @@ func (s *Service) DeleteGroup(id uint) error {
 	if err := s.repository.DeleteGroup(id); err != nil {
 		return err
 	}
-	return s.RefreshCache()
+	s.RefreshCache()
+
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventGroupDelete,
+			Payload: map[string]uint{"id": id},
+		})
+	}
+
+	return nil
 }
 
 func (s *Service) SetGroupUseGlobalPolicies(id uint, enabled bool) error {

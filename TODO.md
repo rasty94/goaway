@@ -219,7 +219,7 @@ Labels base recomendadas:
 
 ### EPIC-05 HA Active
 
-- [ ] FEATURE: Membership y leader election
+- [x] FEATURE: Membership y leader election
   - Prioridad: p1
   - Labels: feature, ha
   - Criterios de aceptacion:
@@ -235,7 +235,7 @@ Labels base recomendadas:
   - [x] Interactive DNS Resolution & Wildcard console
   - [x] Real-time activity stream and policy explainer
 
-- [ ] FEATURE: Replicacion en tiempo real
+- [/] FEATURE: Replicacion en tiempo real (Foundation + Blacklist OK)
   - Prioridad: p1
   - Labels: feature, ha
   - Criterios de aceptacion:

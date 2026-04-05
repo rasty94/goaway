@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"goaway/backend/database"
+	"goaway/backend/cluster"
 	"goaway/backend/domain"
 	"goaway/backend/logging"
 	"io"
@@ -39,6 +40,7 @@ type Service struct {
 	cacheMu          sync.RWMutex
 	blocklistURL     []BlocklistSource
 	config           Config
+	replicator       cluster.Replicator
 }
 
 var (
@@ -89,6 +91,10 @@ func NewService(repo Repository) *Service {
 	}
 
 	return service
+}
+
+func (s *Service) SetReplicator(r cluster.Replicator) {
+	s.replicator = r
 }
 
 func (s *Service) initialize(ctx context.Context) error {
@@ -444,6 +450,14 @@ func (s *Service) AddBlacklistedDomain(ctx context.Context, domain string) error
 	}
 
 	s.updateCache([]string{domain}, true)
+
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventBlacklistAdd,
+			Payload: map[string]string{"domain": domain},
+		})
+	}
+
 	return nil
 }
 
@@ -489,6 +503,14 @@ func (s *Service) RemoveDomain(ctx context.Context, domain string) error {
 	}
 
 	s.updateCache([]string{domain}, false)
+
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventBlacklistRemove,
+			Payload: map[string]string{"domain": domain},
+		})
+	}
+
 	return nil
 }
 
