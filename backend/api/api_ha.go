@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"goaway/backend/cluster"
+	"goaway/backend/database"
 	"net/http"
 	"strings"
 	"time"
@@ -204,11 +206,17 @@ func (api *API) getClusterStatus(c *gin.Context) {
 		}
 	}
 
+	var proxyStats map[string]interface{}
+	if api.DNSProxy != nil {
+		proxyStats = api.DNSProxy.GetStats()
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"selfRole":    api.Config.HighAvailability.Mode,
 		"activeNodes": count,
 		"clusterId":   "goaway-cluster-main", // Static for now, or fetch from config
 		"nodes":       nodes,
+		"proxyStats":  proxyStats,
 	})
 }
 
@@ -236,6 +244,12 @@ func (api *API) handleReplication(c *gin.Context) {
 		err = api.handleGroupCreateReplication(event.Payload)
 	case cluster.EventGroupDelete:
 		err = api.handleGroupDeleteReplication(event.Payload)
+	case cluster.EventDHCPLeaseAdd:
+		err = api.handleDHCPLeaseReplication(event.Payload)
+	case cluster.EventDHCPStaticAdd:
+		err = api.handleDHCPStaticAddReplication(event.Payload)
+	case cluster.EventDHCPStaticRemove:
+		err = api.handleDHCPStaticRemoveReplication(event.Payload)
 	// Add other cases as needed
 	default:
 		log.Warning("[HA/Replication] Unhandled event type: %s", event.Type)
@@ -340,4 +354,50 @@ func (api *API) handleGroupDeleteReplication(payload interface{}) error {
 	}
 
 	return api.GroupService.DeleteGroup(uint(idVal))
+}
+func (api *API) handleDHCPLeaseReplication(payload interface{}) error {
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid dhcp lease payload")
+	}
+
+	// Dynamic leases are complex due to time.Time JSON marshalling
+	// We'll decode it properly
+	data, _ := json.Marshal(m)
+	var lease database.ActiveDHCPLease
+	if err := json.Unmarshal(data, &lease); err != nil {
+		return err
+	}
+
+	// Store in repository directly to avoid re-broadcast
+	return api.DBConn.Save(&lease).Error
+}
+
+func (api *API) handleDHCPStaticAddReplication(payload interface{}) error {
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid dhcp static payload")
+	}
+
+	data, _ := json.Marshal(m)
+	var lease database.StaticDHCPLease
+	if err := json.Unmarshal(data, &lease); err != nil {
+		return err
+	}
+
+	return api.DBConn.Save(&lease).Error
+}
+
+func (api *API) handleDHCPStaticRemoveReplication(payload interface{}) error {
+	m, ok := payload.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid dhcp static remove payload")
+	}
+
+	idVal, _ := m["id"].(float64)
+	if idVal == 0 {
+		return fmt.Errorf("missing id in dhcp static delete")
+	}
+
+	return api.DBConn.Delete(&database.StaticDHCPLease{}, uint(idVal)).Error
 }

@@ -3,6 +3,7 @@ package dhcp
 import (
 	"encoding/binary"
 	"fmt"
+	"goaway/backend/cluster"
 	"goaway/backend/database"
 	"goaway/backend/logging"
 	"goaway/backend/settings"
@@ -21,6 +22,7 @@ var log = logging.GetLogger()
 type Service struct {
 	repository Repository
 	config     *settings.Config
+	replicator cluster.Replicator
 
 	mu        sync.Mutex
 	running   bool
@@ -30,6 +32,12 @@ type Service struct {
 
 func NewService(repo Repository, cfg *settings.Config) *Service {
 	return &Service{repository: repo, config: cfg}
+}
+
+func (s *Service) SetReplicator(replicator cluster.Replicator) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.replicator = replicator
 }
 
 func (s *Service) Start() error {
@@ -375,6 +383,7 @@ func (s *Service) allocateIP6(duid string, iaid uint32, hostname string) (net.IP
 		if l.DUID == duid && l.IAID == iaid {
 			l.ExpiresAt = time.Now().Add(time.Duration(s.config.DHCP.LeaseDuration) * time.Second)
 			_ = s.repository.CreateOrUpdateActivev6Lease(&l)
+			s.broadcastLeasev6(&l)
 			return net.ParseIP(l.IP), nil
 		}
 	}
@@ -408,6 +417,7 @@ func (s *Service) allocateIP6(duid string, iaid uint32, hostname string) (net.IP
 			if err := s.repository.CreateOrUpdateActivev6Lease(newLease); err != nil {
 				return nil, err
 			}
+			s.broadcastLeasev6(newLease)
 			return ip, nil
 		}
 	}
@@ -529,6 +539,7 @@ func (s *Service) allocateIP(mac net.HardwareAddr, hostname string) (net.IP, err
 				l.Hostname = hostname
 			}
 			_ = s.repository.CreateOrUpdateActiveLease(&l)
+			s.broadcastLease(&l)
 			return net.ParseIP(l.IP), nil
 		}
 	}
@@ -562,6 +573,7 @@ func (s *Service) allocateIP(mac net.HardwareAddr, hostname string) (net.IP, err
 			if err := s.repository.CreateOrUpdateActiveLease(newLease); err != nil {
 				return nil, err
 			}
+			s.broadcastLease(newLease)
 			return ip, nil
 		}
 	}
@@ -599,6 +611,7 @@ func (s *Service) confirmLease(mac net.HardwareAddr, requested net.IP, hostname 
 					l.Hostname = hostname
 				}
 				_ = s.repository.CreateOrUpdateActiveLease(&l)
+				s.broadcastLease(&l)
 				return requested, nil
 			}
 		}
@@ -666,7 +679,11 @@ func (s *Service) CreateStaticLease(lease *database.StaticDHCPLease) error {
 	if err := s.validateLease(lease); err != nil {
 		return err
 	}
-	return s.repository.CreateStaticLease(lease)
+	if err := s.repository.CreateStaticLease(lease); err != nil {
+		return err
+	}
+	s.broadcastStatic(cluster.EventDHCPStaticAdd, lease)
+	return nil
 }
 
 func (s *Service) UpdateStaticLease(id uint, lease *database.StaticDHCPLease) error {
@@ -677,7 +694,11 @@ func (s *Service) UpdateStaticLease(id uint, lease *database.StaticDHCPLease) er
 }
 
 func (s *Service) DeleteStaticLease(id uint) error {
-	return s.repository.DeleteStaticLease(id)
+	if err := s.repository.DeleteStaticLease(id); err != nil {
+		return err
+	}
+	s.broadcastStatic(cluster.EventDHCPStaticRemove, &database.StaticDHCPLease{ID: id})
+	return nil
 }
 
 func (s *Service) ListActiveLeases() ([]database.ActiveDHCPLease, error) {
@@ -692,3 +713,29 @@ func (s *Service) ListStaticv6Leases() ([]database.StaticDHCPv6Lease, error) {
 	return s.repository.ListStaticv6Leases()
 }
 
+func (s *Service) broadcastLease(lease *database.ActiveDHCPLease) {
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventDHCPLeaseAdd,
+			Payload: lease,
+		})
+	}
+}
+
+func (s *Service) broadcastLeasev6(lease *database.ActiveDHCPv6Lease) {
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventDHCPLeaseAdd,
+			Payload: lease,
+		})
+	}
+}
+
+func (s *Service) broadcastStatic(eventType cluster.EventType, lease *database.StaticDHCPLease) {
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    eventType,
+			Payload: lease,
+		})
+	}
+}

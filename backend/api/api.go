@@ -90,6 +90,7 @@ type API struct {
 	AuditService        *audit.Service
 	ReplicaSyncManager  *sync.ReplicaSyncManager
 	ClusterManager      *cluster.Service
+	DNSProxy            *cluster.DNSProxy
 
 	server         *http.Server
 	IsShuttingDown bool

@@ -27,6 +27,11 @@ export type ClusterStatus = {
   activeNodes: number;
   clusterId: string;
   nodes: ClusterNode[];
+  proxyStats?: {
+    totalRequests: number;
+    nodeRequests: Record<string, number>;
+    errorRequests: number;
+  };
 };
 
 export function Cluster() {
@@ -164,6 +169,63 @@ export function Cluster() {
           </div>
         </CardContent>
       </Card>
+
+      {status?.proxyStats && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-emerald-500/5 border-emerald-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-emerald-500 uppercase">Total Proxied</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{status.proxyStats.totalRequests || 0}</div>
+              <p className="text-[10px] text-muted-foreground mt-1">Queries balanced across cluster</p>
+            </CardContent>
+          </Card>
+          <Card className={`${status.proxyStats.errorRequests > 0 ? 'bg-amber-500/5 border-amber-500/20' : 'bg-muted/50 border-border'}`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium uppercase font-bold">Node Failovers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${status.proxyStats.errorRequests > 0 ? 'text-amber-500' : ''}`}>
+                {status.proxyStats.errorRequests || 0}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">Retries on healthy nodes</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium uppercase">Node Traffic Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 mt-2">
+                {Object.entries(status.proxyStats.nodeRequests || {}).map(([ip, count]) => {
+                   const percentage = Math.round((count / (status?.proxyStats?.totalRequests || 1)) * 100);
+                   return (
+                    <div key={ip} className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-mono">
+                        <span>{ip}</span>
+                        <span className="font-bold">{count} q ({percentage}%)</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-500" 
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+                {Object.keys(status.proxyStats.nodeRequests || {}).length === 0 && (
+                  <div className="text-center py-4 text-xs text-muted-foreground italic">
+                    No proxy traffic recorded yet.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
         <h3 className="font-semibold text-blue-500 mb-2">Clustering Note</h3>

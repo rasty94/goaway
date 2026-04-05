@@ -86,7 +86,7 @@ Labels base recomendadas:
 ### Pendientes de Alta Prioridad Tecnica
 - [x] Framework de migraciones de esquema (versionado + rollback).
 - [x] DNSSEC completo con estado secure/insecure/bogus en logs/API.
-- [ ] Soporte total Windows/macOS (de Beta a Full).
+- [x] Soporte total Windows/macOS (de Beta a Full).
 - [ ] DHCPv6 nativo.
 
 ---
@@ -217,19 +217,19 @@ Labels base recomendadas:
     - [x] Middleware automatico para toda la API.
     - [x] Evento con actor, timestamp y accion.
 
-### EPIC-05 HA Active
-
-- [x] FEATURE: Membership y leader election
-  - Prioridad: p1
-  - Labels: feature, ha
-  - Criterios de aceptacion:
-    - Roles leader/follower/standby.
-    - Heartbeats y fencing basico anti split-brain.
-    - Estado visible en dashboard y metricas.
+### EPIC-05: High Availability (Active Clustering)
+- [x] Cluster logic and Leader Election (Priority-based)
+- [x] Global Replication Manager (Push-based)
+- [x] Blacklist/Whitelist/Group Replicators
+- [x] Replication API Endpoints
+- [x] **Cluster Management Dashboard in React (UI Unified)**
+- [x] Project Version Bump to v0.90.0
+- [x] Phase 2: DHCP & Leases Replication
+- [x] Phase 3: Virtual IP (VIP) Floating & DNS Proxy Balancing (Sticky Sessions)
+- [ ] Phase 4: Cluster Auth & Security Signatures
 
 - [x] EPIC-10: Premium Native Dashboard Implementation
   - [x] Modern layout with sidebar and glassmorphism design
-  - [x] HTMX-powered SPA architecture for high-performance feel
   - [x] Dual-stack DHCPv4/v6 monitoring view
   - [x] Hierarchical DNS Policy management view
   - [x] Interactive DNS Resolution & Wildcard console
@@ -243,11 +243,7 @@ Labels base recomendadas:
     - Cola persistente y reintentos al reconectar nodos.
     - Resolucion de conflictos con versionado definido.
 
-- [ ] FEATURE: Modo despliegue con VIP flotante
-  - Prioridad: p1
-  - Labels: feature, ha
-  - Criterios de aceptacion:
-    - Guia oficial de despliegue con VIP compartida.
+- [x] FEATURE: Modo despliegue con VIP flotante (Linux / macOS)
     - Health checks expulsan nodo en fallo DNS/DB.
     - Runbook de failover y rollback.
 

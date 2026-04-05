@@ -9,20 +9,21 @@ COPY client/ ./
 RUN pnpm build
 
 # Build Stage for Backend
-FROM golang:1.26-alpine3.23 AS backend-builder
+FROM golang:1.26.1-alpine3.23 AS backend-builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 # Copy compiled frontend from the previous stage
 COPY --from=frontend-builder /app/client/dist ./client/dist
-RUN CGO_ENABLED=0 GOOS=linux go build -o goaway .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o goaway .
 
 # Final Stage
 FROM alpine:3.23
-RUN apk add --no-cache ca-certificates
+RUN apk update && apk upgrade && \
+    apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=backend-builder /app/goaway .
 
-EXPOSE 53/tcp 53/udp 8080/tcp 67/udp 547/udp
+EXPOSE 53/tcp 53/udp 5353/tcp 5353/udp 8080/tcp 67/udp 547/udp
 ENTRYPOINT ["./goaway"]

@@ -1,8 +1,9 @@
-FROM golang:1.26.0-alpine3.23
+FROM golang:1.26.1-alpine3.23
 
 WORKDIR /app
 
-RUN mkdir -p /.cache && chmod 777 /.cache
+RUN apk update && apk upgrade && \
+    mkdir -p /.cache && chmod 777 /.cache
 
 RUN go install github.com/air-verse/air@latest
 

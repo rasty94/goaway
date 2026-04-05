@@ -1,6 +1,9 @@
 services:
   goaway:
     image: goaway:local
+    build:
+      context: .
+      dockerfile: Dockerfile.multi
     container_name: goaway
     restart: unless-stopped
     # volumes:
@@ -12,6 +15,8 @@ services:
     ports:
       - "${DNS_PORT:-53}:${DNS_PORT:-53}/udp"
       - "${DNS_PORT:-53}:${DNS_PORT:-53}/tcp"
+      - "${PROXY_PORT:-5354}:${PROXY_PORT:-5354}/udp"
+      - "${PROXY_PORT:-5354}:${PROXY_PORT:-5354}/tcp"
       - "${WEBSITE_PORT:-8080}:${WEBSITE_PORT:-8080}/tcp"
       - "67:67/udp"
       - "547:547/udp"
@@ -21,4 +26,11 @@ services:
       - NET_ADMIN
     # Note: For DHCP server to function correctly, host networking is often required:
     # network_mode: host
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${WEBSITE_PORT:-8080}/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 

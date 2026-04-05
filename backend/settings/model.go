@@ -129,13 +129,26 @@ type RemoteBackupConfig struct {
 	Schedule  string `yaml:"schedule" json:"schedule"` // "daily", "weekly", "manual"
 }
 
+type HaProxyConfig struct {
+	Enabled bool `yaml:"enabled" json:"enabled"`
+	Port    int  `yaml:"port" json:"port"`
+}
+
+type VipConfig struct {
+	Enabled   bool   `yaml:"enabled" json:"enabled"`
+	Interface string `yaml:"interface" json:"interface"`
+	Address   string `yaml:"address" json:"address"`
+}
+
 type HighAvailabilityConfig struct {
-	Enabled      bool      `yaml:"enabled" json:"enabled"`
-	Mode         string    `yaml:"mode" json:"mode"`           // "primary" or "replica"
-	ClusterID    string    `yaml:"clusterId" json:"clusterId"` // Unique ID for the cluster
-	Priority     int       `yaml:"priority" json:"priority"`   // Higher priority = better candidate for Primary
-	Peers        []string  `yaml:"peers" json:"peers"`         // List of peer node API endpoints (e.g. http://192.168.1.10:8080)
-	HeartbeatURL string    `yaml:"heartbeatUrl" json:"heartbeatUrl"`
+	Enabled      bool           `yaml:"enabled" json:"enabled"`
+	Mode         string         `yaml:"mode" json:"mode"`           // "primary" or "replica"
+	ClusterID    string         `yaml:"clusterId" json:"clusterId"` // Unique ID for the cluster
+	Priority     int            `yaml:"priority" json:"priority"`   // Higher priority = better candidate for Primary
+	Peers        []string       `yaml:"peers" json:"peers"`         // List of peer node API endpoints (e.g. http://192.168.1.10:8080)
+	HeartbeatURL string         `yaml:"heartbeatUrl" json:"heartbeatUrl"`
+	Proxy        HaProxyConfig  `yaml:"proxy" json:"proxy"`
+	VIP          VipConfig      `yaml:"vip" json:"vip"`
 
 	// Passive Pull-Sync (Phase 1 legacy/fallback)
 	ReplicaSyncInterval    string `yaml:"replicaSyncInterval" json:"replicaSyncInterval"`

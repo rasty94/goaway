@@ -59,6 +59,8 @@ type ServiceRegistry struct {
 	PolicyService       *policy.Service
 	WhitelistService    *whitelist.Service
 	ClusterService      *cluster.Service
+	DNSProxy            *cluster.DNSProxy
+	VipManager          *cluster.VipManager
 }
 
 type ServiceError struct {
@@ -168,7 +170,26 @@ func (r *ServiceRegistry) setupAPIServer() {
 	
 	r.BlacklistService.SetReplicator(r.ClusterService)
 	r.WhitelistService.SetReplicator(r.ClusterService)
-	r.GroupService.SetReplicator(r.ClusterService)
+	r.DHCPService.SetReplicator(r.ClusterService)
+
+	// Setup DNS Proxy if enabled
+	if r.Context.Config.HighAvailability.Enabled && r.Context.Config.HighAvailability.Proxy.Enabled {
+		r.DNSProxy = cluster.NewDNSProxy(
+			r.ClusterService,
+			r.Context.Config.DNS.Address,
+			r.Context.Config.HighAvailability.Proxy.Port,
+		)
+		r.APIServer.DNSProxy = r.DNSProxy
+	}
+
+	// Setup VIP Manager if enabled
+	if r.Context.Config.HighAvailability.Enabled && r.Context.Config.HighAvailability.VIP.Enabled {
+		r.VipManager = cluster.NewVipManager(
+			r.ClusterService,
+			r.Context.Config.HighAvailability.VIP.Address,
+			r.Context.Config.HighAvailability.VIP.Interface,
+		)
+	}
 }
 
 func (r *ServiceRegistry) StartAll() {
@@ -263,6 +284,18 @@ func (r *ServiceRegistry) startAPIServer() {
 		// Start the new active clustering service
 		if r.ClusterService != nil {
 			r.ClusterService.Start()
+		}
+
+		// Start DNS Proxy if configured
+		if r.DNSProxy != nil {
+			if err := r.DNSProxy.Start(); err != nil {
+				log.Error("[HA/Proxy] Failed to start DNS Proxy: %v", err)
+			}
+		}
+
+		// Start VIP Manager if configured
+		if r.VipManager != nil {
+			r.VipManager.Start()
 		}
 
 		r.APIServer.Start(r.content, errorChan)

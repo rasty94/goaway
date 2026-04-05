@@ -22,6 +22,9 @@ const (
 	EventGroupDelete     EventType = "group.delete"
 	EventClientUpdate    EventType = "client.update"
 	EventDHCPLeaseAdd    EventType = "dhcp.lease.add"
+	EventDHCPLeaseRemove EventType = "dhcp.lease.remove"
+	EventDHCPStaticAdd   EventType = "dhcp.static.add"
+	EventDHCPStaticRemove EventType = "dhcp.static.remove"
 )
 
 type ReplicatedEvent struct {

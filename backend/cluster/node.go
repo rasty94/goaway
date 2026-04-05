@@ -24,9 +24,10 @@ const (
 
 // ClusterNode represents a node in the cluster from this instance's perspective
 type ClusterNode struct {
-	ID           string    `json:"id"`
-	Address      string    `json:"address"`
-	Role         NodeRole  `json:"role"`
+	ID      string    `json:"id"`
+	Address string    `json:"address"` // API endpoint (e.g. http://ip:8080)
+	IP      string    `json:"ip"`      // Node IP for DNS/DHCP (e.g. 192.168.1.10)
+	Role    NodeRole  `json:"role"`
 	Status       NodeState `json:"status"`
 	Priority     int       `json:"priority"`
 	LastSeen     time.Time `json:"lastSeen"`

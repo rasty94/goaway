@@ -1,3 +1,23 @@
+## [0.91.0] (2026-04-05)
+
+### High Availability & Clustering (Phase 2 & 3)
+* **DHCP Replication**: Full real-time synchronization of DHCP leases and static reservations across the cluster.
+* **DNS Proxy with Sticky Sessions**: Implementation of a high-performance DNS load balancer with source IP hashing for persistent resolution.
+* **Virtual IP (VIP)**: Platform-agnostic floating IP takeover/release for seamless failover (Supports Linux `ip addr` and macOS `ifconfig`).
+* **Cluster Dashboard**: Real-time traffic distribution charts and proxy health monitoring integrated into the UI.
+
+### DevOps & Infrastructure
+* **Docker Optimization**: 
+    * Updated base images to **Alpine 3.23** and **Go 1.26.1**.
+    * Binary size reduced using `-ldflags="-s -w"` (symbol stripping).
+    * Enhanced security with `apk upgrade` during build.
+* **Health Monitoring**: Added `/api/health` endpoint and native Docker `healthcheck` in `docker-compose.yml`.
+* **Conflict Resolution**: Relocated DNS Proxy to port **5354** to avoid mDNS conflicts on macOS.
+
+### Bug Fixes
+* Fixed Gin router panic caused by redundant health route registrations.
+* Synchronized `go.sum` dependencies for consistent builds.
+
 ## [0.63.9](https://github.com/rasty94/goaway/compare/v0.63.8...v0.63.9) (2026-02-28)
 
 ### Bug Fixes

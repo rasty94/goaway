@@ -179,6 +179,13 @@ func createDefaultSettings(filePath string) (Config, error) {
 				Window:   5,
 			},
 		},
+		HighAvailability: HighAvailabilityConfig{
+			Enabled: false,
+			Proxy: HaProxyConfig{
+				Enabled: false,
+				Port:    5354,
+			},
+		},
 		Logging: LoggingConfig{
 			Enabled: true,
 			Level:   int(logging.INFO),
