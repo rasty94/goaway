@@ -216,7 +216,6 @@ func (api *API) setupRoutes() {
 	api.registerSettingsRoutes()
 	api.registerNotificationRoutes()
 	api.registerAlertRoutes()
-	api.registerNativeRoutes()
 	api.registerConditionalForwarderRoutes()
 	api.registerTeleporterRoutes()
 	api.registerRemoteBackupRoutes()

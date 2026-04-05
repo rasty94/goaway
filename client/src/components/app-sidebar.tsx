@@ -86,6 +86,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               title: t("sidebar.users"),
               url: "/users",
               icon: UsersIcon
+            },
+            {
+              title: t("sidebar.cluster"),
+              url: "/cluster",
+              icon: CloudArrowUpIcon
             }
           ]
         : []),

@@ -13,6 +13,7 @@ import { Settings } from "./settings";
 import { Upstream } from "./upstream";
 import { Whitelist } from "./whitelist";
 import { Users } from "./users";
+import { Cluster } from "./cluster";
 import { GenerateQuote } from "@/quotes";
 import Login from "./login";
 import { FileXIcon } from "@phosphor-icons/react";
@@ -55,6 +56,7 @@ function App() {
             <Route path="/upstream" element={<Upstream />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/cluster" element={<Cluster />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/changelog" element={<Changelog />} />
             <Route path="*" element={<NotFound />} />

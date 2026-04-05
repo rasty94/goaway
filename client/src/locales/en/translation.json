@@ -10,6 +10,7 @@
     "upstream": "Upstream",
     "clients": "Clients",
     "users": "Users",
+    "cluster": "HA Cluster",
     "settings": "Settings",
     "changelog": "Changelog",
     "website": "Website",

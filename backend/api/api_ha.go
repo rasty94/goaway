@@ -197,7 +197,19 @@ func (api *API) getClusterStatus(c *gin.Context) {
 	}
 
 	nodes := api.ClusterManager.GetNodes()
-	c.JSON(http.StatusOK, nodes)
+	count := 0
+	for _, n := range nodes {
+		if !n.Unreachable {
+			count++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"selfRole":    api.Config.HighAvailability.Mode,
+		"activeNodes": count,
+		"clusterId":   "goaway-cluster-main", // Static for now, or fetch from config
+		"nodes":       nodes,
+	})
 }
 
 func (api *API) handleReplication(c *gin.Context) {
