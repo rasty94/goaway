@@ -6,6 +6,14 @@
 * **Virtual IP (VIP)**: Platform-agnostic floating IP takeover/release for seamless failover (Supports Linux `ip addr` and macOS `ifconfig`).
 * **Cluster Dashboard**: Real-time traffic distribution charts and proxy health monitoring integrated into the UI.
 
+### Security & Quality Analysis
+* **SonarQube Integration**: Unified code quality analysis for both Backend (Go) and Frontend (React), including coverage reporting.
+* **Automated Audits**: Added `make audit` suite with:
+    * **GoSec**: AST-based security scanning for Go code.
+    * **Govulncheck**: Dependency vulnerability analysis.
+    * **Trivy**: Comprehensive container and infrastructure auditing (CVEs scan).
+    * **Gitleaks**: Native secret detection to prevent credential leaks.
+
 ### DevOps & Infrastructure
 * **Docker Optimization**: 
     * Updated base images to **Alpine 3.23** and **Go 1.26.1**.

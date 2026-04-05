@@ -41,6 +41,8 @@ Labels base recomendadas:
 
 ### DX, CI/CD y Operacion
 - [x] Cobertura y linters en CI (incluyendo golangci-lint).
+- [x] Targets de auditoría de seguridad en Makefile (gosec, govulncheck, trivy, gitleaks).
+- [x] Integración de SonarQube (Unified Analysis + Coverage).
 - [x] Firma/checksums en release.
 - [x] Especificacion OpenAPI/Swagger.
 - [x] Guia para ejecutar sin root en puerto 53.
