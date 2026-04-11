@@ -10,7 +10,7 @@ import (
 )
 
 func Initialize() *gorm.DB {
-	if err := os.MkdirAll("data", 0755); err != nil {
+	if err := os.MkdirAll("data", 0750); err != nil {
 		log.Fatal("failed to create data directory: %w", err)
 	}
 

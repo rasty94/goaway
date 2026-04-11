@@ -352,6 +352,11 @@ func (s *DNSServer) avahiLookup(clientIP string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
+	if net.ParseIP(clientIP) == nil {
+		return unknownHostname
+	}
+
+	// #nosec G204,G702 - clientIP is validated
 	cmd := exec.CommandContext(ctx, "avahi-resolve-address", clientIP)
 	output, err := cmd.Output()
 	if err == nil {
@@ -403,6 +408,11 @@ func (s *DNSServer) reverseDNSLookup(clientIP string) string {
 }
 
 func (s *DNSServer) sshBannerLookup(clientIP string) string {
+	if net.ParseIP(clientIP) == nil {
+		return unknownHostname
+	}
+
+	// #nosec G704 - clientIP is validated and lookup is within local network context
 	conn, err := net.DialTimeout("tcp", clientIP+":22", 1*time.Second)
 	if err != nil {
 		return unknownHostname
@@ -809,6 +819,7 @@ func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, bool, bool, string, s
 func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string, string) {
 	var (
 		records      []dns.RR
+		// #nosec G115 - CacheTTL is validated
 		ttl          = uint32(s.Config.DNS.CacheTTL)
 		status       = dns.RcodeToString[dns.RcodeSuccess]
 		dnssecStatus = s.defaultDNSSECStatus()
@@ -1086,6 +1097,7 @@ func (s *DNSServer) handleBlacklisted(request *Request) model.RequestLogEntry {
 	request.Msg.Rcode = dns.RcodeSuccess
 
 	var resolved []model.ResolvedIP
+	// #nosec G115 - CacheTTL is validated
 	cacheTTL := uint32(s.Config.DNS.CacheTTL)
 
 	switch request.Question.Qtype {

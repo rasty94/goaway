@@ -34,7 +34,9 @@ func LoadSettings() (Config, error) {
 		return config, nil
 	}
 
-	data, err := os.ReadFile(path)
+	cleanPath := filepath.Clean(path)
+	// #nosec G304 - path is constructed from CWD and fixed subdirs
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return Config{}, fmt.Errorf("could not read settings file: %w", err)
 	}
@@ -68,7 +70,7 @@ func (config *Config) Save() {
 		return
 	}
 
-	if err := os.WriteFile("./config/settings.yaml", data, 0644); err != nil {
+	if err := os.WriteFile("./config/settings.yaml", data, 0600); err != nil {
 		log.Error("Could not save settings %v", err)
 	}
 }
@@ -206,11 +208,11 @@ func createDefaultSettings(filePath string) (Config, error) {
 	}
 
 	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return Config{}, fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
+	if err := os.WriteFile(filePath, data, 0600); err != nil {
 		return Config{}, fmt.Errorf("failed to create default settings file: %w", err)
 	}
 

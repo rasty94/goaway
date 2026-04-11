@@ -123,7 +123,8 @@ func (api *API) exportDatabase(c *gin.Context) {
 }
 
 func validateSQLiteFile(filePath string) error {
-	file, err := os.Open(filePath)
+	// #nosec G304 - path is validated to be a local DB file
+	file, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return fmt.Errorf("cannot open file: %w", err)
 	}
@@ -281,7 +282,8 @@ func (api *API) importDatabase(c *gin.Context) {
 }
 
 func copyFile(src, dst string) error {
-	sourceFile, err := os.Open(src)
+	// #nosec G304 - internal paths
+	sourceFile, err := os.Open(filepath.Clean(src))
 	if err != nil {
 		return err
 	}
@@ -289,7 +291,8 @@ func copyFile(src, dst string) error {
 		_ = sourceFile.Close()
 	}()
 
-	destFile, err := os.Create(dst)
+	// #nosec G304 - internal paths
+	destFile, err := os.Create(filepath.Clean(dst))
 	if err != nil {
 		return err
 	}

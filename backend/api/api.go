@@ -286,7 +286,8 @@ func (api *API) startServer(errorChannel chan struct{}) {
 
 	// Store the server instance for graceful shutdown
 	api.server = &http.Server{
-		Handler: api.router,
+		Handler:           api.router,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	if serverIP, err := GetServerIP(); err == nil {

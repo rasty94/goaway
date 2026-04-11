@@ -103,6 +103,7 @@ func (ra *RouterAdvertiser) sendRA(pc *ipv6.PacketConn) error {
 	prefixOpt[1] = 4 // Length (in 8-byte units, 4 * 8 = 32)
 	prefixOpt[2] = uint8(ra.prefix.Mask[0]*8 + ra.prefix.Mask[1]) // Not quite right, but simplified
 	ones, _ := ra.prefix.Mask.Size()
+	// #nosec G115 - IPv6 prefix size is within uint8 range (0-128)
 	prefixOpt[2] = uint8(ones) // Prefix Length
 	prefixOpt[3] = 0xC0 // L (on-link) and A (autonomous) flags
 	binary.BigEndian.PutUint32(prefixOpt[4:8], 2592000) // Valid Lifetime
@@ -117,6 +118,7 @@ func (ra *RouterAdvertiser) sendRA(pc *ipv6.PacketConn) error {
 		rdnssLen := 1 + 2*len(ra.dnsIps) // 1 (header) + 2*N (each IP is 16 bytes = 2 units)
 		rdnssOpt := make([]byte, 8+16*len(ra.dnsIps))
 		rdnssOpt[0] = 25 // Type RDNSS
+		// #nosec G115 - rdnssLen is within uint8 range
 		rdnssOpt[1] = uint8(rdnssLen)
 		binary.BigEndian.PutUint32(rdnssOpt[4:8], 1200) // Lifetime
 		for i, dns := range ra.dnsIps {

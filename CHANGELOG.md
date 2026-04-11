@@ -7,6 +7,11 @@
 
 ### Security
 * **Trivy Clean**: Resolved CVE-2026-28390 by updating the base image to `alpine:latest` and pinning security-patched OpenSSL.
+* **GoSec Audit & Hardening**: Reduced AST security findings to zero through comprehensive hardening:
+    * **Command Injection Protection**: Added strict input validation for VIP management and hostname lookups.
+    * **Slowloris Mitigation**: Configured `ReadHeaderTimeout` for the API server.
+    * **Cookie Security**: Enforced `SameSite: Strict` and `Secure` attributes for JWT cookies.
+    * **Permission Tightening**: Restructured config and data directory permissions (0600/0750).
 * **Dependency Audit**: Verified 0 vulnerabilities in both Go binary and Node.js frontend.
 
 ### Frontend

@@ -354,7 +354,8 @@ func (api *API) pushToLocal(rb settings.RemoteBackupConfig, data []byte, filenam
 	}
 
 	dest := filepath.Join(rb.Endpoint, filename)
-	if err := os.WriteFile(dest, data, 0640); err != nil {
+	// #nosec G306 - backup file must be readable by owner
+	if err := os.WriteFile(dest, data, 0600); err != nil {
 		return fmt.Errorf("failed to write backup file: %w", err)
 	}
 

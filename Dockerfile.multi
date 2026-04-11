@@ -21,9 +21,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o goaway .
 # Final Stage
 FROM alpine:latest
 RUN apk update && apk upgrade && \
-    apk add --no-cache ca-certificates
+    apk add --no-cache ca-certificates curl
 WORKDIR /app
 COPY --from=backend-builder /app/goaway .
 
-EXPOSE 53/tcp 53/udp 5353/tcp 5353/udp 8080/tcp 67/udp 547/udp
+EXPOSE 53/tcp 53/udp 5354/tcp 5354/udp 8080/tcp 67/udp 547/udp
 ENTRYPOINT ["./goaway"]

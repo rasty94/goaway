@@ -201,7 +201,9 @@ func (s *Service) DeleteGroup(id uint) error {
 	if err := s.repository.DeleteGroup(id); err != nil {
 		return err
 	}
-	s.RefreshCache()
+	if err := s.RefreshCache(); err != nil {
+		log.Error("Failed to refresh group cache after deletion: %v", err)
+	}
 
 	if s.replicator != nil {
 		s.replicator.Broadcast(cluster.ReplicatedEvent{

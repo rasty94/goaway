@@ -82,6 +82,7 @@ Labels base recomendadas:
 - [x] Smoke E2E en Docker para validacion de endpoints criticos.
 - [x] Sincronización completa con Upstream (pommee/goaway v0.63+).
 - [x] Migración automática de resoluciones YAML a SQLite.
+- [x] Hardening de seguridad v0.92.0 (gosec, permissions, slowloris, cmd injection).
 
 ---
 

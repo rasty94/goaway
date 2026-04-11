@@ -90,7 +90,9 @@ func (b *BackgroundJobs) startLogRetentionCleanup(readyChan <-chan struct{}) {
 			retentionDays := b.registry.Context.Config.Misc.StatisticsRetention
 			if retentionDays > 0 {
 				log.Info("Cleaning up logs older than %d days...", retentionDays)
-				b.registry.RequestService.DeleteOldLogs(retentionDays)
+				if err := b.registry.RequestService.DeleteOldLogs(retentionDays); err != nil {
+					log.Error("Failed to clean up old logs: %v", err)
+				}
 			}
 		}
 	}()

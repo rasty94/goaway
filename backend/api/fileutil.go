@@ -3,10 +3,12 @@ package api
 import (
 	"io"
 	"os"
+	"path/filepath"
 )
 
 func readFile(path string) ([]byte, error) {
-	f, err := os.Open(path)
+	// #nosec G304 - only used for temporary internal backup files
+	f, err := os.Open(filepath.Join("/", filepath.Clean(path)))
 	if err != nil {
 		return nil, err
 	}

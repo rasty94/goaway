@@ -152,8 +152,8 @@ func setAuthCookie(w http.ResponseWriter, token string) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true, // Required by auditors
+		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(tokenDuration),
 		MaxAge:   int(tokenDuration.Seconds()),
 	})

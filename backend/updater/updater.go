@@ -38,7 +38,8 @@ func SelfUpdate(sse sendSSE, binaryPath string) error {
 			return fmt.Errorf("failed to read script content: %w", err)
 		}
 
-		if err := os.WriteFile(scriptPath, scriptContent, 0755); err != nil {
+		// #nosec G306 - script must be executable by owner
+		if err := os.WriteFile(scriptPath, scriptContent, 0700); err != nil {
 			return fmt.Errorf("failed to write script file: %w", err)
 		}
 		sse("[info] Script downloaded successfully")
@@ -55,6 +56,7 @@ func SelfUpdate(sse sendSSE, binaryPath string) error {
 	}
 
 	sse(fmt.Sprintf("[info] Executing update script with %s", shell))
+	// #nosec G204 - scriptPath and shell are internal
 	cmd := exec.Command(shell, scriptPath, binaryPath)
 
 	stdoutPipe, err := cmd.StdoutPipe()

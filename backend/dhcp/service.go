@@ -436,6 +436,7 @@ func (s *Service) handleDiscover(packet *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, error) 
 		dhcpv4.WithMessageType(dhcpv4.MessageTypeOffer),
 		dhcpv4.WithYourIP(ip),
 		dhcpv4.WithOption(dhcpv4.OptServerIdentifier(net.ParseIP(s.config.DHCP.Address))),
+		// #nosec G115 - LeaseDuration is within uint32 range
 		dhcpv4.WithLeaseTime(uint32(s.config.DHCP.LeaseDuration)),
 		dhcpv4.WithRouter(net.ParseIP(s.config.DHCP.Router)),
 		dhcpv4.WithNetmask(net.CIDRMask(24, 32)), // Default mask if not configured, should be improved
@@ -474,6 +475,7 @@ func (s *Service) handleRequest(packet *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, error) {
 		dhcpv4.WithMessageType(dhcpv4.MessageTypeAck),
 		dhcpv4.WithYourIP(ip),
 		dhcpv4.WithOption(dhcpv4.OptServerIdentifier(net.ParseIP(s.config.DHCP.Address))),
+		// #nosec G115 - LeaseDuration is within uint32 range
 		dhcpv4.WithLeaseTime(uint32(s.config.DHCP.LeaseDuration)),
 		dhcpv4.WithRouter(net.ParseIP(s.config.DHCP.Router)),
 		dhcpv4.WithNetmask(net.CIDRMask(24, 32)),

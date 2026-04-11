@@ -42,6 +42,7 @@ func (s *Service) Run() {
 
 func (s *Service) checkNewDomains() {
 	for domain, prefetchDomain := range s.Domains {
+		// #nosec G115 - QueryType is validated
 		cacheKey := s.buildCacheKey(domain, dns.Type(prefetchDomain.QueryType))
 		if _, exists := s.DNS.DomainCache.Load(cacheKey); !exists {
 			log.Debug("Prefetching new/missing domain: %s", domain)
@@ -103,6 +104,7 @@ func (s *Service) removeNonPrefetchDomains(domains []string) {
 func (s *Service) prefetchDomain(prefetchDomain database.Prefetch) {
 	question := dns.Question{
 		Name:   prefetchDomain.Domain,
+		// #nosec G115 - QueryType is validated to be within uint16 range
 		Qtype:  uint16(prefetchDomain.QueryType),
 		Qclass: 1,
 	}

@@ -220,7 +220,7 @@ func restoreDatabaseFile(content []byte) error {
 		return fmt.Errorf("database payload is empty")
 	}
 
-	if err := os.MkdirAll("data", 0755); err != nil {
+	if err := os.MkdirAll("data", 0750); err != nil {
 		return fmt.Errorf("failed to ensure data directory: %w", err)
 	}
 

@@ -124,7 +124,9 @@ func (p *DNSProxy) HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	}
 
 	if resp != nil {
-		w.WriteMsg(resp)
+		if err := w.WriteMsg(resp); err != nil {
+			log.Error("[HA/Proxy] Failed to write message: %v", err)
+		}
 	}
 }
 
