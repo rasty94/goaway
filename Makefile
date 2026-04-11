@@ -32,7 +32,7 @@ audit-docker:
 
 audit-secrets:
 	@echo "🔑 Scanning for hardcoded secrets..."
-	@npx gitleaks detect --source . --verbose --redact || echo "⚠️ Gitleaks not found or scan failed. Install with: brew install gitleaks"
+	@gitleaks detect --source . --verbose --redact || echo "⚠️ Gitleaks scan failed or not found. Install with: brew install gitleaks"
 
 sonar:
 	@echo "🧪 Generating Code Coverage for Sonar..."
