@@ -63,7 +63,6 @@ type Resolution struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
-
 type MacAddress struct {
 	MAC       string    `gorm:"primaryKey" json:"mac" validate:"required,mac"`
 	IP        string    `gorm:"index" json:"ip" validate:"required,ip"`
