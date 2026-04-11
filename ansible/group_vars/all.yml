@@ -1,0 +1,10 @@
+---
+app_name: goaway
+app_dir: "/opt/{{ app_name }}"
+image_repo: "ghcr.io/rasty94/goaway"
+image_version: "latest"
+
+# Default ports
+dns_port: 53
+website_port: 8080
+proxy_port: 5354
