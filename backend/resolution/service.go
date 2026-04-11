@@ -1,6 +1,7 @@
 package resolution
 
 import (
+	"goaway/backend/database"
 	"goaway/backend/logging"
 )
 
@@ -27,7 +28,7 @@ func (s *Service) GetResolution(domain string) (database.Resolution, error) {
 	return s.repository.FindResolution(domain)
 }
 
-func (s *Service) GetResolutions() (map[string]string, error) {
+func (s *Service) GetResolutions() ([]database.Resolution, error) {
 	return s.repository.FindResolutions()
 }
 

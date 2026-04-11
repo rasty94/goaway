@@ -53,7 +53,7 @@ type DNSConfig struct {
 	Upstream              UpstreamConfig         `yaml:"upstream" json:"upstream"`
 	Ports                 PortsConfig            `yaml:"ports" json:"ports"`
 	ConditionalForwarders []ConditionalForwarder `yaml:"conditionalForwarders" json:"conditionalForwarders"`
-	Resolutions           map[string]string      `yaml:"resolutions,omitempty" json:"resolutions,omitempty"`
+	Resolutions           map[string]string      `yaml:"resolution,omitempty" json:"resolution,omitempty"`
 }
 
 type DNSRateLimitConfig struct {

@@ -59,5 +59,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&Schedule{},
 		&PolicyAssignment{},
 		&PolicyCategory{},
+		&Resolution{},
 	)
 }

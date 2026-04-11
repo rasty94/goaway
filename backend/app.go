@@ -171,6 +171,17 @@ func (a *Application) Start() error {
 	userService := user.NewService(user.NewRepository(dbConn))
 	whitelistService := whitelist.NewService(whitelist.NewRepository(dbConn))
 
+	// Integrate YAML-based resolutions from Upstream config into our Enterprise DB (One-time migration)
+	if len(a.config.DNS.Resolutions) > 0 {
+		log.Warning("Discovered %d resolutions in settings.yaml. Migrating to database...", len(a.config.DNS.Resolutions))
+		for domain, ip := range a.config.DNS.Resolutions {
+			err := resolutionService.CreateResolution(ip, domain, "A")
+			if err != nil {
+				log.Debug("Skipping YAML migration for %s: %v", domain, err)
+			}
+		}
+	}
+
 	a.context.DNSServer.AlertService = alertService
 	a.context.DNSServer.AuditService = auditService
 	a.context.DNSServer.BlacklistService = blacklistService
