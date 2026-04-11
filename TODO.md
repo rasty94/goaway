@@ -1,6 +1,6 @@
 # GoAway - Hoja de Ruta y TODO
 
-Ultima actualizacion: 2026-03-19
+Ultima actualizacion: 2026-04-11
 
 ## Resumen Ejecutivo
 
@@ -80,6 +80,8 @@ Labels base recomendadas:
 - [x] Leases estaticos DHCP.
 - [x] HA Fase 1: sincronizacion pasiva Primary -> Replica por backup + teleporter (manual y programada).
 - [x] Smoke E2E en Docker para validacion de endpoints criticos.
+- [x] Sincronización completa con Upstream (pommee/goaway v0.63+).
+- [x] Migración automática de resoluciones YAML a SQLite.
 
 ---
 

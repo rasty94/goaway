@@ -1,158 +1,108 @@
+schemaVersion: 2
 dns:
-  # Address used for the DNS server to bind to. Default all IPv4 addresses (0.0.0.0).
-  # This is the ip address on which the server will listen for incoming DNS queries.
-  address: 0.0.0.0
-
-  # Gateway address used when performing local lookups.
-  # Mostly used to find hostnames of local clients.
-  # Will be populated if not set upon first startup.
-  # gateway: 192.168.0.1:53
-
-  # Maximum time (in seconds) to keep resolved domains in cache.
-  # The server will use either this value or the DNS response TTL, whichever is smaller.
-  # Lower values can result in lesser amount of cached responses, but also the most up-to-date information.
-  cacheTTL: 360
-
-  # DNS query throttling per client IP to reduce abuse or amplification attempts.
-  rateLimit:
-    # Enable/disable DNS query throttling
-    enabled: true
-    # Maximum queries accepted per client in the configured sliding window
-    maxQueries: 120
-    # Sliding window size in seconds for query counting
-    windowSeconds: 10
-    # Temporary block duration after exceeding the limit (seconds)
-    blockDurationSeconds: 30
-
-  # UDP buffer size for incoming DNS queries (bytes)
-  # Standard DNS-over-UDP packet size limit per RFC 1035
-  udpSize: 512
-
-  # TLS certificate and key file for DNS-over-TLS (DoT) & DNS-over-HTTPS servers.
-  # If empty, the servers will not be started.
-  # This file should contain the TLS certificate in PEM format.
-  tls:
-    enabled: false
-    cert: ""
-    key: ""
-
-  # Primary DNS server to forward queries to.
-  # List of available DNS servers to forward queries to.
-  upstream:
-    preferred: 8.8.8.8:53
-    fallback:
-      - 1.1.1.1:53
-
-  # Custom host-to-IP mappings for local resolution.
-  # This allows you to define specific IP addresses for certain hostnames, bypassing the need for external DNS resolution for those hosts.
-  # Supports wildcard entries (e.g., "*.example.com") to match multiple subdomains.
-  resolution:
-    example.host: 192.168.0.2
-    another.host: 192.168.1.50
-    "*.wildcard.host": 10.10.0.2
-
-  # Port used for the DNS server to bind to.
-  # This is the port on which the server will listen for incoming DNS queries.
-  # The server will listen on both UDP and TCP on this port.
-  # Port used for the DoT (DNS-over-TLS) server to bind to.
-  # Port used for the DoH (DNS-over-HTTPS) server to bind to.
-  ports:
-    udptcp: 53
-    dot: 853
-    doh: 443
-
+    address: 0.0.0.0
+    gateway: ""
+    cacheEnabled: false
+    cacheTTL: 360
+    dnssec:
+        enabled: false
+        mode: "off"
+    rateLimit:
+        enabled: true
+        maxQueries: 120
+        windowSeconds: 10
+        blockDurationSeconds: 30
+    udpSize: 512
+    tls:
+        enabled: false
+        cert: ""
+        key: ""
+    upstream:
+        servers:
+            - name: Preferred (Migrated)
+              address: 8.8.8.8:53
+              protocol: udp
+              enabled: true
+            - name: Fallback 1 (Migrated)
+              address: 1.1.1.1:53
+              protocol: udp
+              enabled: true
+    ports:
+        udptcp: 53
+        dot: 853
+        doh: 443
+    conditionalForwarders: []
+    resolution:
+        '*.wildcard.host': 10.10.0.2
+        another.host: 192.168.1.50
+        example.host: 192.168.0.2
 dhcp:
-  # Enable or disable the embedded DHCP service.
-  enabled: false
-
-  # Address used by DHCP listeners (IPv4 and/or IPv6 depending on enabled protocol).
-  address: 0.0.0.0
-
-  # Optional network interface to bind in future versions (placeholder for advanced deployments).
-  interface: ""
-
-  # DHCP protocol toggles.
-  ipv4Enabled: true
-  ipv6Enabled: false
-
-  # Dynamic pool range used by DHCP allocator (allocator engine is iterative work).
-  rangeStart: 192.168.0.100
-  rangeEnd: 192.168.0.250
-
-  # Lease duration in seconds.
-  leaseDuration: 86400
-
-  # Router gateway announced by DHCP.
-  router: 192.168.0.1
-
-  # DNS servers announced by DHCP.
-  dnsServers:
-    - 0.0.0.0
-
-  # Optional search domain announced to clients.
-  domainSearch: lan
-
-  # DHCP listener ports.
-  ports:
-    ipv4: 67
-    ipv6: 547
-
+    enabled: false
+    address: 0.0.0.0
+    interface: ""
+    ipv4Enabled: true
+    ipv6Enabled: false
+    rangeStart: 192.168.0.100
+    rangeEnd: 192.168.0.250
+    rangeStartV6: ""
+    rangeEndV6: ""
+    leaseDuration: 86400
+    router: 192.168.0.1
+    dnsServers:
+        - 0.0.0.0
+    dnsServersV6: []
+    domainSearch: lan
+    ports:
+        ipv4: 67
+        ipv6: 547
 api:
-  # Port used for the API/web interface server.
-  # Access the dashboard and management features through this port.
-  port: 8080
-
-  # Controls whether login is required to access the dashboard.
-  # Will create an admin account of first startup (password can be seen in the logs).
-  # Set to true for increased security.
-  authentication: true
-
-  # Secret key used for signing JWT tokens.
-  # If empty, a random key will be generated automatically.
-  jwtSecret: ""
-
-  # Currently only protects the login route
-  rateLimit:
-    # Enable or disable the usage of rate limiting
-    enabled: true
-    # User can make N requests before being rate limited
-    maxTries: 5
-    # Once limit is reached, rate limits for N minutes
-    window: 5
-
-# Toggles all logging when set.
-# Useful for privacy-focused deployments or reducing disk I/O when disabled.
-# Determines which severity of log messages to display.
-# Each level includes all levels above it in number.
-# 0 = Debug (most verbose, includes all messages)
-# 1 = Info (normal operation messages)
-# 2 = Warning (potential issues that don't affect operation)
-# 3 = Error (serious problems only)
+    port: 8080
+    authentication: true
+    jwtSecret: aAOij2bY_jYYsj3Hs7u8pEdsR2nkmg9-ZJ0yFJEO5Vw
+    rateLimit:
+        enabled: true
+        maxTries: 5
+        window: 5
 logging:
-  enabled: true
-  level: 1
-
-# Miscellaneous settings for various features.
+    enabled: true
+    level: 1
 misc:
-  # Enables or disables in-app update functionality.
-  # Behavior depends on the deployment method (Docker vs standalone binary):
-  # Docker:
-  #   - inAppUpdate: false → Updates require stopping, removing, and pulling a new image manually.
-  #   - inAppUpdate: true  → The dashboard's built-in updater will fetch the latest binary and restart the container automatically.
-  # Standalone:
-  #   - inAppUpdate: false → Update manually via installer or `updater.sh`.
-  #   - inAppUpdate: true  → The dashboard's updater will install the new binary, but you'll need to restart the app manually.
-  inAppUpdate: false
-
-  # Number of days to retain statistics and query logs.
-  # Lower values save disk space but provide less historical data.
-  statisticsRetention: 7
-
-  # Serves the dashboard (ui) on http://server-ip:api-port
-  # If false, the API will still be available, but the dashboard will not be served.
-  # This is useful for deployments where the dashboard is not needed.
-  dashboard: true
-
-  # Enable or disable automatic updates for blacklists.
-  # If enabled, the server will check for updates to blacklists daily at midnight.
-  scheduledBlacklistUpdates: true
+    inAppUpdate: false
+    statisticsRetention: 7
+    anonymizeIP: false
+    dashboard: true
+    scheduledBlacklistUpdates: true
+remoteBackup:
+    enabled: false
+    provider: ""
+    endpoint: ""
+    bucket: ""
+    region: ""
+    accessKey: ""
+    secretKey: ""
+    username: ""
+    password: ""
+    schedule: manual
+highAvailability:
+    enabled: false
+    mode: primary
+    clusterId: ""
+    priority: 0
+    peers: []
+    heartbeatUrl: ""
+    proxy:
+        enabled: false
+        port: 0
+    vip:
+        enabled: false
+        interface: ""
+        address: ""
+    replicaSyncInterval: 15m
+    primaryBackupProvider: ""
+    primaryBackupEndpoint: ""
+    primaryBackupBucket: ""
+    primaryBackupRegion: ""
+    primaryBackupAccessKey: ""
+    primaryBackupSecretKey: ""
+    primaryBackupUsername: ""
+    primaryBackupPassword: ""

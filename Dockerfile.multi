@@ -9,7 +9,7 @@ COPY client/ ./
 RUN pnpm build
 
 # Build Stage for Backend
-FROM golang:1.26.1-alpine3.23 AS backend-builder
+FROM golang:1.26.2-alpine3.23 AS backend-builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -19,7 +19,7 @@ COPY --from=frontend-builder /app/client/dist ./client/dist
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o goaway .
 
 # Final Stage
-FROM alpine:3.23
+FROM alpine:latest
 RUN apk update && apk upgrade && \
     apk add --no-cache ca-certificates
 WORKDIR /app

@@ -1,6 +1,6 @@
 services:
   goaway:
-    image: goaway:local
+    image: ghcr.io/rasty94/goaway:v0.92
     build:
       context: .
       dockerfile: Dockerfile.multi

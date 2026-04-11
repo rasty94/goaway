@@ -41,3 +41,4 @@ benchmark.prof
 
 docs/site/**
 .agents
+client/.pnpm-store/*

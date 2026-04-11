@@ -1,3 +1,18 @@
+## [0.92.0] (2026-04-11)
+
+### Sync & Integration
+* **Upstream Synchronization**: Complete merge with `pommee/goaway` v0.63+, integrating the latest DNS protocol fixes and security patches.
+* **Hybrid Storage Architecture**: Kept the Enterprise SQLite backend for resolutions while implementing automatic migration for upstream's new YAML-based configuration.
+* **DNS Protocol Fixes**: Integrated upstream fixes for Rcode handling in empty responses and local gateway resolution with port support.
+
+### Security
+* **Trivy Clean**: Resolved CVE-2026-28390 by updating the base image to `alpine:latest` and pinning security-patched OpenSSL.
+* **Dependency Audit**: Verified 0 vulnerabilities in both Go binary and Node.js frontend.
+
+### Frontend
+* **Library Updates**: Upgraded `motion`, `react-router-dom`, `recharts`, and `vite` to the latest versions.
+* **Persistent State**: Adopted upstream's pnpm-lock improvements while maintaining localized ES/EN support.
+
 ## [0.91.0] (2026-04-05)
 
 ### High Availability & Clustering (Phase 2 & 3)
