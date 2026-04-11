@@ -1,3 +1,10 @@
+## [0.93.0] (2026-04-11)
+
+### Security & Audit
+* **Audit Compliance**: Reached 100% compliance in `gosec` (0 findings) and `govulncheck` (0 vulnerabilities).
+* **Tooling Integration**: Successfully integrated and verified `govulncheck` and `gitleaks` in the local development and audit environment.
+* **CI/CD Hardening**: Finalized `Dockerfile.multi` with `curl` for reliable healthchecks and corrected port exposures.
+
 ## [0.92.0] (2026-04-11)
 
 ### Sync & Integration
