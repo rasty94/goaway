@@ -5,7 +5,8 @@ import (
 	"goaway/backend/metrics"
 	"time"
 
-	"github.com/miekg/dns"
+	"codeberg.org/miekg/dns"
+	"codeberg.org/miekg/dns/dnsutil"
 )
 
 type clientRateLimitWindow struct {
@@ -92,19 +93,19 @@ func (s *DNSServer) isDNSRateLimited(clientIP string) (bool, int) {
 }
 
 func (s *DNSServer) writeRateLimitedResponse(req *Request, _ int) model.RequestLogEntry {
-	msg := new(dns.Msg)
-	msg.SetReply(req.Msg)
+	msg := dnsutil.SetReply(new(dns.Msg), req.Msg)
 	msg.Authoritative = false
 	msg.RecursionAvailable = true
 	msg.Rcode = dns.RcodeRefused
 
-	_ = req.ResponseWriter.WriteMsg(msg)
-	metrics.ThrottledQueries.WithLabelValues(req.Client.IP, string(req.Protocol)).Inc()
+	limitedReq := &Request{ResponseWriter: req.ResponseWriter, Msg: msg}
+	limitedReq.Respond(s.NotificationService)
+	metrics.ThrottledQueries.WithLabelValues(req.Client.IP.String(), string(req.Protocol)).Inc()
 
 	return model.RequestLogEntry{
-		Domain:            req.Question.Name,
-		Status:            dns.RcodeToString[dns.RcodeRefused],
-		QueryType:         dns.TypeToString[req.Question.Qtype],
+		Domain:            req.QName(),
+		Status:            dnsutil.CodeToString(dns.RcodeRefused),
+		QueryType:         req.QTypeStr(),
 		IP:                nil,
 		ResponseSizeBytes: msg.Len(),
 		Timestamp:         req.Sent,

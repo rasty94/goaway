@@ -7,6 +7,7 @@ import (
 	"goaway/backend/logging"
 	"goaway/backend/settings"
 	"net"
+	"net/netip"
 	"time"
 )
 
@@ -25,7 +26,9 @@ func (s *Service) SaveRequestLog(entries []model.RequestLogEntry) error {
 	if s.config.Misc.AnonymizeIP {
 		for i := range entries {
 			if entries[i].ClientInfo != nil {
-				entries[i].ClientInfo.IP = MaskIP(entries[i].ClientInfo.IP)
+				if masked, err := netip.ParseAddr(MaskIP(entries[i].ClientInfo.IP.String())); err == nil {
+					entries[i].ClientInfo.IP = masked
+				}
 			}
 		}
 	}

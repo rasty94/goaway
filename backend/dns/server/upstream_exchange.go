@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -10,18 +11,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/miekg/dns"
+	"codeberg.org/miekg/dns"
+	"codeberg.org/miekg/dns/dnsutil"
 )
 
 func (s *DNSServer) exchangeWithProtocol(msg *dns.Msg, addr, proto string) (*dns.Msg, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	switch strings.ToLower(proto) {
 	case "udp":
-		client := &dns.Client{Net: "udp", Timeout: 5 * time.Second}
-		in, _, err := client.Exchange(msg, addr)
+		client := dns.NewClient()
+		in, _, err := client.Exchange(ctx, msg, "udp", addr)
 		return in, err
 	case "tcp":
-		client := &dns.Client{Net: "tcp", Timeout: 5 * time.Second}
-		in, _, err := client.Exchange(msg, addr)
+		client := dns.NewClient()
+		in, _, err := client.Exchange(ctx, msg, "tcp", addr)
 		return in, err
 	case "dot":
 		host, port, err := net.SplitHostPort(addr)
@@ -31,15 +36,12 @@ func (s *DNSServer) exchangeWithProtocol(msg *dns.Msg, addr, proto string) (*dns
 		} else if port == "53" {
 			addr = net.JoinHostPort(host, "853")
 		}
-		client := &dns.Client{
-			Net: "tcp-tls",
-			TLSConfig: &tls.Config{
-				InsecureSkipVerify: false,
-				ServerName:         host,
-			},
-			Timeout: 5 * time.Second,
+		client := dns.NewClient()
+		client.Transport.TLSConfig = &tls.Config{
+			InsecureSkipVerify: false,
+			ServerName:         host,
 		}
-		in, _, err := client.Exchange(msg, addr)
+		in, _, err := client.Exchange(ctx, msg, "tcp", addr)
 		return in, err
 	case "doh":
 		return s.exchangeDoH(msg, addr)
@@ -49,12 +51,11 @@ func (s *DNSServer) exchangeWithProtocol(msg *dns.Msg, addr, proto string) (*dns
 }
 
 func (s *DNSServer) exchangeDoH(msg *dns.Msg, url string) (*dns.Msg, error) {
-	pack, err := msg.Pack()
-	if err != nil {
+	if err := msg.Pack(); err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(pack))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(msg.Data))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,8 @@ func (s *DNSServer) exchangeDoH(msg *dns.Msg, url string) (*dns.Msg, error) {
 	}
 
 	response := new(dns.Msg)
-	if err := response.Unpack(body); err != nil {
+	response.Data = body
+	if err := response.Unpack(); err != nil {
 		return nil, err
 	}
 
@@ -86,8 +88,7 @@ func (s *DNSServer) exchangeDoH(msg *dns.Msg, url string) (*dns.Msg, error) {
 }
 
 func (s *DNSServer) ProbeUpstream(server string) *UpstreamHealth {
-	msg := new(dns.Msg)
-	msg.SetQuestion(dns.Fqdn("."), dns.TypeNS)
+	msg := dns.NewMsg(dnsutil.Fqdn("."), dns.TypeNS)
 	msg.RecursionDesired = true
 
 	parts := strings.Split(server, ":")

@@ -6,7 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/miekg/dns"
+	"codeberg.org/miekg/dns"
+	"codeberg.org/miekg/dns/dnsutil"
 )
 
 const (
@@ -86,14 +87,13 @@ func (s *DNSServer) DiagnoseDNSSEC(domain string, qtype uint16) (*DNSSECDiagnost
 		return nil, fmt.Errorf("domain is required")
 	}
 
-	msg := &dns.Msg{}
-	msg.SetQuestion(dns.Fqdn(strings.TrimSpace(domain)), qtype)
+	msg := dns.NewMsg(dnsutil.Fqdn(strings.TrimSpace(domain)), qtype)
 
 	req := &Request{
 		Sent:     time.Now(),
 		Msg:      msg,
 		Question: msg.Question[0],
-		Client:   &model.Client{IP: "diagnostic", Name: "diagnostic"},
+		Client:   &model.Client{IP: IPv4Loopback, Name: "diagnostic"},
 		Protocol: model.UDP,
 	}
 
@@ -104,15 +104,8 @@ func (s *DNSServer) DiagnoseDNSSEC(domain string, qtype uint16) (*DNSSECDiagnost
 		answerStrings = append(answerStrings, rr.String())
 	}
 
-	do := false
-	if req.Msg != nil {
-		if opt := req.Msg.IsEdns0(); opt != nil {
-			do = opt.Do()
-		}
-	}
-
 	diagnostic := &DNSSECDiagnostic{
-		Domain:       dns.Fqdn(strings.TrimSpace(domain)),
+		Domain:       dnsutil.Fqdn(strings.TrimSpace(domain)),
 		Type:         dns.TypeToString[qtype],
 		Status:       status,
 		DNSSECStatus: dnssecStatus,
@@ -120,7 +113,7 @@ func (s *DNSServer) DiagnoseDNSSEC(domain string, qtype uint16) (*DNSSECDiagnost
 		AuthorityRRs: len(req.Msg.Ns),
 		ExtraRRs:     len(req.Msg.Extra),
 		AD:           req.Msg.AuthenticatedData,
-		DO:           do,
+		DO:           req.Msg.Security,
 		Answers:      answerStrings,
 	}
 

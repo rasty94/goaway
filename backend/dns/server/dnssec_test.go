@@ -5,7 +5,7 @@ import (
 	"goaway/backend/settings"
 	"testing"
 
-	"github.com/miekg/dns"
+	"codeberg.org/miekg/dns"
 )
 
 func newDNSSECTestServer(mode string, enabled bool) *DNSServer {

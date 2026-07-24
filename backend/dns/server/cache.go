@@ -55,8 +55,8 @@ func (s *DNSServer) getStaleRecord(cached interface{}) ([]dns.RR, string, string
 	if now.After(cachedRecord.ExpiresAt) && now.Before(cachedRecord.StaleUntil) {
 		updatedRecords := make([]dns.RR, len(cachedRecord.IPAddresses))
 		for i, rr := range cachedRecord.IPAddresses {
-			clone := dns.Copy(rr)
-			clone.Header().Ttl = 30
+			clone := rr.Clone()
+			clone.Header().TTL = 30
 			updatedRecords[i] = clone
 		}
 
