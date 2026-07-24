@@ -7,6 +7,7 @@ import (
 	"goaway/backend/api/models"
 	"goaway/backend/database"
 	model "goaway/backend/dns/server/models"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -26,10 +27,10 @@ type Repository interface {
 	FetchAllClients() (map[string]model.Client, error)
 	GetClientDetailsWithDomains(clientIP string) (ClientRequestDetails, string, map[string]int, error)
 	GetClientHistory(clientIP string) ([]models.DomainHistory, error)
-	GetTopBlockedDomains(blockedRequests int) ([]map[string]interface{}, error)
-	GetTopQueriedDomains() ([]map[string]interface{}, error)
-	GetTopPermittedDomains(permittedRequests int) ([]map[string]interface{}, error)
-	GetTopClients() ([]map[string]interface{}, error)
+	GetTopBlockedDomains(blockedRequests int) ([]map[string]any, error)
+	GetTopQueriedDomains() ([]map[string]any, error)
+	GetTopPermittedDomains(permittedRequests int) ([]map[string]any, error)
+	GetTopClients() ([]map[string]any, error)
 	CountQueries(search string) (int, error)
 
 	UpdateClientName(ip string, name string) error
@@ -66,7 +67,7 @@ func (r *repository) SaveRequestLog(entries []model.RequestLogEntry) error {
 				Blocked:           entry.Blocked,
 				Cached:            entry.Cached,
 				ResponseTimeNs:    entry.ResponseTime.Nanoseconds(),
-				ClientIP:          entry.ClientInfo.IP,
+				ClientIP:          entry.ClientInfo.IP.String(),
 				ClientName:        entry.ClientInfo.Name,
 				Status:            entry.Status,
 				DNSSECStatus:      entry.DNSSECStatus,
@@ -77,7 +78,7 @@ func (r *repository) SaveRequestLog(entries []model.RequestLogEntry) error {
 
 			for _, resolvedIP := range entry.IP {
 				rl.IPs = append(rl.IPs, database.RequestLogIP{
-					IP:         resolvedIP.IP,
+					IP:         resolvedIP.IP.String(),
 					RecordType: resolvedIP.RType,
 				})
 			}
@@ -254,25 +255,35 @@ func (r *repository) FetchQueries(q models.QueryParams) ([]model.RequestLogEntry
 	}
 
 	results := make([]model.RequestLogEntry, len(logs))
-	for i, log := range logs {
+	for i, qLog := range logs {
+		clientIP, err := netip.ParseAddr(qLog.ClientIP)
+		if err != nil {
+			log.Warning("failed to parse client IP '%s' for log ID %d: %v", qLog.ClientIP, qLog.ID, err)
+			continue
+		}
 		results[i] = model.RequestLogEntry{
-			ID:                log.ID,
-			Timestamp:         log.Timestamp,
-			Domain:            log.Domain,
-			Blocked:           log.Blocked,
-			Cached:            log.Cached,
-			ResponseTime:      time.Duration(log.ResponseTimeNs),
-			ClientInfo:        &model.Client{IP: log.ClientIP, Name: log.ClientName},
-			Status:            log.Status,
-			DNSSECStatus:      log.DNSSECStatus,
-			QueryType:         log.QueryType,
-			ResponseSizeBytes: log.ResponseSizeBytes,
-			Protocol:          model.Protocol(log.Protocol),
-			IP:                make([]model.ResolvedIP, len(log.IPs)),
+			ID:                qLog.ID,
+			Timestamp:         qLog.Timestamp,
+			Domain:            qLog.Domain,
+			Blocked:           qLog.Blocked,
+			Cached:            qLog.Cached,
+			ResponseTime:      time.Duration(qLog.ResponseTimeNs),
+			ClientInfo:        &model.Client{IP: clientIP, Name: qLog.ClientName},
+			Status:            qLog.Status,
+			DNSSECStatus:      qLog.DNSSECStatus,
+			QueryType:         qLog.QueryType,
+			ResponseSizeBytes: qLog.ResponseSizeBytes,
+			Protocol:          model.Protocol(qLog.Protocol),
+			IP:                make([]model.ResolvedIP, len(qLog.IPs)),
 		}
 
-		for j, ip := range log.IPs {
-			results[i].IP[j] = model.ResolvedIP{IP: ip.IP, RType: ip.RecordType}
+		for j, ip := range qLog.IPs {
+			resolvedIP, err := netip.ParseAddr(ip.IP)
+			if err != nil {
+				log.Warning("failed to parse resolved IP '%s' for log ID %d: %v", ip.IP, qLog.ID, err)
+				continue
+			}
+			results[i].IP[j] = model.ResolvedIP{IP: resolvedIP, RType: ip.RecordType}
 		}
 	}
 
@@ -289,16 +300,16 @@ func (r *repository) FetchClient(ip string) (*model.Client, error) {
 		Bypass     sql.NullBool   `gorm:"column:bypass"`
 	}
 
-	subquery := r.db.Table("request_logs").
-		Select("MAX(timestamp)").
-		Where("client_ip = ?", ip)
+	query := `
+		SELECT r.client_ip, r.client_name, r.timestamp, m.mac, m.vendor, m.bypass
+		FROM request_logs r
+		LEFT JOIN mac_addresses m ON r.client_ip = m.ip
+		WHERE r.client_ip = ?
+		ORDER BY r.timestamp DESC
+		LIMIT 1
+	`
 
-	if err := r.db.Table("request_logs r").
-		Select("r.client_ip, r.client_name, r.timestamp, m.mac, m.vendor, m.bypass").
-		Joins("LEFT JOIN mac_addresses m ON r.client_ip = m.ip").
-		Where("r.client_ip = ?", ip).
-		Where("r.timestamp = (?)", subquery).
-		Scan(&row).Error; err != nil {
+	if err := r.db.Raw(query, ip).Scan(&row).Error; err != nil {
 		return nil, err
 	}
 
@@ -306,8 +317,12 @@ func (r *repository) FetchClient(ip string) (*model.Client, error) {
 		return nil, fmt.Errorf("client with ip '%s' was not found", ip)
 	}
 
+	clientIP, err := netip.ParseAddr(row.ClientIP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse client IP '%s': %v", row.ClientIP, err)
+	}
 	client := &model.Client{
-		IP:       row.ClientIP,
+		IP:       clientIP,
 		Name:     row.ClientName,
 		LastSeen: row.Timestamp,
 		Mac:      row.Mac.String,
@@ -328,22 +343,30 @@ func (r *repository) FetchAllClients() (map[string]model.Client, error) {
 		Bypass     sql.NullBool   `gorm:"column:bypass"`
 	}
 
-	subquery := r.db.Table("request_logs").
-		Select("client_ip, MAX(timestamp) as max_timestamp").
-		Group("client_ip")
+	query := `
+		SELECT DISTINCT r.client_ip, r.client_name, r.timestamp, m.mac, m.vendor, m.bypass
+		FROM (
+			SELECT client_ip, client_name, timestamp, ROW_NUMBER() OVER (PARTITION BY client_ip ORDER BY timestamp DESC) as rn
+			FROM request_logs
+		) r
+		LEFT JOIN mac_addresses m ON r.client_ip = m.ip
+		WHERE r.rn = 1
+		ORDER BY r.timestamp DESC
+	`
 
-	if err := r.db.Table("request_logs r").
-		Select("r.client_ip, r.client_name, r.timestamp, m.mac, m.vendor, m.bypass").
-		Joins("INNER JOIN (?) latest ON r.client_ip = latest.client_ip AND r.timestamp = latest.max_timestamp", subquery).
-		Joins("LEFT JOIN mac_addresses m ON r.client_ip = m.ip").
-		Scan(&rows).Error; err != nil {
+	if err := r.db.Raw(query).Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 
 	uniqueClients := make(map[string]model.Client, len(rows))
 	for _, row := range rows {
+		clientIP, err := netip.ParseAddr(row.ClientIP)
+		if err != nil {
+			log.Warning("failed to parse client IP '%s': %v", row.ClientIP, err)
+			continue
+		}
 		uniqueClients[row.ClientIP] = model.Client{
-			IP:       row.ClientIP,
+			IP:       clientIP,
 			Name:     row.ClientName,
 			LastSeen: row.Timestamp,
 			Mac:      row.Mac.String,
@@ -422,7 +445,7 @@ func (r *repository) GetClientHistory(clientIP string) ([]models.DomainHistory, 
 	return history, nil
 }
 
-func (r *repository) GetTopBlockedDomains(blockedRequests int) ([]map[string]interface{}, error) {
+func (r *repository) GetTopBlockedDomains(blockedRequests int) ([]map[string]any, error) {
 	var rows []struct {
 		Domain string `gorm:"column:domain"`
 		Hits   int    `gorm:"column:hits"`
@@ -438,13 +461,13 @@ func (r *repository) GetTopBlockedDomains(blockedRequests int) ([]map[string]int
 		return nil, err
 	}
 
-	var topBlockedDomains []map[string]interface{}
+	var topBlockedDomains []map[string]any
 	for _, r := range rows {
 		freq := 0
 		if blockedRequests > 0 {
 			freq = (r.Hits * 100) / blockedRequests
 		}
-		topBlockedDomains = append(topBlockedDomains, map[string]interface{}{
+		topBlockedDomains = append(topBlockedDomains, map[string]any{
 			"name":      r.Domain,
 			"hits":      r.Hits,
 			"frequency": freq,
@@ -453,7 +476,7 @@ func (r *repository) GetTopBlockedDomains(blockedRequests int) ([]map[string]int
 	return topBlockedDomains, nil
 }
 
-func (r *repository) GetTopQueriedDomains() ([]map[string]interface{}, error) {
+func (r *repository) GetTopQueriedDomains() ([]map[string]any, error) {
 	var rows []struct {
 		Domain string `gorm:"column:domain"`
 		Hits   int    `gorm:"column:hits"`
@@ -468,9 +491,9 @@ func (r *repository) GetTopQueriedDomains() ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	var topQueriedDomains []map[string]interface{}
+	var topQueriedDomains []map[string]any
 	for _, row := range rows {
-		topQueriedDomains = append(topQueriedDomains, map[string]interface{}{
+		topQueriedDomains = append(topQueriedDomains, map[string]any{
 			"name": row.Domain,
 			"hits": row.Hits,
 		})
@@ -479,7 +502,7 @@ func (r *repository) GetTopQueriedDomains() ([]map[string]interface{}, error) {
 	return topQueriedDomains, nil
 }
 
-func (r *repository) GetTopPermittedDomains(permittedRequests int) ([]map[string]interface{}, error) {
+func (r *repository) GetTopPermittedDomains(permittedRequests int) ([]map[string]any, error) {
 	var rows []struct {
 		Domain string `gorm:"column:domain"`
 		Hits   int    `gorm:"column:hits"`
@@ -495,13 +518,13 @@ func (r *repository) GetTopPermittedDomains(permittedRequests int) ([]map[string
 		return nil, err
 	}
 
-	var topPermittedDomains []map[string]interface{}
+	var topPermittedDomains []map[string]any
 	for _, r := range rows {
 		freq := 0
 		if permittedRequests > 0 {
 			freq = (r.Hits * 100) / permittedRequests
 		}
-		topPermittedDomains = append(topPermittedDomains, map[string]interface{}{
+		topPermittedDomains = append(topPermittedDomains, map[string]any{
 			"name":      r.Domain,
 			"hits":      r.Hits,
 			"frequency": freq,
@@ -510,7 +533,7 @@ func (r *repository) GetTopPermittedDomains(permittedRequests int) ([]map[string
 	return topPermittedDomains, nil
 }
 
-func (r *repository) GetTopClients() ([]map[string]interface{}, error) {
+func (r *repository) GetTopClients() ([]map[string]any, error) {
 	var total int64
 	if err := r.db.Table("request_logs").Count(&total).Error; err != nil {
 		return nil, err
@@ -532,14 +555,13 @@ func (r *repository) GetTopClients() ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	clients := make([]map[string]interface{}, 0, len(rows))
+	clients := make([]map[string]any, 0, len(rows))
 	for _, r := range rows {
 		freq := float32(r.RequestCount) * 100 / float32(total)
-		clients = append(clients, map[string]interface{}{
-			"client":       r.ClientIP,
-			"clientName":   r.ClientName,
-			"requestCount": r.RequestCount,
-			"frequency":    freq,
+		clients = append(clients, map[string]any{
+			"client":     r.ClientIP,
+			"clientName": r.ClientName, "requestCount": r.RequestCount,
+			"frequency": freq,
 		})
 	}
 	return clients, nil

@@ -9,6 +9,7 @@ import (
 	"goaway/backend/user"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -107,7 +108,9 @@ func (api *API) updatePassword(c *gin.Context) {
 		Message: logMsg,
 	})
 	go func() {
-		_ = api.DNSServer.AlertService.SendToAll(context.Background(), alert.Message{
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = api.DNSServer.AlertService.SendToAll(ctx, alert.Message{
 			Title:    "System",
 			Content:  logMsg,
 			Severity: SeverityWarning,
@@ -150,7 +153,9 @@ func (api *API) createAPIKey(c *gin.Context) {
 	}
 
 	go func() {
-		_ = api.DNSServer.AlertService.SendToAll(context.Background(), alert.Message{
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = api.DNSServer.AlertService.SendToAll(ctx, alert.Message{
 			Title:    "System",
 			Content:  fmt.Sprintf("New API key created with the name '%s' and scopes '%v'", request.Name, request.Scopes),
 			Severity: SeverityWarning,

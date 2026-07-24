@@ -77,21 +77,13 @@ func (a *Application) RestartApplication() {
 	wg.Add(5)
 	go func() {
 		defer wg.Done()
-		if err := a.services.UDPServer.Shutdown(); err != nil {
-			mu.Lock()
-			shutdownErrors = append(shutdownErrors, fmt.Errorf("UDP server: %w", err))
-			mu.Unlock()
-		}
+		a.services.UDPServer.Shutdown(ctx)
 		log.Warning("Stopped UDP server")
 	}()
 
 	go func() {
 		defer wg.Done()
-		if err := a.services.TCPServer.Shutdown(); err != nil {
-			mu.Lock()
-			shutdownErrors = append(shutdownErrors, fmt.Errorf("TCP server: %w", err))
-			mu.Unlock()
-		}
+		a.services.TCPServer.Shutdown(ctx)
 		log.Warning("Stopped TCP server")
 	}()
 
@@ -110,11 +102,7 @@ func (a *Application) RestartApplication() {
 	go func() {
 		defer wg.Done()
 		if a.services.DoTServer != nil {
-			if err := a.services.DoTServer.Shutdown(); err != nil {
-				mu.Lock()
-				shutdownErrors = append(shutdownErrors, fmt.Errorf("DoT server: %w", err))
-				mu.Unlock()
-			}
+			a.services.DoTServer.Shutdown(ctx)
 			log.Warning("Stopped DNS-over-TLS server")
 		}
 	}()
@@ -148,6 +136,9 @@ func (a *Application) RestartApplication() {
 }
 
 func (a *Application) Start() error {
+
+	logger := logging.GetLogger()
+	logger.SetLevel(logging.LogLevel(a.config.Logging.Level))
 
 	ctx, err := services.NewAppContext(a.config)
 	if err != nil {

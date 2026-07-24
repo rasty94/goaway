@@ -59,6 +59,46 @@
 
 * **deps:** update client dependencies to resolve cve's ([d4fc499](https://github.com/rasty94/goaway/commit/d4fc499e9421fdd6410ca1193bfa010a53f65f66))
 
+## [0.63.17](https://github.com/pommee/goaway/compare/v0.63.16...v0.63.17) (2026-06-18)
+
+### Bug Fixes
+
+* fix resource leak ([8f97026](https://github.com/pommee/goaway/commit/8f97026948e863e836363ccbd44f7a73a4307778))
+
+## [0.63.16](https://github.com/pommee/goaway/compare/v0.63.15...v0.63.16) (2026-06-18)
+
+### Bug Fixes
+
+* corrently use set log level at start ([2ae7c0b](https://github.com/pommee/goaway/commit/2ae7c0b8623f1caee99a4c360fc2cac6b4540f8a))
+* use correct query type and name ([f09509c](https://github.com/pommee/goaway/commit/f09509c02d815b2bd5b921744c1b0882b8d770e1))
+
+## [0.63.15](https://github.com/pommee/goaway/compare/v0.63.14...v0.63.15) (2026-05-01)
+
+### Bug Fixes
+
+* multiple fixes related to graceful shutdown, routine leaks, error channel overflow and more ([e84bbcd](https://github.com/pommee/goaway/commit/e84bbcd73c64eea9b47270431fa0c8e68df03e3b))
+
+## [0.63.14](https://github.com/pommee/goaway/compare/v0.63.13...v0.63.14) (2026-04-18)
+
+### Bug Fixes
+
+* added support for wildcard in custom blacklist ([fa8ac9d](https://github.com/pommee/goaway/commit/fa8ac9d03fe90ba9fbc10e123e26ecae5ee6437c))
+
+## [0.63.13](https://github.com/pommee/goaway/compare/v0.63.12...v0.63.13) (2026-04-18)
+
+### Bug Fixes
+
+* **deps:** switch from miekg/dns v1 to v2 ([5152f8c](https://github.com/pommee/goaway/commit/5152f8c97db38375d44c7f2cf0128de862c2c1fa))
+* update any miekg/dns related code ([cefe01c](https://github.com/pommee/goaway/commit/cefe01c64584ecf9480987191c44a3095fcb204e))
+
+### Performance Improvements
+
+* fetching notifications are not done cursor based ([abf851a](https://github.com/pommee/goaway/commit/abf851ae991bf253737e4c94cf11cb23c79ed37a))
+
+### UI/UX
+
+* fetch notifications using cursor ([e87d949](https://github.com/pommee/goaway/commit/e87d949b7f50cea1ac57eb30e8f1a2b7e1f64f34))
+
 ## [0.63.8](https://github.com/rasty94/goaway/compare/v0.63.7...v0.63.8) (2026-02-28)
 
 ### Bug Fixes

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"goaway/backend/api"
@@ -22,7 +23,7 @@ import (
 	"net/http"
 	synchronization "sync"
 
-	"github.com/miekg/dns"
+	"codeberg.org/miekg/dns"
 )
 
 var log = logging.GetLogger()
@@ -41,10 +42,12 @@ type ServiceRegistry struct {
 
 	Context *AppContext
 
-	version string
-	date    string
-	commit  string
-	wg      synchronization.WaitGroup
+	version     string
+	date        string
+	commit      string
+	wg          synchronization.WaitGroup
+	shutdownCtx context.Context
+	cancel      context.CancelFunc
 
 	ResolutionService   *resolution.Service
 	RequestService      *request.Service
@@ -69,14 +72,17 @@ type ServiceError struct {
 }
 
 func NewServiceRegistry(ctx *AppContext, version, commit, date string, content embed.FS) *ServiceRegistry {
+	shutdownCtx, cancel := context.WithCancel(context.Background())
 	return &ServiceRegistry{
-		Context:   ctx,
-		version:   version,
-		commit:    commit,
-		date:      date,
-		content:   content,
-		readyChan: make(chan struct{}),
-		errorChan: make(chan ServiceError, 10),
+		Context:     ctx,
+		version:     version,
+		commit:      commit,
+		date:        date,
+		content:     content,
+		readyChan:   make(chan struct{}),
+		errorChan:   make(chan ServiceError, 50),
+		shutdownCtx: shutdownCtx,
+		cancel:      cancel,
 	}
 }
 
@@ -97,7 +103,7 @@ func (r *ServiceRegistry) Initialize() error {
 func (r *ServiceRegistry) setupDNSServers() {
 	config := r.Context.Config
 
-	notifyReady := func() {
+	notifyReady := func(context.Context) {
 		log.Info("Started DNS server on: %s:%d", config.DNS.Address, config.DNS.Ports.TCPUDP)
 		close(r.readyChan)
 	}
@@ -308,6 +314,14 @@ func (r *ServiceRegistry) WaitGroup() *synchronization.WaitGroup {
 
 func (r *ServiceRegistry) ReadyChannel() <-chan struct{} {
 	return r.readyChan
+}
+
+func (r *ServiceRegistry) ShutdownContext() context.Context {
+	return r.shutdownCtx
+}
+
+func (r *ServiceRegistry) Shutdown() {
+	r.cancel()
 }
 
 func (r *ServiceRegistry) ErrorChannel() <-chan ServiceError {

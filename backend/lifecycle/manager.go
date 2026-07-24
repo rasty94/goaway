@@ -1,14 +1,15 @@
 package lifecycle
 
 import (
+	"context"
 	"goaway/backend/api"
 	"goaway/backend/jobs"
 	"goaway/backend/logging"
 	"goaway/backend/services"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
+	"time"
 )
 
 var log = logging.GetLogger()
@@ -64,64 +65,58 @@ func (m *Manager) waitForTermination() error {
 }
 
 func (m *Manager) shutdown() {
-	log.Info("Initiating graceful shutdown...")
+	log.Info("Starting graceful shutdown...")
 
+	m.services.Shutdown()
 	m.services.APIServer.IsShuttingDown = true
 
-	var wg sync.WaitGroup
-
-	if m.services.APIServer != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := m.services.APIServer.Stop(); err != nil {
-				log.Error("Failed to stop API server: %v", err)
-			}
-		}()
+	if err := m.services.APIServer.Stop(); err != nil {
+		log.Error("Error stopping API server: %v", err)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	if m.services.UDPServer != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := m.services.UDPServer.Shutdown(); err != nil {
-				log.Error("Failed to stop UDP server: %v", err)
-			}
-		}()
+		m.services.UDPServer.Shutdown(ctx)
+		log.Info("Stopped UDP server")
 	}
 
 	if m.services.TCPServer != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := m.services.TCPServer.Shutdown(); err != nil {
-				log.Error("Failed to stop TCP server: %v", err)
-			}
-		}()
+		m.services.TCPServer.Shutdown(ctx)
+		log.Info("Stopped TCP server")
 	}
 
 	if m.services.DoTServer != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := m.services.DoTServer.Shutdown(); err != nil {
-				log.Error("Failed to stop DoT server: %v", err)
-			}
-		}()
+		m.services.DoTServer.Shutdown(ctx)
+		log.Info("Stopped DNS-over-TLS server")
+	}
+
+	if m.services.DoHServer != nil {
+		if err := m.services.DoHServer.Shutdown(ctx); err != nil && err != context.DeadlineExceeded {
+			log.Error("Error stopping DoH server: %v", err)
+		}
+		log.Info("Stopped DNS-over-HTTPS server")
 	}
 
 	if m.services.DHCPService != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			m.services.DHCPService.Stop()
-		}()
+		m.services.DHCPService.Stop()
+		log.Info("Stopped DHCP service")
 	}
 
-	// DoH Server doesn't have a direct Context-less shutdown like Miekg DNS
-	// So we won't wait for its shutdown strictly here if it takes too long.
+	// Wait for all goroutines to finish with timeout
+	done := make(chan struct{})
+	go func() {
+		m.services.WaitGroup().Wait()
+		close(done)
+	}()
 
-	wg.Wait()
-	log.Info("Graceful shutdown completed successfully.")
+	select {
+	case <-done:
+		log.Info("All services stopped gracefully")
+	case <-time.After(15 * time.Second):
+		log.Warning("Shutdown timeout exceeded, forcing exit")
+	}
+
 	os.Exit(0)
 }

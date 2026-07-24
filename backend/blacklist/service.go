@@ -243,6 +243,28 @@ func (s *Service) RemoveWildcard(ctx context.Context, domain string) error {
 	return s.RemoveCustomDomain(ctx, domain)
 }
 
+// matchesWildcard checks if a domain matches a wildcard pattern
+// Examples:
+// - "*.example.com" matches "test.example.com", "a.b.example.com"
+// - "*.example.com" does NOT match "example.com"
+func matchesWildcard(domain, pattern string) bool {
+	domain = strings.TrimSuffix(domain, ".")
+	pattern = strings.TrimSuffix(pattern, ".")
+
+	if !strings.HasPrefix(pattern, "*.") {
+		return domain == pattern
+	}
+
+	// Extract the base domain (everything after "*.")
+	baseDomain := pattern[2:]
+	suffix := "." + baseDomain
+	if !strings.HasSuffix(domain, suffix) {
+		return false
+	}
+
+	return len(domain) > len(suffix)
+}
+
 func (s *Service) GetBlocklistUrls(ctx context.Context) ([]BlocklistSource, error) {
 	sources, err := s.repository.GetSources(ctx, true)
 	if err != nil {
@@ -387,6 +409,32 @@ func (s *Service) isValidDomain(domain string) bool {
 	return !invalidDomains[domain]
 }
 
+// isValidDomainOrWildcard checks if a domain is valid FQDN or a valid wildcard pattern
+// Valid wildcards start with "*." followed by a valid domain
+func isValidDomainOrWildcard(domain string) bool {
+	domain = strings.TrimSuffix(domain, ".")
+
+	if strings.HasPrefix(domain, "*.") {
+		baseDomain := domain[2:]
+		// Basic validation: must have at least one dot and contain only valid characters
+		if len(baseDomain) == 0 {
+			return false
+		}
+		if strings.Contains(baseDomain, "*") {
+			return false
+		}
+		return strings.Contains(baseDomain, ".")
+	}
+
+	if len(domain) == 0 || !strings.Contains(domain, ".") {
+		return false
+	}
+	if strings.Contains(domain, "*") {
+		return false
+	}
+	return true
+}
+
 func (s *Service) ExtractDomains(body io.Reader) ([]string, error) {
 	scanner := bufio.NewScanner(body)
 	domainSet := make(map[string]struct{})
@@ -515,6 +563,12 @@ func (s *Service) RemoveDomain(ctx context.Context, domain string) error {
 }
 
 func (s *Service) AddCustomDomains(ctx context.Context, domains []string) error {
+	for _, domain := range domains {
+		if !isValidDomainOrWildcard(domain) {
+			return fmt.Errorf("invalid domain or wildcard pattern: %s", domain)
+		}
+	}
+
 	return s.repository.WithTransaction(ctx, func(tx *gorm.DB) error {
 		currentTime := time.Now()
 
@@ -757,46 +811,52 @@ func (s *Service) Vacuum(ctx context.Context) {
 	}
 }
 
-func (s *Service) ScheduleAutomaticListUpdates() {
+func (s *Service) ScheduleAutomaticListUpdates(ctx context.Context) {
 	ticker := time.NewTicker(s.config.UpdateInterval)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		ctx := context.Background()
-		log.Info("Starting automatic list updates...")
+	for {
+		select {
+		case <-ctx.Done():
+			log.Debug("Stopping automatic list updates")
+			return
+		case <-ticker.C:
+			bgCtx := context.Background()
+			log.Info("Starting automatic list updates...")
 
-		for _, source := range s.blocklistURL {
-			if source.Name == "Custom" {
-				continue
+			for _, source := range s.blocklistURL {
+				if source.Name == "Custom" {
+					continue
+				}
+				log.Info("Checking for updates for blocklist %s from %s", source.Name, source.URL)
+
+				availableUpdate, err := s.CheckIfUpdateAvailable(bgCtx, source.URL, source.Name)
+				if err != nil {
+					log.Warning("Failed to check for updates for %s: %v", source.Name, err)
+					continue
+				}
+
+				if !availableUpdate.UpdateAvailable {
+					log.Info("No updates available for %s", source.Name)
+					continue
+				}
+
+				if err := s.RemoveSourceAndDomains(bgCtx, source.Name, source.URL); err != nil {
+					log.Warning("Failed to remove old domains for %s: %v", source.Name, err)
+					continue
+				}
+
+				if err := s.FetchAndLoadHosts(bgCtx, source.URL, source.Name); err != nil {
+					log.Warning("Failed to fetch and load hosts for %s: %v", source.Name, err)
+					continue
+				}
+
+				log.Info("Successfully updated %s with %d new domains", source.Name, len(availableUpdate.DiffAdded))
 			}
-			log.Info("Checking for updates for blocklist %s from %s", source.Name, source.URL)
 
-			availableUpdate, err := s.CheckIfUpdateAvailable(ctx, source.URL, source.Name)
-			if err != nil {
-				log.Warning("Failed to check for updates for %s: %v", source.Name, err)
-				continue
+			if err := s.PopulateCache(bgCtx); err != nil {
+				log.Warning("Failed to populate blocklist cache after auto-update: %v", err)
 			}
-
-			if !availableUpdate.UpdateAvailable {
-				log.Info("No updates available for %s", source.Name)
-				continue
-			}
-
-			if err := s.RemoveSourceAndDomains(ctx, source.Name, source.URL); err != nil {
-				log.Warning("Failed to remove old domains for %s: %v", source.Name, err)
-				continue
-			}
-
-			if err := s.FetchAndLoadHosts(ctx, source.URL, source.Name); err != nil {
-				log.Warning("Failed to fetch and load hosts for %s: %v", source.Name, err)
-				continue
-			}
-
-			log.Info("Successfully updated %s with %d new domains", source.Name, len(availableUpdate.DiffAdded))
-		}
-
-		if err := s.PopulateCache(ctx); err != nil {
-			log.Warning("Failed to populate blocklist cache after auto-update: %v", err)
 		}
 	}
 }

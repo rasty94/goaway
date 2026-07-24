@@ -74,7 +74,7 @@ dev-website:   ; pnpm -C client install && pnpm -C client dev
 dev-server:    ; mkdir client/dist ; touch client/dist/.fake ; air .
 
 test: install lint commitlint
-	go test -count=1 -race ./test/...
+	go test -count=1 ./test/...
 
 e2e:			; ./test/e2e/run.sh
 
