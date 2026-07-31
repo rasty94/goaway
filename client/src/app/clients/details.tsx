@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { ClientEntry } from "@/pages/clients";
+import { ClientEntry } from "./types";
 import { GetRequest, PutRequest } from "@/util";
 import {
   ArrowsClockwiseIcon,

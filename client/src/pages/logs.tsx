@@ -66,7 +66,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ClientEntry } from "./clients";
+import { ClientEntry } from "@/app/clients/types";
 import { DNSMetrics } from "@/app/home/metrics-card";
 
 export interface IPEntry {
@@ -108,6 +108,14 @@ interface TopClient {
   requestCount: number;
 }
 
+// Shape of a query as it arrives from the API, before normalisation below.
+type RawQuery = Record<string, unknown> & {
+  client?: { ip?: string; name?: string; mac?: string };
+  ip?: unknown;
+};
+
+type RawResolvedIP = { ip?: string; rtype?: string } | null | undefined;
+
 async function fetchQueries(
   page: number,
   pageSize: number,
@@ -134,7 +142,7 @@ async function fetchQueries(
     if (response?.queries && Array.isArray(response.queries)) {
       return {
         queries: response.queries.map(
-          (item: any) => ({
+          (item: RawQuery) => ({
             ...item,
             client: {
               ip: item.client?.ip || "",
@@ -142,7 +150,7 @@ async function fetchQueries(
               mac: item.client?.mac || ""
             },
             ip: Array.isArray(item.ip)
-              ? item.ip.map((entry: any) => ({
+              ? item.ip.map((entry: RawResolvedIP) => ({
                   ip: String(entry?.ip || ""),
                   rtype: String(entry?.rtype || "")
                 }))
@@ -224,7 +232,8 @@ export function Logs() {
   const [topDestinations, setTopDestinations] = useState<TopDestination[]>([]);
   const [topClients, setTopClients] = useState<TopClient[]>([]);
 
-  const showClientDetails = useCallback(async (client: ClientEntry) => {
+  // Only the IP is needed to fetch the details, so a full ClientEntry is not required.
+  const showClientDetails = useCallback(async (client: Pick<ClientEntry, "ip">) => {
     const [code, response] = await GetRequest(`client/${client.ip}/details`);
     if (code !== 200) {
       toast.error(response.status);
@@ -374,7 +383,7 @@ export function Logs() {
             const client = row.original.client;
             return (
               <div
-                onClick={() => showClientDetails(client as any)}
+                onClick={() => showClientDetails(client)}
                 className="cursor-pointer text-blue-300 hover:text-blue-500 transition-colors"
               >
                 {client.name} | {client.ip}

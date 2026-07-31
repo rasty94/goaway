@@ -9,15 +9,7 @@ import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { ClientDetails } from "./details";
-
-interface ClientEntry {
-  ip: string;
-  lastSeen: string;
-  name: string;
-  mac: string;
-  vendor: string;
-  bypass: boolean;
-}
+import { ClientEntry } from "./types";
 
 interface NetworkNode {
   id: string;
@@ -130,7 +122,10 @@ export default function DNSServerVisualizer() {
     width: 800,
     height: 600
   });
-  const fgRef = useRef<ForceGraphMethods | null>(null);
+  // ForceGraph2D types its own ref as MutableRefObject<... | undefined>.
+  const fgRef = useRef<ForceGraphMethods<NetworkNode, NetworkLink> | undefined>(
+    undefined
+  );
   const wsRef = useRef<WebSocket | null>(null);
 
   const createPulse = useCallback(
@@ -594,8 +589,8 @@ export default function DNSServerVisualizer() {
         {networkData.nodes.length > 0 && (
           <div className="rounded-md cursor-move overflow-hidden">
             <ForceGraph2D
-              ref={fgRef as any}
-              graphData={networkData as any}
+              ref={fgRef}
+              graphData={networkData}
               width={dimensions.width}
               height={dimensions.height}
               nodeColor={(node: NetworkNode) => node.color || "#ffffff"}
