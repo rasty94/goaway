@@ -43,3 +43,5 @@ docs/site/**
 .agents
 client/.pnpm-store/*
 graphify-out/
+# Contains a real jwtSecret; the app reads config/settings.yaml instead.
+settings.yaml

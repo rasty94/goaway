@@ -1,1 +1,13 @@
+# Findings that only exist in git history and are already remediated in HEAD.
+# Each fingerprint pins one commit+file+line, so a new leak still fails the scan.
+# The underlying secrets must still be treated as compromised and rotated.
+
+# jwtSecret in the tracked settings.yaml. Untracked + gitignored as of this commit;
+# the app reads config/settings.yaml. Rotate on any instance that ran with it.
 6d91f07d8353b986998bf537fc85249608fde640:settings.yaml:generic-api-key:61
+
+# Hardcoded JWT signing secret in upstream (pommee/goaway), removed before this fork.
+75fb86cc00595a419c3d9035cc7bd6fd3c7b0936:backend/api/middleware.go:generic-api-key:15
+956bca0307d2b12c03b722f0d370a48a1a249d28:backend/api/middleware.go:generic-api-key:15
+ede0f8bd76d61dafede00f88bd2ea9889a6acae6:internal/api/middleware.go:generic-api-key:15
+dcf881902da7e9e956d9a03e4683012fbfbea4ed:internal/api/api.go:generic-api-key:23
