@@ -194,7 +194,13 @@ func (s *Service) isScheduleActive(sched *database.Schedule, t time.Time) bool {
 	// Time check
 	if sched.StartTime != "" && sched.EndTime != "" {
 		currentTime := t.Format("15:04")
-		if currentTime < sched.StartTime || currentTime > sched.EndTime {
+		if sched.StartTime > sched.EndTime {
+			// Window wraps midnight, e.g. 22:00-06:00. The day check above is
+			// still evaluated against the day the window starts on.
+			if currentTime < sched.StartTime && currentTime > sched.EndTime {
+				return false
+			}
+		} else if currentTime < sched.StartTime || currentTime > sched.EndTime {
 			return false
 		}
 	}
