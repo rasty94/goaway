@@ -133,6 +133,10 @@ func (v *VipManager) sendGratuitousARP() {
 			return
 		}
 		// #nosec G204 - inputs are validated
-		_ = exec.Command("arping", "-A", "-I", v.iface, "-c", "2", v.vip).Run()
+		if err := exec.Command("arping", "-A", "-I", v.iface, "-c", "2", v.vip).Run(); err != nil {
+			// Without this, switches keep pointing the VIP at the old MAC and
+			// failover looks like it silently did nothing.
+			log.Warning("[HA/VIP] Gratuitous ARP for %s failed (is arping installed?): %v", v.vip, err)
+		}
 	}
 }
