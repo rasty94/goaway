@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"codeberg.org/miekg/dns"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/miekg/dns"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 func (api *API) registerServerRoutes() {
@@ -84,11 +84,13 @@ func (api *API) checkDNSHealth(ctx context.Context) bool {
 	}
 
 	addr := fmt.Sprintf("127.0.0.1:%d", api.Config.DNS.Ports.TCPUDP)
-	msg := new(dns.Msg)
-	msg.SetQuestion("example.com.", dns.TypeA)
+	msg := dns.NewMsg("example.com.", dns.TypeA)
 
-	client := &dns.Client{Net: "udp", Timeout: 2 * time.Second}
-	in, _, err := client.ExchangeContext(ctx, msg, addr)
+	// v2 takes the deadline from the context rather than a Client.Timeout field.
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	in, _, err := dns.NewClient().Exchange(ctx, msg, "udp", addr)
 	if err != nil {
 		return false
 	}

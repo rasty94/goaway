@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"codeberg.org/miekg/dns"
 	"github.com/gin-gonic/gin"
-	"github.com/miekg/dns"
 )
 
 func (api *API) dnssecDiagnose(c *gin.Context) {

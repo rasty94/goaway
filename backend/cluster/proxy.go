@@ -1,26 +1,28 @@
 package cluster
 
 import (
+	"context"
+	"io"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/miekg/dns"
+	"codeberg.org/miekg/dns"
 )
 
 // DNSProxy implements a simple DNS proxy that balances requests among cluster nodes
 type DNSProxy struct {
-	cluster    *Service
-	addr       string
-	dnsPort    int
-	
-	mu         sync.RWMutex
-	currIndex  int
-	
+	cluster *Service
+	addr    string
+	dnsPort int
+
+	mu        sync.RWMutex
+	currIndex int
+
 	// Metrics
-	totalRequests  uint64
-	nodeRequests   map[string]uint64
-	errorRequests  uint64
+	totalRequests uint64
+	nodeRequests  map[string]uint64
+	errorRequests uint64
 }
 
 func NewDNSProxy(cluster *Service, addr string, port int) *DNSProxy {
@@ -36,15 +38,15 @@ func (p *DNSProxy) Start() error {
 	log.Info("[HA/Proxy] Starting DNS Cluster Proxy on %s (Forwarding to Cluster)", p.addr)
 
 	udpServer := &dns.Server{
-		Addr: p.addr,
-		Net:  "udp",
-		Handler: dns.HandlerFunc(p.HandleDNSRequest),
+		Addr:    p.addr,
+		Net:     "udp",
+		Handler: dns.HandlerFunc(p.ServeDNS),
 	}
 
 	tcpServer := &dns.Server{
-		Addr: p.addr,
-		Net:  "tcp",
-		Handler: dns.HandlerFunc(p.HandleDNSRequest),
+		Addr:    p.addr,
+		Net:     "tcp",
+		Handler: dns.HandlerFunc(p.ServeDNS),
 	}
 
 	go func() {
@@ -62,7 +64,17 @@ func (p *DNSProxy) Start() error {
 	return nil
 }
 
-func (p *DNSProxy) HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
+// writeServFail replaces v1's dns.HandleFailed, which v2 dropped.
+func writeServFail(w dns.ResponseWriter, r *dns.Msg) {
+	r.Response = true
+	r.Rcode = dns.RcodeServerFailure
+	r.Answer, r.Ns, r.Extra = nil, nil, nil
+	if _, err := io.Copy(w, r); err != nil {
+		log.Error("[HA/Proxy] Failed to write SERVFAIL: %v", err)
+	}
+}
+
+func (p *DNSProxy) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) {
 	p.mu.Lock()
 	p.totalRequests++
 	p.mu.Unlock()
@@ -70,7 +82,7 @@ func (p *DNSProxy) HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	nodes := p.getHealthyNodes()
 	if len(nodes) == 0 {
 		log.Warning("[HA/Proxy] No healthy nodes available to proxy request")
-		dns.HandleFailed(w, r)
+		writeServFail(w, r)
 		return
 	}
 
@@ -91,17 +103,19 @@ func (p *DNSProxy) HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	p.nodeRequests[target]++
 	p.mu.Unlock()
 
-	c := new(dns.Client)
-	c.Timeout = 2 * time.Second
-	
-	resp, _, err := c.Exchange(r, targetAddr)
+	// v2 takes the deadline from the context rather than a Client.Timeout field.
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	c := dns.NewClient()
+	resp, _, err := c.Exchange(ctx, r, "udp", targetAddr)
 	if err != nil {
 		log.Debug("[HA/Proxy] Node %s failed (Sticky node), retrying with next healthy node...", targetAddr)
 		// Fallback to Round Robin if sticky node failed
 		p.mu.Lock()
 		p.errorRequests++
 		p.currIndex++
-		node = nodes[p.currIndex % len(nodes)]
+		node = nodes[p.currIndex%len(nodes)]
 		p.mu.Unlock()
 
 		target = node.IP
@@ -109,22 +123,22 @@ func (p *DNSProxy) HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 			target = node.Address
 		}
 		targetAddr = net.JoinHostPort(target, "53")
-		
+
 		p.mu.Lock()
 		p.nodeRequests[target]++
 		p.mu.Unlock()
 
-		resp, _, err = c.Exchange(r, targetAddr)
+		resp, _, err = c.Exchange(ctx, r, "udp", targetAddr)
 	}
 
 	if err != nil {
 		log.Error("[HA/Proxy] Proxy forwarding failed (all attempts): %v", err)
-		dns.HandleFailed(w, r)
+		writeServFail(w, r)
 		return
 	}
 
 	if resp != nil {
-		if err := w.WriteMsg(resp); err != nil {
+		if _, err := io.Copy(w, resp); err != nil {
 			log.Error("[HA/Proxy] Failed to write message: %v", err)
 		}
 	}
@@ -136,7 +150,7 @@ func (p *DNSProxy) selectNodeForIP(ip string, nodes []*ClusterNode) *ClusterNode
 	for i := 0; i < len(ip); i++ {
 		hash = 31*hash + uint32(ip[i])
 	}
-	
+
 	return nodes[int(hash)%len(nodes)]
 }
 
