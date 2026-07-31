@@ -296,10 +296,10 @@ export function Settings() {
             {title === "Database" && (
               <DatabaseSection
                 loading={loading}
-                setLoading={setLoading as any}
-                fileInput={fileInput as any}
+                setLoading={setLoading}
+                fileInput={fileInput}
                 setFile={setFile}
-                setModals={setModals as any}
+                setModals={setModals}
               />
             )}
 
@@ -336,7 +336,7 @@ export function Settings() {
 
             {settings.length > 0 && (
               <DynamicSettingsSection
-                settings={settings as any}
+                settings={settings}
                 getSettingValue={getSettingValue}
                 handleSettingChange={handleSettingChange}
               />

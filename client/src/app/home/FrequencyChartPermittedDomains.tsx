@@ -24,10 +24,15 @@ type TopPermittedDomains = {
   name: string;
 };
 
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: { payload: TopPermittedDomains }[];
+};
+
 const CustomTooltip = ({
   active,
   payload
-}: any) => {
+}: CustomTooltipProps) => {
   const { t } = useTranslation();
   if (active && payload && payload.length) {
     const data = payload[0].payload;
@@ -185,7 +190,7 @@ export default function FrequencyChartPermittedDomains() {
                   dataKey={sortBy}
                   position="right"
                   offset={8}
-                  formatter={(value: any) =>
+                  formatter={(value: unknown) =>
                     sortBy === "frequency"
                       ? `${Number(value).toFixed(1)}%`
                       : Number(value).toLocaleString()

@@ -38,6 +38,7 @@ import { toast } from "sonner";
 import { validateFQDN } from "./validation";
 import { NoContent } from "@/shared";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 type PrefetchEntry = {
   domain: string;
@@ -62,7 +63,7 @@ async function CreatePrefetch(
   domain: string,
   refresh: number,
   queryType: number,
-  t: (key: string, options?: any) => string
+  t: TFunction
 ) {
   const [code, response] = await PostRequest("prefetch", {
     domain,
@@ -80,7 +81,7 @@ async function CreatePrefetch(
 
 async function DeletePrefetch(
   domain: string,
-  t: (key: string, options?: any) => string
+  t: TFunction
 ) {
   const [code, response] = await DeleteRequest(
     `prefetch?domain=${domain}`,

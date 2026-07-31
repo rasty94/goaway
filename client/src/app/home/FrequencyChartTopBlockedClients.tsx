@@ -24,13 +24,18 @@ type TopBlockedClients = {
   clientName: string;
 };
 
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: { payload: TopBlockedClients }[];
+};
+
 const CustomTooltip = ({
   active,
   payload
-}: any) => {
+}: CustomTooltipProps) => {
   const { t } = useTranslation();
   if (active && payload && payload.length) {
-    const data = payload[0].payload as TopBlockedClients;
+    const data = payload[0].payload;
     return (
       <div className="bg-accent p-2 rounded-md border">
         <p className="font-medium mb-1 truncate max-w-xs">{data.client}</p>
@@ -189,7 +194,7 @@ export default function FrequencyChartTopBlockedClients() {
                   dataKey={sortBy}
                   position="right"
                   offset={8}
-                  formatter={(value: any) =>
+                  formatter={(value: unknown) =>
                     sortBy === "frequency"
                       ? `${Number(value).toFixed(1)}%`
                       : Number(value).toLocaleString()

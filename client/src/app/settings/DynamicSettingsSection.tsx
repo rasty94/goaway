@@ -1,14 +1,16 @@
 import { Combobox } from "@/components/combobox";
 import { Switch } from "@/components/ui/switch";
 import { SettingRow } from "./SettingsRow";
-import { JSX } from "react";
+import { ElementType } from "react";
 
 interface SettingsSectionProps {
   label: string;
   key: string;
   explanation: string;
   default: number | string | boolean;
-  widgetType: JSX.Element;
+  options?: string[];
+  // Input, Switch or Combobox; the branch below picks the props for each.
+  widgetType: ElementType;
 }
 
 export const DynamicSettingsSection = ({

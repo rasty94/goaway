@@ -85,11 +85,21 @@ export function Resolution() {
         return;
       }
 
-      const listArray: ListEntry[] = (response || []).map((details: any) => ({
-        domain: details.domain,
-        value: details.value || details.ip, // Backward compat
-        type: details.type || "A"
-      }));
+      // `ip` is the pre-rename field name, still sent by older backends.
+      type RawResolution = {
+        domain: string;
+        value?: string;
+        ip?: string;
+        type?: string;
+      };
+
+      const listArray: ListEntry[] = (response || []).map(
+        (details: RawResolution) => ({
+          domain: details.domain,
+          value: details.value || details.ip || "", // Backward compat
+          type: details.type || "A"
+        })
+      );
 
       setResolutions(listArray);
       setLoading(false);

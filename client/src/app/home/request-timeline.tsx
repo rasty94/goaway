@@ -41,6 +41,9 @@ interface Query {
   allowed: boolean;
 }
 
+// Recharts hands the mouse handlers the active category on the x-axis.
+type ChartMouseEvent = { activeLabel?: string } | null;
+
 interface ChartEntry {
   interval: number;
   timestamp: string;
@@ -153,12 +156,12 @@ export default function RequestTimeline() {
     setIsZoomed(false);
   };
 
-  const handleMouseDown = (e: any) => {
+  const handleMouseDown = (e: ChartMouseEvent) => {
     if (!e || !e.activeLabel) return;
     setRefAreaLeft(e.activeLabel);
   };
 
-  const handleMouseMove = (e: any) => {
+  const handleMouseMove = (e: ChartMouseEvent) => {
     if (!refAreaLeft || !e || !e.activeLabel) return;
     setRefAreaRight(e.activeLabel);
   };

@@ -39,7 +39,6 @@ export function Cluster() {
   const [loading, setLoading] = useState(true);
 
   const fetchStatus = async () => {
-    setLoading(true);
     const [code, response] = await GetRequest("ha/cluster");
     if (code !== 200) {
       toast.error("Failed to fetch cluster status");
@@ -50,7 +49,17 @@ export function Cluster() {
     setLoading(false);
   };
 
+  // Manual refresh shows the spinner; the effect below must not set state
+  // synchronously, so it calls fetchStatus directly.
+  const refresh = () => {
+    setLoading(true);
+    fetchStatus();
+  };
+
   useEffect(() => {
+    // Every setState in fetchStatus runs after the await, so nothing is set
+    // synchronously here despite what the rule sees.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStatus();
     const interval = setInterval(fetchStatus, 10000); // Auto refresh every 10s
     return () => clearInterval(interval);
@@ -71,7 +80,7 @@ export function Cluster() {
           <h1 className="text-3xl font-bold tracking-tight">Cluster Management</h1>
           <p className="text-muted-foreground">Monitor and manage High Availability nodes.</p>
         </div>
-        <Button onClick={fetchStatus} disabled={loading}>
+        <Button onClick={refresh} disabled={loading}>
           <ArrowsClockwise className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>

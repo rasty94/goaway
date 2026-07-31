@@ -40,6 +40,18 @@ type ResponseSizeQuery = {
   max_response_size_bytes: number;
 };
 
+interface ChartEntry {
+  interval: number;
+  timestamp: string;
+  total: number;
+  avg: number;
+  min: number;
+  max: number;
+}
+
+// Recharts hands the mouse handlers the active category on the x-axis.
+type ChartMouseEvent = { activeLabel?: string } | null;
+
 export default function ResponseSizeTimeline() {
   const { t } = useTranslation();
   const chartConfig = {
@@ -61,12 +73,12 @@ export default function ResponseSizeTimeline() {
     }
   };
 
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<ChartEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refAreaLeft, setRefAreaLeft] = useState("");
   const [refAreaRight, setRefAreaRight] = useState("");
-  const [zoomedData, setZoomedData] = useState<any[]>([]);
+  const [zoomedData, setZoomedData] = useState<ChartEntry[]>([]);
   const [isZoomed, setIsZoomed] = useState(false);
   const [timelineInterval, setTimelineInterval] = useState("2");
 
@@ -149,12 +161,12 @@ export default function ResponseSizeTimeline() {
     setIsZoomed(false);
   };
 
-  const handleMouseDown = (e: any) => {
+  const handleMouseDown = (e: ChartMouseEvent) => {
     if (!e || !e.activeLabel) return;
     setRefAreaLeft(e.activeLabel);
   };
 
-  const handleMouseMove = (e: any) => {
+  const handleMouseMove = (e: ChartMouseEvent) => {
     if (!refAreaLeft || !e || !e.activeLabel) return;
     setRefAreaRight(e.activeLabel);
   };
@@ -391,8 +403,12 @@ export default function ResponseSizeTimeline() {
                                     style={{ backgroundColor: entry.color }}
                                   />
                                   <span className="text-muted-foreground text-xs mr-4">
-                                    {(chartConfig as any)[entry.dataKey]?.label ||
-                                      entry.dataKey}
+                                    {(
+                                      chartConfig as Record<
+                                        string,
+                                        { label: string; color: string }
+                                      >
+                                    )[entry.dataKey]?.label || entry.dataKey}
                                   </span>
                                 </div>
                                 <span className="font-medium text-right text-xs">

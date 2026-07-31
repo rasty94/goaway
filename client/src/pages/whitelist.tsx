@@ -23,9 +23,10 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
+import type { TFunction } from "i18next";
 import { toast } from "sonner";
 
-async function CreateWhitelistedDomain(domain: string, t: any) {
+async function CreateWhitelistedDomain(domain: string, t: TFunction) {
   const [code, response] = await PostRequest("whitelist", {
     domain: domain
   });
@@ -38,7 +39,7 @@ async function CreateWhitelistedDomain(domain: string, t: any) {
   }
 }
 
-async function DeleteWhitelistedDomain(domain: string, t: any) {
+async function DeleteWhitelistedDomain(domain: string, t: TFunction) {
   const [code, response] = await DeleteRequest(
     `whitelist?domain=${domain}`,
     null

@@ -44,7 +44,7 @@ export function Blacklist() {
       const listArray: ListEntry[] = Object.entries(response).map(
         ([name, details]) => ({
           name,
-          ...(details as any)
+          ...(details as Omit<ListEntry, "name">)
         })
       );
 

@@ -17,7 +17,7 @@ export const DatabaseSection = ({
   setLoading: React.Dispatch<
     React.SetStateAction<{ main: boolean; import: boolean; export: boolean }>
   >;
-  fileInput: React.RefObject<HTMLInputElement>;
+  fileInput: React.RefObject<HTMLInputElement | null>;
   setFile: (file: File | null) => void;
   setModals: React.Dispatch<React.SetStateAction<SetModalsType>>;
 }) => {
