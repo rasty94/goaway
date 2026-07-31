@@ -31,7 +31,7 @@
     "react-dom": "^19.2.5",
     "react-force-graph-2d": "^1.29.1",
     "react-i18next": "^16.5.8",
-    "react-router-dom": "^7.14.0",
+    "react-router-dom": "^7.18.1",
     "react-timeago": "^8.3.0",
     "recharts": "^3.8.1",
     "sonner": "^2.0.7",
@@ -60,5 +60,15 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.1",
     "vite": "^8.0.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "lodash-es": ">=4.18.0"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-qwww-vcr4-c8h2"
+      ]
+    }
   }
 }
