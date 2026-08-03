@@ -3,7 +3,9 @@ FROM --platform=linux/amd64 node:22-alpine AS frontend-builder
 WORKDIR /app/client
 # Install pnpm
 RUN npm install -g pnpm
-COPY client/package.json client/pnpm-lock.yaml ./
+# pnpm-workspace.yaml holds allowBuilds/overrides/auditConfig; without it pnpm
+# sees no settings and --frozen-lockfile rejects the lockfile.
+COPY client/package.json client/pnpm-lock.yaml client/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY client/ ./
 RUN pnpm build
@@ -28,8 +30,9 @@ WORKDIR /app
 COPY --from=backend-builder --chown=goaway:goaway /app/goaway .
 # Bind 53/67/547 and send ICMPv6 RAs without running as root.
 # Note: HA VIP mode shells out to `ip addr add` and still needs root.
-RUN setcap 'cap_net_bind_service=+ep cap_net_raw=+ep' ./goaway && \
-    chown -R goaway:goaway /app
+# chown must come first: changing ownership clears the capability xattr.
+RUN chown -R goaway:goaway /app && \
+    setcap 'cap_net_bind_service=+ep cap_net_raw=+ep' ./goaway
 USER goaway
 
 EXPOSE 53/tcp 53/udp 5354/tcp 5354/udp 8080/tcp 67/udp 547/udp

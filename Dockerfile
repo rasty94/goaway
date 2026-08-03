@@ -23,8 +23,9 @@ COPY updater.sh ./
 
 # Bind 53/67/547 and send ICMPv6 RAs without running as root.
 # Note: HA VIP mode shells out to `ip addr add` and still needs root.
-RUN setcap 'cap_net_bind_service=+ep cap_net_raw=+ep' /app/goaway && \
-    chown -R goaway:goaway /app
+# chown must come first: changing ownership clears the capability xattr.
+RUN chown -R goaway:goaway /app && \
+    setcap 'cap_net_bind_service=+ep cap_net_raw=+ep' /app/goaway
 USER goaway
 
 EXPOSE ${DNS_PORT}/tcp ${DNS_PORT}/udp ${PROXY_PORT}/tcp ${PROXY_PORT}/udp ${WEBSITE_PORT}/tcp 67/udp 547/udp
