@@ -16,3 +16,17 @@ dig-domains.sh
 
 resources/
 database.db
+
+# Host build output. node_modules is platform specific, so copying it over the
+# one installed inside the image leaves pnpm with a node_modules that does not
+# match the lockfile and the build aborts.
+**/node_modules
+client/dist
+
+# Runtime state. config/ holds a real jwtSecret and data/ the database; neither
+# belongs in a build layer, and both are mounted at run time instead.
+config/
+data/
+settings.yaml
+
+graphify-out/

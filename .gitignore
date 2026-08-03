@@ -45,3 +45,6 @@ client/.pnpm-store/*
 graphify-out/
 # Contains a real jwtSecret; the app reads config/settings.yaml instead.
 settings.yaml
+
+# Per-machine compose tweaks (volumes, ports). Compose loads it automatically.
+docker-compose.override.yml
