@@ -143,10 +143,15 @@ func createDefaultSettings(filePath string) (Config, error) {
 				Cert:    "",
 				Key:     "",
 			},
+			// Populate Servers, not the legacy Preferred/Fallback pair.
+			// QueryUpstream only iterates Servers, and the legacy-to-Servers
+			// migration in ApplySchemaUpgrades only runs for schemaVersion 1,
+			// so a fresh config written at the current version would keep an
+			// empty Servers list and SERVFAIL every query.
 			Upstream: UpstreamConfig{
-				Preferred: "8.8.8.8:53",
-				Fallback: []string{
-					"1.1.1.1:53",
+				Servers: []UpstreamServer{
+					{Name: "Google", Address: "8.8.8.8:53", Protocol: "udp", Enabled: true},
+					{Name: "Cloudflare", Address: "1.1.1.1:53", Protocol: "udp", Enabled: true},
 				},
 			},
 			Ports: PortsConfig{
