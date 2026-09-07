@@ -89,6 +89,35 @@ Response:
 - `POST /api/ha/config` - Update HA configuration
 - `POST /api/ha/sync-now` - Trigger manual synchronization
 
+### Node-to-node Endpoints (cluster signature required)
+- `POST /api/native/cluster/heartbeat` - Peer liveness and leader election
+- `POST /api/native/cluster/replicate` - Push of lists, groups and DHCP leases
+
+These two endpoints are not tied to a user session. Every call must carry
+`X-Cluster-Timestamp` (unix seconds) and `X-Cluster-Signature`
+(hex HMAC-SHA256 of `timestamp + "\n" + body`) computed with the shared key
+`highAvailability.secret`. Requests older than 30 seconds, unsigned, or signed
+with another key are rejected with 401 and written to the audit log.
+
+Set the same value on every node:
+
+```yaml
+highAvailability:
+  enabled: true
+  secret: "<long random string, e.g. openssl rand -hex 32>"
+```
+
+With an empty `secret` the node refuses all peer traffic (fail closed) and logs
+an error at startup, so an active cluster never runs unauthenticated.
+
+### Delivery guarantees
+The Primary writes every event to the `replication_outbox` table, one row per
+peer, and pushes them in insertion order. A row is deleted only after the peer
+returns 200; on any failure the Primary stops at that row and retries every 5
+seconds, so a replica that was down receives the backlog in the right order
+once it is back. Rows older than 24 hours are dropped; a replica that was away
+longer must re-sync through the Phase 1 backup pull.
+
 ## How Synchronization Works
 
 1. **Initial Sync**: When a Replica is enabled, it attempts an immediate sync on startup

@@ -1,11 +1,14 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"goaway/backend/audit"
 	"goaway/backend/cluster"
 	"goaway/backend/database"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -27,9 +30,33 @@ func (api *API) registerHARoutes() {
 		haRoutes.GET("/cluster", api.getClusterStatus)
 	}
 
-	// Internal clustering heartbeat (no auth required if verified separately or over TLS)
-	api.router.POST("/api/native/cluster/heartbeat", api.handleHeartbeat)
-	api.router.POST("/api/native/cluster/replicate", api.handleReplication)
+	// Internal node-to-node endpoints: HMAC-signed with highAvailability.secret, never the user session.
+	native := api.router.Group("/api/native/cluster", api.clusterAuth())
+	native.POST("/heartbeat", api.handleHeartbeat)
+	native.POST("/replicate", api.handleReplication)
+}
+
+// clusterAuth verifies the peer signature over timestamp+body and fails closed when no secret is configured.
+func (api *API) clusterAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		body, err := io.ReadAll(io.LimitReader(c.Request.Body, 1<<20))
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "unreadable body"})
+			return
+		}
+		c.Request.Body = io.NopCloser(bytes.NewReader(body))
+
+		if err := cluster.VerifyRequest(c.Request.Header, api.Config.HighAvailability.Secret, body, time.Now()); err != nil {
+			msg := fmt.Sprintf("Rejected cluster request from %s to %s: %v", c.ClientIP(), c.Request.URL.Path, err)
+			log.Warning("[HA/Cluster] %s", msg)
+			if api.AuditService != nil {
+				api.AuditService.CreateAudit(&audit.Entry{Topic: audit.TopicAPI, Message: msg, CreatedAt: time.Now()})
+			}
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid cluster signature"})
+			return
+		}
+		c.Next()
+	}
 }
 
 // getHAConfig returns current HA configuration
@@ -180,8 +207,7 @@ func (api *API) handleHeartbeat(c *gin.Context) {
 		return
 	}
 
-	// In a real scenario, we would verify the SourceID and Timestamp/Signature
-	// For now, we just reply with our current status
+	// Signature already verified by clusterAuth; reply with our current status
 	resp := cluster.HeartbeatResponse{
 		ID:        "local-node", // Should match initialized ID
 		Role:      cluster.NodeRole(api.Config.HighAvailability.Mode),
@@ -244,8 +270,20 @@ func (api *API) handleReplication(c *gin.Context) {
 		err = api.handleGroupCreateReplication(event.Payload)
 	case cluster.EventGroupDelete:
 		err = api.handleGroupDeleteReplication(event.Payload)
+	case cluster.EventGroupUpdate:
+		err = api.handleGroupUpdateReplication(event.Payload)
+	case cluster.EventGroupBlockedAdd, cluster.EventGroupBlockedRemove, cluster.EventGroupAllowedAdd, cluster.EventGroupAllowedRemove:
+		err = api.handleGroupDomainReplication(event.Type, event.Payload)
+	case cluster.EventClientUpdate:
+		err = api.handleClientUpdateReplication(event.Payload)
+	case cluster.EventResolutionAdd:
+		err = api.handleResolutionAddReplication(event.Payload)
+	case cluster.EventResolutionRemove:
+		err = api.handleResolutionRemoveReplication(event.Payload)
 	case cluster.EventDHCPLeaseAdd:
 		err = api.handleDHCPLeaseReplication(event.Payload)
+	case cluster.EventDHCPLeasev6Add:
+		err = api.handleDHCPLeasev6Replication(event.Payload)
 	case cluster.EventDHCPStaticAdd:
 		err = api.handleDHCPStaticAddReplication(event.Payload)
 	case cluster.EventDHCPStaticRemove:
@@ -355,6 +393,84 @@ func (api *API) handleGroupDeleteReplication(payload interface{}) error {
 
 	return api.GroupService.DeleteGroup(uint(idVal))
 }
+
+// decodePayload re-encodes the generic JSON payload into a typed struct.
+func decodePayload(payload interface{}, out interface{}) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, out)
+}
+
+func (api *API) handleGroupUpdateReplication(payload interface{}) error {
+	var p struct {
+		ID                uint `json:"id"`
+		UseGlobalPolicies bool `json:"useGlobalPolicies"`
+	}
+	if err := decodePayload(payload, &p); err != nil || p.ID == 0 {
+		return fmt.Errorf("invalid group update payload")
+	}
+	return api.GroupService.SetGroupUseGlobalPolicies(p.ID, p.UseGlobalPolicies)
+}
+
+func (api *API) handleGroupDomainReplication(t cluster.EventType, payload interface{}) error {
+	var p struct {
+		GroupID uint   `json:"groupId"`
+		Domain  string `json:"domain"`
+	}
+	if err := decodePayload(payload, &p); err != nil || p.GroupID == 0 || p.Domain == "" {
+		return fmt.Errorf("invalid group domain payload")
+	}
+	switch t {
+	case cluster.EventGroupBlockedAdd:
+		return api.GroupService.AddBlockedDomain(p.GroupID, p.Domain)
+	case cluster.EventGroupBlockedRemove:
+		return api.GroupService.RemoveBlockedDomain(p.GroupID, p.Domain)
+	case cluster.EventGroupAllowedAdd:
+		return api.GroupService.AddAllowedDomain(p.GroupID, p.Domain)
+	default:
+		return api.GroupService.RemoveAllowedDomain(p.GroupID, p.Domain)
+	}
+}
+
+func (api *API) handleClientUpdateReplication(payload interface{}) error {
+	var p struct {
+		Identifier     string `json:"identifier"`
+		IdentifierType string `json:"identifierType"`
+		GroupIDs       []uint `json:"groupIds"`
+	}
+	if err := decodePayload(payload, &p); err != nil || p.Identifier == "" {
+		return fmt.Errorf("invalid client update payload")
+	}
+	return api.GroupService.ReplaceAssignments(p.Identifier, p.IdentifierType, p.GroupIDs)
+}
+
+func (api *API) handleResolutionAddReplication(payload interface{}) error {
+	var p struct{ Domain, Value, Type string }
+	if err := decodePayload(payload, &p); err != nil || p.Domain == "" || p.Value == "" {
+		return fmt.Errorf("invalid resolution payload")
+	}
+	return api.ResolutionService.CreateResolution(p.Value, p.Domain, p.Type)
+}
+
+func (api *API) handleResolutionRemoveReplication(payload interface{}) error {
+	var p struct{ Domain, Value string }
+	if err := decodePayload(payload, &p); err != nil || p.Domain == "" {
+		return fmt.Errorf("invalid resolution remove payload")
+	}
+	_, err := api.ResolutionService.DeleteResolution(p.Value, p.Domain)
+	return err
+}
+
+func (api *API) handleDHCPLeasev6Replication(payload interface{}) error {
+	var lease database.ActiveDHCPv6Lease
+	if err := decodePayload(payload, &lease); err != nil || lease.DUID == "" {
+		return fmt.Errorf("invalid dhcpv6 lease payload")
+	}
+	return api.DBConn.Save(&lease).Error
+}
+
 func (api *API) handleDHCPLeaseReplication(payload interface{}) error {
 	m, ok := payload.(map[string]interface{})
 	if !ok {

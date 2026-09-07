@@ -148,6 +148,7 @@ type HighAvailabilityConfig struct {
 	Priority     int            `yaml:"priority" json:"priority"`   // Higher priority = better candidate for Primary
 	Peers        []string       `yaml:"peers" json:"peers"`         // List of peer node API endpoints (e.g. http://192.168.1.10:8080)
 	HeartbeatURL string         `yaml:"heartbeatUrl" json:"heartbeatUrl"`
+	Secret       string         `yaml:"secret" json:"-"` // Shared HMAC key; every heartbeat/replication call must be signed with it
 	Proxy        HaProxyConfig  `yaml:"proxy" json:"proxy"`
 	VIP          VipConfig      `yaml:"vip" json:"vip"`
 

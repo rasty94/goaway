@@ -8,8 +8,11 @@ import (
 	"goaway/backend/logging"
 	"goaway/backend/settings"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 var log = logging.GetLogger()
@@ -34,7 +37,7 @@ type Service struct {
 	stopOnce sync.Once
 }
 
-func NewService(config *settings.Config, selfID string) *Service {
+func NewService(config *settings.Config, selfID string, db *gorm.DB) *Service {
 	s := &Service{
 		config: config,
 		peers:  make(map[string]*ClusterNode),
@@ -42,7 +45,7 @@ func NewService(config *settings.Config, selfID string) *Service {
 		selfRole: NodeRole(config.HighAvailability.Mode),
 		stopCh: make(chan struct{}),
 	}
-	s.Replicator = NewReplicationManager(s)
+	s.Replicator = NewReplicationManager(s, db)
 	return s
 }
 
@@ -55,6 +58,10 @@ func (s *Service) Start() {
 
 	log.Info("[HA/Cluster] Starting clustering service (Mode: %s, Priority: %d)", 
 		s.selfRole, s.config.HighAvailability.Priority)
+
+	if s.config.HighAvailability.Secret == "" {
+		log.Error("[HA/Cluster] highAvailability.secret is empty: peers will reject every heartbeat and replication event until it is set on all nodes")
+	}
 
 	s.Replicator.Start()
 
@@ -133,6 +140,7 @@ func (s *Service) pingNode(address string) {
 
 	httpReq, _ := http.NewRequestWithContext(ctx, "POST", targetURL, bytes.NewBuffer(payload))
 	httpReq.Header.Set("Content-Type", "application/json")
+	SignRequest(httpReq, s.config.HighAvailability.Secret, payload)
 	
 	client := &http.Client{}
 	resp, err := client.Do(httpReq)
@@ -215,6 +223,18 @@ func (s *Service) evaluateLeader() {
 	if !hasLeader && bestID != s.selfID {
 		log.Warning("[HA/Cluster] No leader detected in cluster, waiting for consensus...")
 	}
+}
+
+// peerAddresses returns every configured peer, reachable or not, so queued events survive an outage.
+func (s *Service) peerAddresses() []string {
+	s.peersMu.RLock()
+	defer s.peersMu.RUnlock()
+	addrs := make([]string, 0, len(s.peers))
+	for addr := range s.peers {
+		addrs = append(addrs, addr)
+	}
+	sort.Strings(addrs)
+	return addrs
 }
 
 func (s *Service) GetNodes() []*ClusterNode {

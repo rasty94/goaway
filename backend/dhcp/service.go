@@ -727,7 +727,7 @@ func (s *Service) broadcastLease(lease *database.ActiveDHCPLease) {
 func (s *Service) broadcastLeasev6(lease *database.ActiveDHCPv6Lease) {
 	if s.replicator != nil {
 		s.replicator.Broadcast(cluster.ReplicatedEvent{
-			Type:    cluster.EventDHCPLeaseAdd,
+			Type:    cluster.EventDHCPLeasev6Add,
 			Payload: lease,
 		})
 	}

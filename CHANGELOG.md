@@ -1,3 +1,12 @@
+## [Unreleased]
+
+### High Availability
+* **Persistent Replication Outbox**: cluster events are now stored per peer in the `replication_outbox` table and pushed in order until the peer acknowledges them, so a replica that was offline catches up when it returns. Replaces the in-memory queue that dropped events when full. Rows older than 24h are discarded.
+* **Wider Replication Coverage**: group flags and per-group blocked/allowed domains, client group assignments, local DNS resolutions and DHCPv6 leases now replicate. Group and resolution replicators were not wired before.
+
+### Security
+* **Cluster Authentication (HA Phase 4)**: `/api/native/cluster/heartbeat` and `/replicate` now require an HMAC-SHA256 signature over timestamp and body using the new shared key `highAvailability.secret`. Unsigned, stale (>30s) or wrongly signed requests are rejected with 401 and recorded in the audit log. Nodes fail closed when the secret is empty.
+
 ## [0.93.0] (2026-04-11)
 
 ### Security & Audit

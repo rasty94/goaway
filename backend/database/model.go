@@ -56,6 +56,15 @@ type RequestLogIP struct {
 	CreatedAt    time.Time  `json:"createdAt"`
 }
 
+// ReplicationOutbox holds cluster events waiting to be pushed to one peer; a row is deleted only after the peer acked it.
+type ReplicationOutbox struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement"`
+	Peer      string    `gorm:"type:varchar(255);not null;index"`
+	Event     string    `gorm:"type:text;not null"`
+	Attempts  int       `gorm:"not null;default:0"`
+	CreatedAt time.Time `gorm:"index"`
+}
+
 type Resolution struct {
 	Domain    string    `gorm:"primaryKey" json:"domain" validate:"required,fqdn"`
 	Value     string    `gorm:"index" json:"value" validate:"required"`

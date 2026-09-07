@@ -215,10 +215,17 @@ func (s *Service) DeleteGroup(id uint) error {
 	return nil
 }
 
+func (s *Service) broadcast(t cluster.EventType, payload interface{}) {
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{Type: t, Payload: payload})
+	}
+}
+
 func (s *Service) SetGroupUseGlobalPolicies(id uint, enabled bool) error {
 	if err := s.repository.SetGroupUseGlobalPolicies(id, enabled); err != nil {
 		return err
 	}
+	s.broadcast(cluster.EventGroupUpdate, map[string]interface{}{"id": id, "useGlobalPolicies": enabled})
 	return s.RefreshCache()
 }
 
@@ -246,6 +253,7 @@ func (s *Service) ReplaceAssignments(identifier, identifierType string, groupIDs
 	if err := s.repository.ReplaceAssignments(identifier, identifierType, cleanGroupIDs); err != nil {
 		return err
 	}
+	s.broadcast(cluster.EventClientUpdate, map[string]interface{}{"identifier": identifier, "identifierType": identifierType, "groupIds": cleanGroupIDs})
 	return s.RefreshCache()
 }
 
@@ -257,6 +265,7 @@ func (s *Service) AddBlockedDomain(groupID uint, domainName string) error {
 	if err := s.repository.AddBlockedDomain(groupID, domainName); err != nil {
 		return err
 	}
+	s.broadcast(cluster.EventGroupBlockedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
 	return s.RefreshCache()
 }
 
@@ -265,6 +274,7 @@ func (s *Service) RemoveBlockedDomain(groupID uint, domainName string) error {
 	if err := s.repository.RemoveBlockedDomain(groupID, domainName); err != nil {
 		return err
 	}
+	s.broadcast(cluster.EventGroupBlockedRemove, map[string]interface{}{"groupId": groupID, "domain": domainName})
 	return s.RefreshCache()
 }
 
@@ -276,6 +286,7 @@ func (s *Service) AddAllowedDomain(groupID uint, domainName string) error {
 	if err := s.repository.AddAllowedDomain(groupID, domainName); err != nil {
 		return err
 	}
+	s.broadcast(cluster.EventGroupAllowedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
 	return s.RefreshCache()
 }
 
@@ -284,6 +295,7 @@ func (s *Service) RemoveAllowedDomain(groupID uint, domainName string) error {
 	if err := s.repository.RemoveAllowedDomain(groupID, domainName); err != nil {
 		return err
 	}
+	s.broadcast(cluster.EventGroupAllowedRemove, map[string]interface{}{"groupId": groupID, "domain": domainName})
 	return s.RefreshCache()
 }
 

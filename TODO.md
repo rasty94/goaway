@@ -1,256 +1,56 @@
 # GoAway - Hoja de Ruta y TODO
 
-Ultima actualizacion: 2026-04-11
+Ultima actualizacion: 2026-09-07
 
-## Resumen Ejecutivo
+Este archivo solo contiene trabajo pendiente. Lo completado esta en [DONE.md](DONE.md).
 
-Este archivo consolida:
-- Estado real de lo ya implementado.
-- Pendientes tecnicos de corto y medio plazo.
-- Backlog accionable para GitHub Projects (epicas, prioridades, labels y criterios).
+Tablero recomendado (GitHub Projects): Inbox, Ready, In Progress, Review, Blocked, Done.
 
-Tablero recomendado (GitHub Projects):
-- Inbox
-- Ready
-- In Progress
-- Review
-- Blocked
-- Done
-
-Labels base recomendadas:
-- epic
-- feature
-- enhancement
-- security
-- dns
-- dhcp
-- ha
-- frontend
-- api
-- observability
-- migration
-- breaking-change
-- good-first-issue
-- p0
-- p1
-- p2
+Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api, observability, migration, breaking-change, good-first-issue, p0, p1, p2.
 
 ---
 
-## Completado
+## Epicas abiertas
 
-### DX, CI/CD y Operacion
-- [x] Cobertura y linters en CI (incluyendo golangci-lint).
-- [x] Targets de auditoría de seguridad en Makefile (gosec, govulncheck, trivy, gitleaks).
-- [x] Integración de SonarQube (Unified Analysis + Coverage).
-- [x] Firma/checksums en release.
-- [x] Especificacion OpenAPI/Swagger.
-- [x] Guia para ejecutar sin root en puerto 53.
-- [x] Apagado graceful (SIGINT/SIGTERM) en ciclo de vida.
-
-### Frontend y UX
-- [x] Localizacion completa (EN/ES).
-- [x] Cola de consultas en vivo (WebSocket multi-cliente).
-- [x] Visualizaciones avanzadas de actividad.
-- [x] Grafo de topologia de clientes.
-- [x] Endurecimiento mobile-first en rutas clave.
-- [x] Dashboard HTMX alpha sin dependencia Node para ese modo.
-
-### DNS y Politicas Base
-- [x] Capa de cache DNS con TTL y control desde UI.
-- [x] DNS local y registros CNAME/A/AAAA.
-- [x] Allowlist completa.
-- [x] Wildcards en allow/block.
-- [x] Bloqueo por regex.
-- [x] Reenvio condicional por dominio.
-
-### Arquitectura, Backup y Observabilidad
-- [x] Export/Import tipo Teleporter (settings + base de datos).
-- [x] Backups remotos (S3, WebDAV, local montado).
-- [x] Metricas Prometheus en /metrics.
-
-### Seguridad y Control de Acceso
-- [x] Multiusuario para administracion.
-- [x] Rate limiting por cliente con metrica dedicada.
-- [x] Gestion de grupos por cliente (IP/MAC) con enforcement en resolucion.
-
-### Red y Plataforma
-- [x] Servidor DHCPv4 nativo.
-- [x] Gestion web de DHCP.
-- [x] Leases estaticos DHCP.
-- [x] HA Fase 1: sincronizacion pasiva Primary -> Replica por backup + teleporter (manual y programada).
-- [x] Smoke E2E en Docker para validacion de endpoints criticos.
-- [x] Sincronización completa con Upstream (pommee/goaway v0.63+).
-- [x] Migración automática de resoluciones YAML a SQLite.
-- [x] Hardening de seguridad v0.92.0 (gosec, permissions, slowloris, cmd injection).
+| Epic | Objetivo | Prioridad | Estado |
+| --- | --- | ---: | --- |
+| EPIC-05 HA Active | Versionado para conflictos tras split-brain | P2 | Auth, outbox y cobertura hechos |
+| EPIC-06 Ecosystem | Importador Pi-hole, Helm/Terraform | P1 | API keys hechas |
+| EPIC-07 Enterprise Auth | OIDC, LDAP/AD, passkeys, RBAC fino | P2 | Sin empezar |
+| EPIC-08 DHCPv6 y RA | Consistencia de politicas dual-stack | P2 | DHCPv6+RA hechos |
 
 ---
 
-## Pendientes Activos (Roadmap Tecnico)
+## P0 - Deuda que bloquea lo demas
 
-### Pendientes de Alta Prioridad Tecnica
-- [x] Framework de migraciones de esquema (versionado + rollback).
-- [x] DNSSEC completo con estado secure/insecure/bogus en logs/API.
-- [x] Soporte total Windows/macOS (de Beta a Full).
-- [ ] DHCPv6 nativo.
-
----
-
-## Backlog Accionable para GitHub Projects
-
-## Epicas
-
-| Epic | Objetivo | Prioridad | Dependencias |
-|---|---|---:|---|
-| EPIC-01 Secure Resolver | DoT/DoH/DoQ, DNSSEC, failover de upstream, serve-stale | P0 | Cache + runtime config |
-| EPIC-02 Policy Engine | Politicas por cliente/grupo/subred/horario/categoria | P0 | Grupos + allow/block + regex |
-| EPIC-03 Explainability | Explicar decisiones DNS, simulador, dry-run | P0 | Policy Engine |
-| EPIC-04 Privacy & Audit | Retencion, anonimizado, auditoria administrativa | P1 | Multiusuario |
-| EPIC-05 HA Active | Active-active, election, replicacion en tiempo real, VIP | P1 | HA Fase 1 |
-| EPIC-06 Ecosystem | Importador Pi-hole, API keys con scopes, Helm/Terraform | P1 | API estable |
-| EPIC-07 Enterprise Auth | OIDC, LDAP/AD, passkeys, RBAC fino | P2 | Multiusuario |
-| EPIC-08 DHCPv6 y RA | DHCPv6 + Router Advertisements + dual-stack consistente | P2 | DHCPv4 |
-
----
-
-## P0 - Siguiente Milestone
-
-### EPIC-01 Secure Resolver
-
-- [x] FEATURE: Soporte de upstream DoT saliente
+- [ ] TECH: Ampliar cobertura de tests en backend
   - Prioridad: p0
-  - Labels: epic, feature, dns, security
+  - Labels: enhancement
+  - Contexto: 13 ficheros `_test.go`. Sin tests en `cluster`, `dhcp`, `dns` (fuera de server), `audit`, `user`, `whitelist`, `prefetch`, `resolution`.
   - Criterios de aceptacion:
-    - Multiples upstream DoT con SNI y validacion de certificado.
-    - Health checks periodicos y salida del pool en fallo.
-    - Metricas por upstream: latencia, timeout, errores TLS.
+    - Tests en `cluster` (replicacion, election) y `dhcp` (v4/v6 handlers).
+    - Tests en el cliente React (hoy no hay script `test` en package.json).
 
-- [x] FEATURE: Soporte de upstream DoH saliente
+- [ ] TECH: Runner de tests en el cliente
   - Prioridad: p0
-  - Labels: feature, dns, security
+  - Labels: frontend, enhancement
   - Criterios de aceptacion:
-    - DoH sobre HTTP/2.
-    - Bootstrap sin dependencia circular.
-    - Fallback ordenado entre UDP/TCP/DoT/DoH.
-
-- [x] FEATURE: DNSSEC completo
-  - Prioridad: p0
-  - Labels: feature, dns, security
-  - Criterios de aceptacion:
-    - Validacion de cadena de confianza.
-    - Estado secure/insecure/bogus en logs y API.
-    - Diagnostico por dominio con endpoint dedicado.
-
-- [x] FEATURE: Cache serve-stale + prefetch inteligente
-  - Prioridad: p0
-  - Labels: feature, dns, enhancement
-  - Criterios de aceptacion:
-    - Responder con cache expirada cuando upstreams fallen.
-    - Prefetch de entradas calientes antes de expirar.
-    - Metricas separadas para hit, stale-hit y prefetch-hit.
-
-### EPIC-02 Policy Engine
-
-- [x] FEATURE: Motor jerarquico de politicas
-  - Prioridad: p0
-  - Labels: feature, dns, api
-  - Criterios de aceptacion:
-    - Precedencia explicita: global > grupo > subred > cliente.
-    - Condiciones por IP, MAC, CIDR, hostname, dia y franja horaria.
-    - API devuelve regla ganadora y origen.
-
-- [x] FEATURE: Filtrado por categorias
-  - Prioridad: p0
-  - Labels: feature, dns, frontend
-  - Criterios de aceptacion:
-    - Categorias iniciales: ads, trackers, malware, adult, gambling, social.
-    - Activacion por grupo y por horario.
-    - Conteos por categoria y fuente.
-
-- [x] FEATURE: SafeSearch y modos restringidos
-  - Prioridad: p0
-  - Labels: feature, dns
-  - Criterios de aceptacion:
-    - Forzado en motores principales por grupo.
-    - Excepciones por cliente/subred.
-    - Resultado visible en simulador.
-
-### EPIC-03 Explainability
-
-- [x] FEATURE: Endpoint de explicacion DNS
-  - Prioridad: p0
-  - Labels: feature, api, dns
-  - Criterios de aceptacion:
-    - Endpoint de explicacion con fqdn, tipo, cliente y timestamp.
-    - Devuelve matching (listas, wildcard, regex), upstream y TTL final.
-    - Indica cache-hit o stale-hit.
-
-- [x] FEATURE: Simulador de politicas en UI
-  - Prioridad: p0
-  - Labels: feature, frontend
-  - Criterios de aceptacion:
-    - Formulario dominio + cliente + fecha/hora.
-    - Arbol de evaluacion y regla final.
-    - Comparativa actual vs draft.
-
-- [x] FEATURE: Dry-run para nuevas reglas
-  - Prioridad: p0
-  - Labels: feature, dns, observability
-  - Criterios de aceptacion:
-    - Dry-run no bloquea, solo registra impacto.
-    - Panel con posibles falsos positivos.
-    - Exportacion CSV para revision.
+    - Script `test` en `client/package.json` y ejecucion en CI.
 
 ---
 
 ## P1 - Operacion, Resiliencia y Ecosistema
 
-### EPIC-04 Privacy & Audit
+### EPIC-05 HA Active
 
-- [x] FEATURE: Retencion por capas
-    - [x] Retencion separada para raw logs, agregados y metricas.
-    - [x] Purga automatica visible en UI.
-    - [x] Configuracion por tipo de dato.
-
-- [x] FEATURE: Anonimizacion IP
-    - [x] Truncado IPv4/IPv6 en almacenamiento/export.
-    - [x] Modo reversible solo con clave activa.
-    - [x] Aviso de impacto en troubleshooting.
-
-- [x] FEATURE: Auditoria administrativa
-    - [x] Registra login, cambios de config, import/restore y reglas.
-    - [x] Middleware automatico para toda la API.
-    - [x] Evento con actor, timestamp y accion.
-
-### EPIC-05: High Availability (Active Clustering)
-- [x] Cluster logic and Leader Election (Priority-based)
-- [x] Global Replication Manager (Push-based)
-- [x] Blacklist/Whitelist/Group Replicators
-- [x] Replication API Endpoints
-- [x] **Cluster Management Dashboard in React (UI Unified)**
-- [x] Project Version Bump to v0.90.0
-- [x] Phase 2: DHCP & Leases Replication
-- [x] Phase 3: Virtual IP (VIP) Floating & DNS Proxy Balancing (Sticky Sessions)
-- [ ] Phase 4: Cluster Auth & Security Signatures
-
-- [x] EPIC-10: Premium Native Dashboard Implementation
-  - [x] Modern layout with sidebar and glassmorphism design
-  - [x] Dual-stack DHCPv4/v6 monitoring view
-  - [x] Hierarchical DNS Policy management view
-  - [x] Interactive DNS Resolution & Wildcard console
-  - [x] Real-time activity stream and policy explainer
-
-- [/] FEATURE: Replicacion en tiempo real (Foundation + Blacklist OK)
-  - Prioridad: p1
+- [ ] FEATURE: Resolucion de conflictos con versionado
+  - Prioridad: p2
   - Labels: feature, ha
+  - Contexto: hoy el Primary es la unica fuente de escritura y el outbox entrega en orden, asi que no hay conflictos salvo split-brain. Los eventos de grupo viajan por ID autoincremental, por lo que ambos nodos deben partir del mismo snapshot (backup Fase 1).
   - Criterios de aceptacion:
-    - Replica listas, grupos, clientes, leases y DNS local en segundos.
-    - Cola persistente y reintentos al reconectar nodos.
-    - Resolucion de conflictos con versionado definido.
-
-- [x] FEATURE: Modo despliegue con VIP flotante (Linux / macOS)
-    - Health checks expulsan nodo en fallo DNS/DB.
-    - Runbook de failover y rollback.
+    - Version o reloj logico por entidad; el replica descarta eventos mas antiguos que su estado.
+    - Grupos referenciados por nombre o UUID estable en vez de ID autoincremental.
+    - Test de reconciliacion tras un cambio de lider.
 
 ### EPIC-06 Ecosystem
 
@@ -261,11 +61,6 @@ Labels base recomendadas:
     - Importa listas, grupos, clientes, DNS local, regex y settings.
     - Vista previa con conflictos antes de aplicar.
     - Reporte final de migracion.
-
-- [x] FEATURE: API keys con scopes
-    - [x] Scopes: read, write, backup, metrics, admin.
-    - [x] Expiracion, revocacion y nombre descriptivo.
-    - [x] Ultimo acceso y logs de uso.
 
 - [ ] FEATURE: Helm chart + provider Terraform oficial
   - Prioridad: p1
@@ -306,15 +101,6 @@ Labels base recomendadas:
 
 ### EPIC-08 DHCPv6 y Router Advertisements
 
-- [ ] FEATURE: DHCPv6 nativo
-- [x] FEATURE: DHCPv6 nativo + Router Advertisements
-  - Prioridad: p2
-  - Labels: feature, network, core
-  - Criterios de aceptacion:
-    - Asignacion dinamica de IPv6.
-    - Soporte para RA (Router Advertisements) para SLAAC.
-    - Gestion de leases IPv6 en UI.
-
 - [ ] FEATURE: Consistencia de politicas dual-stack
   - Prioridad: p2
   - Labels: feature, dhcp, dns
@@ -324,57 +110,27 @@ Labels base recomendadas:
 
 ---
 
-## Foundations Tecnicas Transversales
+## Milestones
 
-- [ ] TECH: Framework de migraciones de esquema
-- [x] TECH: Framework de migraciones de esquema
-  - Prioridad: p0
-  - Labels: migration, breaking-change
-  - Criterios de aceptacion:
-    - Migraciones versionadas con up/down.
-    - Runner idempotente en startup.
-    - Estado y rollback por pasos implementados.
+- [x] v0.9 Resolver: EPIC-01 + base de EPIC-03.
+- [x] v1.0 Policy: EPIC-02 + resto de EPIC-03 + privacidad base.
+- [ ] v1.1 Cluster: importador Pi-hole. EPIC-05 (auth, outbox persistente), API keys con scopes ya hechas.
+- [ ] v1.2 Enterprise: auth avanzada + consistencia dual-stack + ecosistema IaC/SDK.
 
-- [x] TECH: Esquema versionado de configuracion + upgrade hooks
-  - Prioridad: p0
-  - Labels: migration, breaking-change
-  - Criterios de aceptacion:
-    - Campo de version de configuracion.
-    - Hooks de upgrade/validacion al cargar settings.
-    - Persistencia automatica de upgrades compatibles.
+Nota: el CHANGELOG va por 0.93.0 mientras que v0.9 y v1.0 ya estan cubiertos funcionalmente. Decidir si se salta a 1.0.0 en la proxima release.
 
 ---
 
 ## Definition of Done (Transversal)
 
-- [ ] Tests unitarios.
-- [ ] Tests de integracion o E2E.
-- [ ] Metricas y logs necesarios.
-- [ ] Documentacion actualizada.
-- [ ] Changelog actualizado.
-- [ ] Plan de migracion y rollback.
-
----
-
-## Milestones Propuestos
-
-- [ ] v0.9 Resolver: EPIC-01 + base de EPIC-03.
-- [ ] v1.0 Policy: EPIC-02 + resto de EPIC-03 + privacidad base.
-- [ ] v1.1 Cluster: EPIC-05 + importador Pi-hole + API keys con scopes.
-- [ ] v1.2 Enterprise: auth avanzada + DHCPv6 + ecosistema IaC/SDK.
-
----
+- Tests unitarios.
+- Tests de integracion o E2E.
+- Metricas y logs necesarios.
+- Documentacion actualizada.
+- Changelog actualizado.
+- Plan de migracion y rollback.
+- Mover la tarea de este fichero a DONE.md.
 
 ## Plantilla Minima de Issue
 
-- [ ] Goal
-- [ ] User story
-- [ ] Scope
-- [ ] Out of scope
-- [ ] API/Config changes
-- [ ] UI changes
-- [ ] Metrics/Logs
-- [ ] Security impact
-- [ ] Migration/Upgrade impact
-- [ ] Acceptance criteria
-- [ ] Test plan
+Goal, User story, Scope, Out of scope, API/Config changes, UI changes, Metrics/Logs, Security impact, Migration/Upgrade impact, Acceptance criteria, Test plan.

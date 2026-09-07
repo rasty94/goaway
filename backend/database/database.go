@@ -71,5 +71,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&PolicyAssignment{},
 		&PolicyCategory{},
 		&Resolution{},
+		&ReplicationOutbox{},
 	)
 }

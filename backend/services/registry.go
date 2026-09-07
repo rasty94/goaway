@@ -171,12 +171,14 @@ func (r *ServiceRegistry) setupAPIServer() {
 	// Initialize replica sync manager for HA support
 	r.APIServer.ReplicaSyncManager = sync.NewReplicaSyncManager(r.Context.Config, r.APIServer)
 
-	r.ClusterService = cluster.NewService(r.Context.Config, "local-node") // Using temporary fixed ID
+	r.ClusterService = cluster.NewService(r.Context.Config, "local-node", r.Context.DBConn) // Using temporary fixed ID
 	r.APIServer.ClusterManager = r.ClusterService
 	
 	r.BlacklistService.SetReplicator(r.ClusterService)
 	r.WhitelistService.SetReplicator(r.ClusterService)
 	r.DHCPService.SetReplicator(r.ClusterService)
+	r.GroupService.SetReplicator(r.ClusterService)
+	r.ResolutionService.SetReplicator(r.ClusterService)
 
 	// Setup DNS Proxy if enabled
 	if r.Context.Config.HighAvailability.Enabled && r.Context.Config.HighAvailability.Proxy.Enabled {

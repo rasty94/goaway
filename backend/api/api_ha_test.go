@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"goaway/backend/cluster"
 	"goaway/backend/settings"
 
 	"github.com/gin-gonic/gin"
@@ -135,5 +136,61 @@ func TestTriggerHASyncRequiresManager(t *testing.T) {
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected status 500, got %d", w.Code)
+	}
+}
+
+func newClusterRouter(secret string) (*API, *gin.Engine) {
+	gin.SetMode(gin.TestMode)
+	api := &API{Config: &settings.Config{}}
+	api.Config.HighAvailability.Secret = secret
+	r := gin.New()
+	r.POST("/api/native/cluster/heartbeat", api.clusterAuth(), api.handleHeartbeat)
+	return api, r
+}
+
+func postHeartbeat(r *gin.Engine, sign func(*http.Request, []byte)) *httptest.ResponseRecorder {
+	body := []byte(`{"sourceId":"peer-1","role":"replica","priority":1}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/native/cluster/heartbeat", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	if sign != nil {
+		sign(req, body)
+	}
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
+func TestClusterAuthRejectsUnsignedRequest(t *testing.T) {
+	_, r := newClusterRouter("s3cret")
+	if w := postHeartbeat(r, nil); w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestClusterAuthRejectsWrongSecret(t *testing.T) {
+	_, r := newClusterRouter("s3cret")
+	w := postHeartbeat(r, func(req *http.Request, body []byte) { cluster.SignRequest(req, "wrong", body) })
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestClusterAuthFailsClosedWithoutSecret(t *testing.T) {
+	_, r := newClusterRouter("")
+	w := postHeartbeat(r, func(req *http.Request, body []byte) { cluster.SignRequest(req, "", body) })
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestClusterAuthAcceptsSignedRequest(t *testing.T) {
+	_, r := newClusterRouter("s3cret")
+	w := postHeartbeat(r, func(req *http.Request, body []byte) { cluster.SignRequest(req, "s3cret", body) })
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp cluster.HeartbeatResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil || resp.Status != "online" {
+		t.Fatalf("unexpected heartbeat response: %s", w.Body.String())
 	}
 }

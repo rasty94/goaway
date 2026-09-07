@@ -1,0 +1,191 @@
+# GoAway - Tareas Completadas
+
+Ultima actualizacion: 2026-09-07
+
+Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, se mueve aqui con sus criterios de aceptacion.
+
+---
+
+## DX, CI/CD y Operacion
+- [x] Cobertura y linters en CI (incluyendo golangci-lint).
+- [x] Targets de auditoría de seguridad en Makefile (gosec, govulncheck, trivy, gitleaks).
+- [x] Integración de SonarQube (Unified Analysis + Coverage).
+- [x] Firma/checksums en release.
+- [x] Especificacion OpenAPI/Swagger.
+- [x] Guia para ejecutar sin root en puerto 53.
+- [x] Apagado graceful (SIGINT/SIGTERM) en ciclo de vida.
+- [x] Smoke E2E en Docker para validacion de endpoints criticos.
+- [x] Sincronización completa con Upstream (pommee/goaway v0.63+).
+- [x] Migración automática de resoluciones YAML a SQLite.
+- [x] Hardening de seguridad v0.92.0 (gosec, permissions, slowloris, cmd injection).
+- [x] Auditoria v0.93.0: gosec 0 findings, govulncheck 0 vulnerabilidades, trivy limpio.
+- [x] Escaneo de dependencias y vulnerabilidades en el workflow de PR.
+- [x] Contenedor ejecutando como usuario no root con file capabilities.
+- [x] settings.yaml fuera del repo (contenia un jwtSecret real).
+
+## Frontend y UX
+- [x] Localizacion completa (EN/ES).
+- [x] Cola de consultas en vivo (WebSocket multi-cliente).
+- [x] Visualizaciones avanzadas de actividad.
+- [x] Grafo de topologia de clientes.
+- [x] Endurecimiento mobile-first en rutas clave.
+- [x] Dashboard HTMX alpha sin dependencia Node para ese modo.
+- [x] Eliminacion de todos los `any` del cliente; tipos reales.
+
+## DNS y Politicas Base
+- [x] Capa de cache DNS con TTL y control desde UI.
+- [x] DNS local y registros CNAME/A/AAAA.
+- [x] Allowlist completa.
+- [x] Wildcards en allow/block.
+- [x] Bloqueo por regex.
+- [x] Reenvio condicional por dominio.
+- [x] Horarios de politica que cruzan medianoche.
+
+## Arquitectura, Backup y Observabilidad
+- [x] Export/Import tipo Teleporter (settings + base de datos).
+- [x] Backups remotos (S3, WebDAV, local montado).
+- [x] Metricas Prometheus en /metrics.
+
+## Seguridad y Control de Acceso
+- [x] Multiusuario para administracion.
+- [x] Rate limiting por cliente con metrica dedicada.
+- [x] Gestion de grupos por cliente (IP/MAC) con enforcement en resolucion.
+
+## Red y Plataforma
+- [x] Servidor DHCPv4 nativo.
+- [x] Gestion web de DHCP.
+- [x] Leases estaticos DHCP.
+- [x] HA Fase 1: sincronizacion pasiva Primary -> Replica por backup + teleporter (manual y programada).
+- [x] Soporte total Windows/macOS (de Beta a Full).
+
+---
+
+## EPIC-01 Secure Resolver (P0)
+
+- [x] FEATURE: Soporte de upstream DoT saliente
+  - Multiples upstream DoT con SNI y validacion de certificado.
+  - Health checks periodicos y salida del pool en fallo.
+  - Metricas por upstream: latencia, timeout, errores TLS.
+
+- [x] FEATURE: Soporte de upstream DoH saliente
+  - DoH sobre HTTP/2.
+  - Bootstrap sin dependencia circular.
+  - Fallback ordenado entre UDP/TCP/DoT/DoH.
+
+- [x] FEATURE: DNSSEC completo
+  - Validacion de cadena de confianza.
+  - Estado secure/insecure/bogus en logs y API.
+  - Diagnostico por dominio con endpoint dedicado.
+
+- [x] FEATURE: Cache serve-stale + prefetch inteligente
+  - Responder con cache expirada cuando upstreams fallen.
+  - Prefetch de entradas calientes antes de expirar.
+  - Metricas separadas para hit, stale-hit y prefetch-hit.
+
+## EPIC-02 Policy Engine (P0)
+
+- [x] FEATURE: Motor jerarquico de politicas
+  - Precedencia explicita: global > grupo > subred > cliente.
+  - Condiciones por IP, MAC, CIDR, hostname, dia y franja horaria.
+  - API devuelve regla ganadora y origen.
+
+- [x] FEATURE: Filtrado por categorias
+  - Categorias iniciales: ads, trackers, malware, adult, gambling, social.
+  - Activacion por grupo y por horario.
+  - Conteos por categoria y fuente.
+
+- [x] FEATURE: SafeSearch y modos restringidos
+  - Forzado en motores principales por grupo.
+  - Excepciones por cliente/subred.
+  - Resultado visible en simulador.
+
+## EPIC-03 Explainability (P0)
+
+- [x] FEATURE: Endpoint de explicacion DNS
+  - Endpoint de explicacion con fqdn, tipo, cliente y timestamp.
+  - Devuelve matching (listas, wildcard, regex), upstream y TTL final.
+  - Indica cache-hit o stale-hit.
+
+- [x] FEATURE: Simulador de politicas en UI
+  - Formulario dominio + cliente + fecha/hora.
+  - Arbol de evaluacion y regla final.
+  - Comparativa actual vs draft.
+
+- [x] FEATURE: Dry-run para nuevas reglas
+  - Dry-run no bloquea, solo registra impacto.
+  - Panel con posibles falsos positivos.
+  - Exportacion CSV para revision.
+
+## EPIC-04 Privacy & Audit (P1)
+
+- [x] FEATURE: Retencion por capas
+  - Retencion separada para raw logs, agregados y metricas.
+  - Purga automatica visible en UI.
+  - Configuracion por tipo de dato.
+
+- [x] FEATURE: Anonimizacion IP
+  - Truncado IPv4/IPv6 en almacenamiento/export.
+  - Modo reversible solo con clave activa.
+  - Aviso de impacto en troubleshooting.
+
+- [x] FEATURE: Auditoria administrativa
+  - Registra login, cambios de config, import/restore y reglas.
+  - Middleware automatico para toda la API.
+  - Evento con actor, timestamp y accion.
+
+## EPIC-05 High Availability (Active Clustering) (P1)
+
+- [x] Cluster logic and Leader Election (Priority-based)
+- [x] Global Replication Manager (Push-based)
+- [x] Blacklist/Whitelist/Group Replicators
+- [x] Replication API Endpoints
+- [x] Cluster Management Dashboard in React (UI Unified)
+- [x] Project Version Bump to v0.90.0
+- [x] Phase 2: DHCP & Leases Replication
+- [x] Phase 3: Virtual IP (VIP) Floating & DNS Proxy Balancing (Sticky Sessions)
+- [x] FEATURE: Modo despliegue con VIP flotante (Linux / macOS)
+  - Health checks expulsan nodo en fallo DNS/DB.
+  - Runbook de failover y rollback.
+- [x] Phase 4: Cluster Auth & Security Signatures (2026-09-07)
+  - Firma HMAC-SHA256 (timestamp + body) con `highAvailability.secret` en heartbeat y replicate.
+  - Ventana anti-replay de 30 s; rechazo 401 con entrada en el audit log.
+  - Fail closed sin secreto configurado. Tests en `cluster/signing_test.go` y `api/api_ha_test.go`.
+- [x] FEATURE: Replicacion en tiempo real (2026-09-07)
+  - Outbox persistente en SQLite (`replication_outbox`), una fila por peer, entrega en orden y reintento cada 5 s hasta ack.
+  - Replica listas, grupos (flags y dominios por grupo), asignaciones de clientes, DNS local, leases DHCPv4/v6 y estaticos.
+  - Replicadores de grupo y resolucion cableados en el registry (antes no se llamaba a SetReplicator).
+  - Test `cluster/replication_test.go`: cola mientras el peer esta caido y entrega ordenada al volver.
+
+## EPIC-06 Ecosystem (P1)
+
+- [x] FEATURE: API keys con scopes
+  - Scopes: read, write, backup, metrics, admin.
+  - Expiracion, revocacion y nombre descriptivo.
+  - Ultimo acceso y logs de uso.
+
+## EPIC-08 DHCPv6 y Router Advertisements (P2)
+
+- [x] FEATURE: DHCPv6 nativo + Router Advertisements
+  - Asignacion dinamica de IPv6.
+  - Soporte para RA (Router Advertisements) para SLAAC.
+  - Gestion de leases IPv6 en UI.
+
+## EPIC-10 Premium Native Dashboard
+
+- [x] Modern layout with sidebar and glassmorphism design
+- [x] Dual-stack DHCPv4/v6 monitoring view
+- [x] Hierarchical DNS Policy management view
+- [x] Interactive DNS Resolution & Wildcard console
+- [x] Real-time activity stream and policy explainer
+
+## Foundations Tecnicas Transversales
+
+- [x] TECH: Framework de migraciones de esquema
+  - Migraciones versionadas con up/down.
+  - Runner idempotente en startup.
+  - Estado y rollback por pasos implementados.
+
+- [x] TECH: Esquema versionado de configuracion + upgrade hooks
+  - Campo de version de configuracion.
+  - Hooks de upgrade/validacion al cargar settings.
+  - Persistencia automatica de upgrades compatibles.
