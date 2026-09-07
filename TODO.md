@@ -50,7 +50,7 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 - [ ] Import: `Exists` en clientes se calcula como "tiene alguna asignacion"; deberia comparar el conjunto de grupos.
 - [ ] Config: `settings.Config` se lee desde el resolver y se escribe desde la API sin mutex (upstreams, DHCP, cache). Hoy se mitiga con copy-on-write en upstreams; hace falta un puntero atomico o RWMutex en el hot path.
 - [ ] Banner de arranque (`asciiart.go`) imprime `dns.upstream.preferred`, siempre vacio tras la migracion; usar `servers[0]`.
-- [ ] Simplificaciones pendientes de ponytail-review: truncado JS de tablas por `max-h` CSS, `describe()` como mapa tipado, nueve bloques `if !Exists` en apply, helper `broadcast` en resolution como en group.
+- [ ] Simplificaciones pendientes de ponytail-review: los nueve bloques `if !Exists` en `piholeImportApply` siguen repitiendo el mismo esqueleto.
 
 ## P1 - Operacion, Resiliencia y Ecosistema
 
