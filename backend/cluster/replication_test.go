@@ -169,3 +169,37 @@ func TestBroadcastIsOffWithoutSecret(t *testing.T) {
 		t.Fatalf("queued %d events without a secret", n)
 	}
 }
+
+func TestExpiredBacklogFlagsThePeerForResync(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	_ = db.AutoMigrate(&database.ReplicationOutbox{})
+	cfg := &settings.Config{}
+	cfg.HighAvailability.Mode = "primary"
+	cfg.HighAvailability.Secret = "s3cret"
+	cfg.HighAvailability.Peers = []string{"http://127.0.0.1:1"}
+	s := NewService(cfg, "node-1", db)
+	s.initializePeers()
+
+	s.Broadcast(ReplicatedEvent{Type: EventBlacklistAdd})
+	db.Model(&database.ReplicationOutbox{}).Where("1 = 1").
+		Update("created_at", time.Now().Add(-2*outboxTTL))
+
+	nodes := s.GetNodes()
+	if len(nodes) != 1 || nodes[0].PendingEvents != 1 || nodes[0].NeedsResync {
+		t.Fatalf("before expiry: %+v", nodes[0])
+	}
+
+	s.Replicator.expireBacklog()
+
+	var left int64
+	db.Model(&database.ReplicationOutbox{}).Count(&left)
+	nodes = s.GetNodes()
+	if left != 0 || !nodes[0].NeedsResync || nodes[0].PendingEvents != 0 {
+		t.Fatalf("after expiry: left=%d node=%+v", left, nodes[0])
+	}
+
+	s.ClearResync("http://127.0.0.1:1")
+	if s.GetNodes()[0].NeedsResync {
+		t.Fatal("ClearResync did not clear the flag")
+	}
+}

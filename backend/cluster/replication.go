@@ -132,8 +132,44 @@ func (rm *ReplicationManager) flush() {
 		}(addr)
 	}
 	wg.Wait()
-	// ponytail: a peer removed from config or unreachable for a day loses its backlog; no automatic resync exists yet.
-	rm.db.Where("created_at < ?", time.Now().Add(-outboxTTL)).Delete(&database.ReplicationOutbox{})
+	rm.expireBacklog()
+}
+
+// expireBacklog drops events a peer never took. Those changes are lost for that peer, so it is
+// flagged as needing a full re-seed instead of diverging quietly.
+// ponytail: no automatic re-seed; a Teleporter import replaces the whole database and needs a restart.
+func (rm *ReplicationManager) expireBacklog() {
+	cutoff := time.Now().Add(-outboxTTL)
+	var stale []struct {
+		Peer  string
+		Count int64
+	}
+	if err := rm.db.Model(&database.ReplicationOutbox{}).
+		Select("peer, count(*) as count").
+		Where("created_at < ?", cutoff).
+		Group("peer").Scan(&stale).Error; err != nil {
+		log.Error("[HA/Replication] Cannot inspect the stale backlog: %v", err)
+		return
+	}
+	if len(stale) == 0 {
+		return
+	}
+	for _, row := range stale {
+		log.Error("[HA/Replication] Dropping %d events older than %s for %s: that node is now out of sync and must be re-seeded from a backup",
+			row.Count, outboxTTL, row.Peer)
+		rm.service.markNeedsResync(row.Peer)
+	}
+	rm.db.Where("created_at < ?", cutoff).Delete(&database.ReplicationOutbox{})
+}
+
+// pending counts the events still queued for one peer.
+func (rm *ReplicationManager) pending(peer string) int64 {
+	if rm.db == nil {
+		return 0
+	}
+	var n int64
+	rm.db.Model(&database.ReplicationOutbox{}).Where("peer = ?", peer).Count(&n)
+	return n
 }
 
 // flushPeer pushes rows in id order. A transport failure stops and retries later; a rejection

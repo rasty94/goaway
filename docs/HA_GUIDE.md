@@ -125,7 +125,10 @@ retries every 5 seconds, so a replica that was down receives the backlog in the
 right order once it is back. If the peer answers but refuses the event (an
 apply error such as a duplicate row) the row is logged and dropped so it cannot
 block the queue. Rows older than 24 hours are dropped; a replica that was away
-longer must be re-seeded from a Teleporter backup.
+longer must be re-seeded from a Teleporter backup. When that happens the node is
+marked **Out of sync** in the cluster dashboard and an error is logged naming how
+many events were lost, so the gap is never silent. `GET /api/ha/cluster` reports
+`pendingEvents` and `needsResync` per node for monitoring.
 
 ## How Synchronization Works
 

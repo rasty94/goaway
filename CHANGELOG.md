@@ -3,6 +3,9 @@
 ### Ecosystem
 * **Pi-hole Import Wizard**: upload a Pi-hole v6 Teleporter zip under *Pi-hole Import*, review every adlist, domain, group, client assignment, local DNS record, upstream and static DHCP lease it contains (entries that already exist are flagged), pick the sections to apply and get a per-section report. Pi-hole wildcard regexes become GoAway wildcards; other regexes are kept for group lists and reported as unsupported for the global blacklist.
 
+### Observability
+* **Replication backlog is visible**: the cluster dashboard shows the queued event count per node and marks a node **Out of sync** when events had to be dropped unsent, with an error log naming the count. `GET /api/ha/cluster` exposes `pendingEvents` and `needsResync` per node.
+
 ### Fixes
 * **Upstream servers added from the UI now take effect**: the upstream API wrote the legacy `fallback`/`preferred` config fields, which the resolver never reads, so the Upstream page showed an empty list and additions were ignored. It now manages `dns.upstream.servers`; the preferred server is the first in the list.
 

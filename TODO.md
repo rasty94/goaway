@@ -43,7 +43,7 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigieron en `3b10071`.
 
-- [ ] HA: resync automatico en vez del TTL de 24 h del outbox (snapshot Teleporter por el canal firmado cuando el backlog de un peer supera un tope). Hoy un replica caido mas de un dia diverge en silencio.
+- [ ] HA: resync automatico cuando un peer pierde eventos. Bloqueado por diseno: `ImportTeleporterData` reemplaza el fichero de base de datos entero y exige reinicio, asi que no vale como resync en caliente. Hace falta un snapshot logico (listas, grupos, clientes, DNS local, leases) aplicable sin reiniciar, o un endpoint de re-seed que reinicie el nodo de forma controlada. Mientras tanto la perdida ya no es silenciosa: el nodo se marca "Out of sync" en el dashboard.
 - [ ] HA: peers por HTTPS o firma de la respuesta de heartbeat. Un MITM en la red de peers puede forzar la eleccion.
 - [ ] HA: cache de nonces en la ventana de 30 s (hoy un evento capturado se puede reenviar dentro de la ventana; efecto idempotente).
 - [ ] HA: los endpoints de cluster estan fuera del rate limiter y escriben una fila de audit por rechazo; limitar o registrar solo en log.

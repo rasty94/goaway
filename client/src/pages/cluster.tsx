@@ -20,6 +20,8 @@ export type ClusterNode = {
   lastSeen: string;
   latencyMs: number;
   unreachable: boolean;
+  pendingEvents: number;
+  needsResync: boolean;
 };
 
 export type ClusterStatus = {
@@ -133,6 +135,7 @@ export function Cluster() {
                   <th className="pb-3 px-4">Status</th>
                   <th className="pb-3 px-4">Priority</th>
                   <th className="pb-3 px-4">Latency</th>
+                  <th className="pb-3 px-4">Backlog</th>
                   <th className="pb-3 px-4 text-right">Last Seen</th>
                 </tr>
               </thead>
@@ -161,6 +164,21 @@ export function Cluster() {
                     </td>
                     <td className="py-4 px-4 text-muted-foreground">{node.priority}</td>
                     <td className="py-4 px-4 text-muted-foreground">{node.latencyMs}ms</td>
+                    <td className="py-4 px-4">
+                      {node.needsResync ? (
+                        <div
+                          className="flex items-center gap-2 text-red-500"
+                          title="Events were dropped unsent. Re-seed this node from a backup."
+                        >
+                          <WarningCircle className="w-4 h-4" />
+                          Out of sync
+                        </div>
+                      ) : node.pendingEvents > 0 ? (
+                        <span className="text-amber-500">{node.pendingEvents} queued</span>
+                      ) : (
+                        <span className="text-muted-foreground">Up to date</span>
+                      )}
+                    </td>
                     <td className="py-4 px-4 text-right text-muted-foreground">
                       {new Date(node.lastSeen).toLocaleTimeString()}
                     </td>
@@ -168,7 +186,7 @@ export function Cluster() {
                 ))}
                 {(!status?.nodes || status.nodes.length === 0) && (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-muted-foreground italic">
+                    <td colSpan={8} className="py-8 text-center text-muted-foreground italic">
                       No discovered peers for this cluster.
                     </td>
                   </tr>
