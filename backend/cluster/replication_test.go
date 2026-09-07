@@ -203,3 +203,34 @@ func TestExpiredBacklogFlagsThePeerForResync(t *testing.T) {
 		t.Fatal("ClearResync did not clear the flag")
 	}
 }
+
+func TestRoleChangesAreSafeUnderConcurrentReads(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	_ = db.AutoMigrate(&database.ReplicationOutbox{})
+	cfg := &settings.Config{}
+	cfg.HighAvailability.Mode = "replica"
+	cfg.HighAvailability.Secret = "s3cret"
+	s := NewService(cfg, "node-1", db)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 200; i++ {
+			s.evaluateLeader()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 200; i++ {
+			_ = s.IsPrimary()
+			_ = s.Role()
+		}
+	}()
+	wg.Wait()
+
+	// No peers, so this node wins its own election.
+	if !s.IsPrimary() {
+		t.Fatalf("expected the only node to elect itself, got %s", s.Role())
+	}
+}

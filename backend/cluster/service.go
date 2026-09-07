@@ -30,7 +30,11 @@ type Service struct {
 
 	Replicator *ReplicationManager
 
-	selfID   string
+	selfID string
+
+	// roleMu guards selfRole, which the election goroutine writes while request
+	// goroutines read it through IsPrimary.
+	roleMu   sync.RWMutex
 	selfRole NodeRole
 
 	needsResync map[string]bool
@@ -134,7 +138,7 @@ func (s *Service) pingNode(address string) {
 
 	req := HeartbeatRequest{
 		SourceID:  s.selfID,
-		Role:      s.selfRole,
+		Role:      s.Role(),
 		Priority:  s.config.HighAvailability.Priority,
 		Timestamp: time.Now(),
 		Version:   "1.0.0", // update for actual version
@@ -193,7 +197,6 @@ func (s *Service) pingNode(address string) {
 // evaluateLeader checks if current node should be the Primary
 func (s *Service) evaluateLeader() {
 	s.peersMu.RLock()
-	defer s.peersMu.RUnlock()
 
 	// Simple logic: node with highest priority is Primary.
 	// In case of tie, node with alphabetical lower ID is Primary.
@@ -218,17 +221,15 @@ func (s *Service) evaluateLeader() {
 		}
 	}
 
+	s.peersMu.RUnlock()
+
 	if bestID == s.selfID {
-		if s.selfRole != RolePrimary {
+		if s.setRole(RolePrimary) {
 			log.Warning("[HA/Cluster] Elected as NEW PRIMARY (ID: %s)", s.selfID)
-			s.selfRole = RolePrimary
-			// Update config or notify other services
 		}
-	} else {
-		if s.selfRole == RolePrimary {
-			log.Warning("[HA/Cluster] Relinquishing Primary role to %s (ID: %s)", bestAddress, bestID)
-			s.selfRole = RoleReplica
-		}
+	} else if s.IsPrimary() {
+		log.Warning("[HA/Cluster] Relinquishing Primary role to %s (ID: %s)", bestAddress, bestID)
+		s.setRole(RoleReplica)
 	}
 
 	if !hasLeader && bestID != s.selfID {
@@ -250,10 +251,28 @@ func (s *Service) peerAddresses() []string {
 
 func (s *Service) SelfID() string { return s.selfID }
 
+// Role reports the role this node currently holds.
+func (s *Service) Role() NodeRole {
+	s.roleMu.RLock()
+	defer s.roleMu.RUnlock()
+	return s.selfRole
+}
+
 func (s *Service) IsPrimary() bool {
-	s.peersMu.RLock()
-	defer s.peersMu.RUnlock()
+	s.roleMu.RLock()
+	defer s.roleMu.RUnlock()
 	return s.selfRole == RolePrimary
+}
+
+// setRole records a role change and reports whether it actually changed.
+func (s *Service) setRole(role NodeRole) bool {
+	s.roleMu.Lock()
+	defer s.roleMu.Unlock()
+	if s.selfRole == role {
+		return false
+	}
+	s.selfRole = role
+	return true
 }
 
 // markNeedsResync records that a peer lost events and can no longer be brought up to date incrementally.

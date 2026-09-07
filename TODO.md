@@ -47,7 +47,6 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 - [ ] HA: peers por HTTPS o firma de la respuesta de heartbeat. Un MITM en la red de peers puede forzar la eleccion.
 - [ ] HA: cache de nonces en la ventana de 30 s (hoy un evento capturado se puede reenviar dentro de la ventana; efecto idempotente).
 - [ ] HA: los endpoints de cluster estan fuera del rate limiter y escriben una fila de audit por rechazo; limitar o registrar solo en log.
-- [ ] HA: test de integracion con dos nodos en proceso (eleccion por prioridad, replicacion extremo a extremo, 409 en split-brain).
 - [ ] Import: `Exists` en clientes se calcula como "tiene alguna asignacion"; deberia comparar el conjunto de grupos.
 - [ ] Config: `settings.Config` se lee desde el resolver y se escribe desde la API sin mutex (upstreams, DHCP, cache). Hoy se mitiga con copy-on-write en upstreams; hace falta un puntero atomico o RWMutex en el hot path.
 - [ ] Banner de arranque (`asciiart.go`) imprime `dns.upstream.preferred`, siempre vacio tras la migracion; usar `servers[0]`.

@@ -161,6 +161,9 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 - [x] Upstreams: la API de `/api/upstream` escribia en `dns.upstream.fallback`, campo legado que el resolver nunca lee, asi que anadir un upstream desde la interfaz no tenia efecto y la lista aparecia vacia. Ahora opera sobre `servers`; "preferido" es la primera posicion. Tests en `api/upstream_test.go`.
 - [x] Import: lista negra en una sola transaccion (`AddCustomDomains`), dominios por grupo en lote con un solo `RefreshCache` por grupo, zip leido en streaming y gravity.db volcado a disco sin pasar por memoria. Evento `blacklist.add.batch` para replicar el lote.
 
+- [x] HA: test de integracion con dos nodos reales (`api/cluster_integration_test.go`): replicacion extremo a extremo, rechazo de firmas invalidas, 409 en split-brain, eleccion por prioridad y recuperacion del outbox tras una caida. Descubrio una condicion de carrera real en el rol del nodo, ya corregida.
+- [x] HA: backlog de replicacion visible por nodo (`pendingEvents`, `needsResync`) en la API y el dashboard, con log de error al descartar eventos.
+
 ## EPIC-06 Ecosystem (P1)
 
 - [x] FEATURE: Wizard de importacion Pi-hole (2026-09-07)

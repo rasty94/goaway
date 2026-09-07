@@ -62,7 +62,7 @@ func (v *VipManager) monitorLoop() {
 			return
 		case <-ticker.C:
 			// Check if we should hold the VIP
-			shouldHold := v.cluster.selfRole == RolePrimary
+			shouldHold := v.cluster.IsPrimary()
 			
 			v.mu.Lock()
 			if shouldHold && !v.isHolding {

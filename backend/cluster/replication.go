@@ -77,7 +77,7 @@ func (rm *ReplicationManager) Start() {
 
 // Broadcast enqueues the event for every configured peer. Only a Primary with a secret emits events.
 func (rm *ReplicationManager) Broadcast(event ReplicatedEvent) {
-	if rm.service.selfRole != RolePrimary || rm.db == nil || rm.service.config.HighAvailability.Secret == "" {
+	if !rm.service.IsPrimary() || rm.db == nil || rm.service.config.HighAvailability.Secret == "" {
 		return
 	}
 

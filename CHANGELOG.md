@@ -7,6 +7,7 @@
 * **Replication backlog is visible**: the cluster dashboard shows the queued event count per node and marks a node **Out of sync** when events had to be dropped unsent, with an error log naming the count. `GET /api/ha/cluster` exposes `pendingEvents` and `needsResync` per node.
 
 ### Fixes
+* **Cluster role is race-free**: the election goroutine wrote the node role while request goroutines read it unguarded, so a demoted node could still be seen as Primary and accept replicated events. The role now lives behind its own lock, and a two-node integration test covers election, signed replication, the split-brain refusal and outbox recovery.
 * **Upstream servers added from the UI now take effect**: the upstream API wrote the legacy `fallback`/`preferred` config fields, which the resolver never reads, so the Upstream page showed an empty list and additions were ignored. It now manages `dns.upstream.servers`; the preferred server is the first in the list.
 
 ### High Availability
