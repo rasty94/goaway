@@ -22,7 +22,7 @@ import {
   UploadSimpleIcon,
   WarningCircleIcon
 } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -50,61 +50,29 @@ type Report = {
   errors: string[];
 };
 
-const SECTIONS: Section[] = [
-  "adlists",
-  "blacklist",
-  "whitelist",
-  "groups",
-  "groupDomains",
-  "clients",
-  "resolutions",
-  "upstreams",
-  "staticLeases"
-];
-
 // One display line per item; the backend decides what actually gets written.
-function describe(section: Section, item: Plan[Section][number]): string {
-  switch (section) {
-    case "adlists": {
-      const a = item as Plan["adlists"][number];
-      return `${a.name} — ${a.url}${a.enabled ? "" : " (disabled)"}`;
-    }
-    case "blacklist":
-    case "whitelist":
-      return (item as Plan["blacklist"][number]).pattern;
-    case "groups": {
-      const g = item as Plan["groups"][number];
-      return g.description ? `${g.name} — ${g.description}` : g.name;
-    }
-    case "groupDomains": {
-      const g = item as Plan["groupDomains"][number];
-      return `${g.group}: ${g.blocked ? "block" : "allow"} ${g.pattern}`;
-    }
-    case "clients": {
-      const c = item as Plan["clients"][number];
-      return `${c.identifier} (${c.type}) → ${c.groups.join(", ")}`;
-    }
-    case "resolutions": {
-      const r = item as Plan["resolutions"][number];
-      return `${r.domain} ${r.type} ${r.value}`;
-    }
-    case "upstreams":
-      return (item as Plan["upstreams"][number]).address;
-    case "staticLeases": {
-      const l = item as Plan["staticLeases"][number];
-      return `${l.mac} → ${l.ip}${l.hostname ? ` (${l.hostname})` : ""}`;
-    }
-  }
-}
+const DESCRIBE: { [K in Section]: (item: Plan[K][number]) => string } = {
+  adlists: (a) => `${a.name} — ${a.url}${a.enabled ? "" : " (disabled)"}`,
+  blacklist: (d) => d.pattern,
+  whitelist: (d) => d.pattern,
+  groups: (g) => (g.description ? `${g.name} — ${g.description}` : g.name),
+  groupDomains: (g) =>
+    `${g.group}: ${g.blocked ? "block" : "allow"} ${g.pattern}`,
+  clients: (c) => `${c.identifier} (${c.type}) → ${c.groups.join(", ")}`,
+  resolutions: (r) => `${r.domain} ${r.type} ${r.value}`,
+  upstreams: (u) => u.address,
+  staticLeases: (l) =>
+    `${l.mac} → ${l.ip}${l.hostname ? ` (${l.hostname})` : ""}`
+};
 
-const PREVIEW_ROWS = 25;
+// Order must match DESCRIBE's declaration order (used for stable section iteration).
+const SECTIONS = Object.keys(DESCRIBE) as Section[];
 
 export function PiholeImport() {
   const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [sections, setSections] = useState<Record<string, boolean>>({});
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [report, setReport] = useState<Report | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -153,12 +121,21 @@ export function PiholeImport() {
     }
   };
 
-  const pending = (s: Section) =>
-    plan ? plan[s].filter((i) => !i.exists).length : 0;
-  const conflicts = (s: Section) =>
-    plan ? plan[s].filter((i) => i.exists).length : 0;
+  const counts = useMemo(() => {
+    const result = {} as Record<Section, { pending: number; conflicts: number }>;
+    for (const s of SECTIONS) {
+      let pendingCount = 0;
+      let conflictCount = 0;
+      for (const item of plan ? plan[s] : []) {
+        if (item.exists) conflictCount++;
+        else pendingCount++;
+      }
+      result[s] = { pending: pendingCount, conflicts: conflictCount };
+    }
+    return result;
+  }, [plan]);
   const totalPending = SECTIONS.reduce(
-    (n, s) => n + (sections[s] ? pending(s) : 0),
+    (n, s) => n + (sections[s] ? counts[s].pending : 0),
     0
   );
 
@@ -201,9 +178,9 @@ export function PiholeImport() {
           </CardHeader>
           <CardContent className="space-y-6">
             {SECTIONS.filter((s) => plan[s].length > 0).map((s) => {
-              const rows = expanded[s]
-                ? plan[s]
-                : plan[s].slice(0, PREVIEW_ROWS);
+              const describeItem = DESCRIBE[s] as (
+                item: Plan[Section][number]
+              ) => string;
               return (
                 <div key={s} className="space-y-2">
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -218,12 +195,12 @@ export function PiholeImport() {
                     </span>
                     <span className="text-sm text-muted-foreground">
                       {t("piholeImport.counts", {
-                        pending: pending(s),
-                        conflicts: conflicts(s)
+                        pending: counts[s].pending,
+                        conflicts: counts[s].conflicts
                       })}
                     </span>
                   </label>
-                  <div className="overflow-x-auto rounded-md border">
+                  <div className="max-h-96 overflow-auto rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -234,13 +211,13 @@ export function PiholeImport() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {rows.map((item, i) => (
+                        {plan[s].map((item, i) => (
                           <TableRow
                             key={i}
                             className={item.exists ? "opacity-60" : ""}
                           >
                             <TableCell className="font-mono text-xs break-all">
-                              {describe(s, item)}
+                              {describeItem(item)}
                             </TableCell>
                             <TableCell>
                               {item.exists ? (
@@ -260,19 +237,6 @@ export function PiholeImport() {
                       </TableBody>
                     </Table>
                   </div>
-                  {plan[s].length > PREVIEW_ROWS && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        setExpanded((prev) => ({ ...prev, [s]: !prev[s] }))
-                      }
-                    >
-                      {expanded[s]
-                        ? t("piholeImport.showLess")
-                        : t("piholeImport.showAll", { count: plan[s].length })}
-                    </Button>
-                  )}
                 </div>
               );
             })}

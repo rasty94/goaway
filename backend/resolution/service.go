@@ -21,6 +21,12 @@ func (s *Service) SetReplicator(r cluster.Replicator) {
 	s.replicator = r
 }
 
+func (s *Service) broadcast(t cluster.EventType, payload interface{}) {
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{Type: t, Payload: payload})
+	}
+}
+
 func (s *Service) CreateResolution(value, domain, recType string) error {
 	if recType == "" {
 		recType = "A"
@@ -29,12 +35,7 @@ func (s *Service) CreateResolution(value, domain, recType string) error {
 	if err := s.repository.CreateResolution(value, domain, recType); err != nil {
 		return err
 	}
-	if s.replicator != nil {
-		s.replicator.Broadcast(cluster.ReplicatedEvent{
-			Type:    cluster.EventResolutionAdd,
-			Payload: map[string]string{"domain": domain, "value": value, "type": recType},
-		})
-	}
+	s.broadcast(cluster.EventResolutionAdd, map[string]string{"domain": domain, "value": value, "type": recType})
 	return nil
 }
 
@@ -49,11 +50,8 @@ func (s *Service) GetResolutions() ([]database.Resolution, error) {
 
 func (s *Service) DeleteResolution(value, domain string) (int, error) {
 	n, err := s.repository.DeleteResolution(value, domain)
-	if err == nil && n > 0 && s.replicator != nil {
-		s.replicator.Broadcast(cluster.ReplicatedEvent{
-			Type:    cluster.EventResolutionRemove,
-			Payload: map[string]string{"domain": domain, "value": value},
-		})
+	if err == nil && n > 0 {
+		s.broadcast(cluster.EventResolutionRemove, map[string]string{"domain": domain, "value": value})
 	}
 	return n, err
 }

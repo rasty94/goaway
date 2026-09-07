@@ -435,8 +435,6 @@
     "status": "Status",
     "exists": "Exists",
     "new": "New",
-    "showAll": "Show all {{count}}",
-    "showLess": "Show fewer",
     "skippedTitle": "{{count}} entries cannot be imported",
     "apply": "Import {{count}} entries",
     "applied": "Import finished",

@@ -434,8 +434,6 @@
     "status": "Estado",
     "exists": "Existe",
     "new": "Nueva",
-    "showAll": "Mostrar las {{count}}",
-    "showLess": "Mostrar menos",
     "skippedTitle": "{{count}} entradas no se pueden importar",
     "apply": "Importar {{count}} entradas",
     "applied": "Importación terminada",
