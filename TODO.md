@@ -39,6 +39,20 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 ---
 
+## Seguimiento de la revision del 2026-09-07
+
+Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigieron en `3b10071`.
+
+- [ ] HA: resync automatico en vez del TTL de 24 h del outbox (snapshot Teleporter por el canal firmado cuando el backlog de un peer supera un tope). Hoy un replica caido mas de un dia diverge en silencio.
+- [ ] HA: peers por HTTPS o firma de la respuesta de heartbeat. Un MITM en la red de peers puede forzar la eleccion.
+- [ ] HA: cache de nonces en la ventana de 30 s (hoy un evento capturado se puede reenviar dentro de la ventana; efecto idempotente).
+- [ ] HA: los endpoints de cluster estan fuera del rate limiter y escriben una fila de audit por rechazo; limitar o registrar solo en log.
+- [ ] HA: test de integracion con dos nodos en proceso (eleccion por prioridad, replicacion extremo a extremo, 409 en split-brain).
+- [ ] Import: lotes en vez de una transaccion por entrada (`AddCustomDomains` una vez, `RefreshCache` una vez por seccion) y lectura del zip en streaming. Un export con 20k entradas tarda minutos y bloquea el escritor de SQLite.
+- [ ] Import: `Exists` en clientes se calcula como "tiene alguna asignacion"; deberia comparar el conjunto de grupos.
+- [ ] Upstreams: la API (`/api/upstream`) escribe en `dns.upstream.fallback`, campo legado que la migracion de esquema vacia, mientras el resolver lee `servers`. Verificar y unificar.
+- [ ] Simplificaciones pendientes de ponytail-review: truncado JS de tablas por `max-h` CSS, `describe()` como mapa tipado, nueve bloques `if !Exists` en apply, helper `broadcast` en resolution como en group.
+
 ## P1 - Operacion, Resiliencia y Ecosistema
 
 ### EPIC-05 HA Active
