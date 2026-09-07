@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"goaway/backend/audit"
+	"goaway/backend/settings"
 	"io"
 	"net"
 	"net/http"
@@ -69,34 +70,55 @@ func (api *API) createUpstream(c *gin.Context) {
 		upstream += ":53"
 	}
 
-	if slices.Contains(api.Config.DNS.Upstream.Fallback, upstream) {
+	if slices.ContainsFunc(api.Config.DNS.Upstream.Servers, func(s settings.UpstreamServer) bool {
+		return s.Address == upstream
+	}) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Upstream already exists"})
 		return
 	}
 
-	api.Config.DNS.Upstream.Fallback = append(api.Config.DNS.Upstream.Fallback, upstream)
+	name := upstream
+	if host, _, err := net.SplitHostPort(upstream); err == nil {
+		name = getUpstreamName(host)
+	}
+
+	api.Config.DNS.Upstream.Servers = append(api.Config.DNS.Upstream.Servers, settings.UpstreamServer{
+		Name:     name,
+		Address:  upstream,
+		Protocol: "udp",
+		Enabled:  true,
+	})
 	api.Config.Save()
 
 	log.Info("Added %s as a new upstream", upstream)
-	api.DNSServer.AuditService.CreateAudit(&audit.Entry{
-		Topic:   audit.TopicUpstream,
-		Message: fmt.Sprintf("Added a new upstream '%s'", request.Upstream),
-	})
+	api.auditUpstream(fmt.Sprintf("Added a new upstream '%s'", request.Upstream))
 
 	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Added %s as a new upstream", upstream)})
 }
 
+func (api *API) auditUpstream(message string) {
+	if api.DNSServer == nil || api.DNSServer.AuditService == nil {
+		return
+	}
+	api.DNSServer.AuditService.CreateAudit(&audit.Entry{
+		Topic:   audit.TopicUpstream,
+		Message: message,
+	})
+}
+
 func (api *API) getUpstreams(c *gin.Context) {
 	var (
-		fallbackUpstreams = api.Config.DNS.Upstream.Fallback
-		preferredUpstream = api.Config.DNS.Upstream.Preferred
-		upstreamsToCheck  = make([]string, 0, len(fallbackUpstreams)+1)
+		servers           = api.Config.DNS.Upstream.Servers
+		preferredUpstream = ""
+		upstreamsToCheck  = make([]string, 0, len(servers))
 		wg                sync.WaitGroup
 	)
 
-	upstreamsToCheck = append(upstreamsToCheck, fallbackUpstreams...)
-	if preferredUpstream != "" && !slices.Contains(fallbackUpstreams, preferredUpstream) {
-		upstreamsToCheck = append(upstreamsToCheck, preferredUpstream)
+	if len(servers) > 0 {
+		preferredUpstream = servers[0].Address
+	}
+	for _, s := range servers {
+		upstreamsToCheck = append(upstreamsToCheck, s.Address)
 	}
 
 	results := make([]map[string]any, len(upstreamsToCheck))
@@ -344,25 +366,28 @@ func (api *API) updatePreferredUpstream(c *gin.Context) {
 		return
 	}
 
-	if !slices.Contains(api.Config.DNS.Upstream.Fallback, request.Upstream) {
+	idx := slices.IndexFunc(api.Config.DNS.Upstream.Servers, func(s settings.UpstreamServer) bool {
+		return s.Address == request.Upstream
+	})
+	if idx == -1 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Upstream not found"})
 		return
 	}
 
-	if api.Config.DNS.Upstream.Preferred == request.Upstream {
+	if idx == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Preferred upstream already set to %s", request.Upstream)})
 		return
 	}
 
-	api.Config.DNS.Upstream.Preferred = request.Upstream
+	server := api.Config.DNS.Upstream.Servers[idx]
+	servers := append(api.Config.DNS.Upstream.Servers[:idx], api.Config.DNS.Upstream.Servers[idx+1:]...)
+	api.Config.DNS.Upstream.Servers = append([]settings.UpstreamServer{server}, servers...)
+
 	message := fmt.Sprintf("Preferred upstream set to %s", request.Upstream)
 	log.Info("%s", message)
 
 	api.Config.Save()
-	api.DNSServer.AuditService.CreateAudit(&audit.Entry{
-		Topic:   audit.TopicUpstream,
-		Message: fmt.Sprintf("New preferred upstream '%s'", request.Upstream),
-	})
+	api.auditUpstream(fmt.Sprintf("New preferred upstream '%s'", request.Upstream))
 
 	c.JSON(http.StatusOK, gin.H{"message": message})
 }
@@ -375,26 +400,20 @@ func (api *API) deleteUpstream(c *gin.Context) {
 		return
 	}
 
-	if !slices.Contains(api.Config.DNS.Upstream.Fallback, upstreamToDelete) {
+	if !slices.ContainsFunc(api.Config.DNS.Upstream.Servers, func(s settings.UpstreamServer) bool {
+		return s.Address == upstreamToDelete
+	}) {
 		c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("Upstream %s not found", upstreamToDelete)})
 		return
 	}
 
-	var updatedUpstreams []string
-	for _, upstream := range api.Config.DNS.Upstream.Fallback {
-		if upstream != upstreamToDelete {
-			updatedUpstreams = append(updatedUpstreams, upstream)
-		}
-	}
-
-	api.Config.DNS.Upstream.Fallback = updatedUpstreams
+	api.Config.DNS.Upstream.Servers = slices.DeleteFunc(api.Config.DNS.Upstream.Servers, func(s settings.UpstreamServer) bool {
+		return s.Address == upstreamToDelete
+	})
 	api.Config.Save()
 	log.Info("Removed upstream: %s", upstreamToDelete)
 
-	api.DNSServer.AuditService.CreateAudit(&audit.Entry{
-		Topic:   audit.TopicUpstream,
-		Message: fmt.Sprintf("Removed upstream '%s'", upstreamToDelete),
-	})
+	api.auditUpstream(fmt.Sprintf("Removed upstream '%s'", upstreamToDelete))
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Upstream removed successfully",
