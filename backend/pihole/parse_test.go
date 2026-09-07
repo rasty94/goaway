@@ -33,9 +33,10 @@ func buildArchive(t *testing.T) []byte {
 			(2, 0, 'ok.example', 1, ''),
 			(3, 3, '(\.|^)tracker\.example$', 1, ''),
 			(4, 3, '^bad', 1, ''),
+			(7, 3, '(\.|^)ads?\.example$', 1, ''),
 			(5, 1, 'disabled.example', 0, ''),
 			(6, 1, 'kids-only.example', 1, '')`,
-		`INSERT INTO domainlist_by_group VALUES (1, 0), (2, 0), (3, 0), (4, 0), (6, 1)`,
+		`INSERT INTO domainlist_by_group VALUES (1, 0), (2, 0), (3, 0), (4, 0), (6, 1), (7, 1)`,
 		`INSERT INTO client VALUES (1, '192.168.1.20', ''), (2, 'AA:BB:CC:DD:EE:FF', ''), (3, '192.168.1.0/24', ''), (4, '192.168.1.99', '')`,
 		`INSERT INTO client_by_group VALUES (1, 1), (2, 1), (3, 1), (4, 0)`,
 	} {
@@ -88,13 +89,14 @@ func TestParseTeleporter(t *testing.T) {
 	if len(plan.Groups) != 1 || plan.Groups[0].Name != "Kids" {
 		t.Fatalf("groups: %+v", plan.Groups)
 	}
-	if len(plan.GroupDomains) != 1 || plan.GroupDomains[0] != (GroupDomain{Group: "Kids", Pattern: "kids-only.example", Blocked: true}) {
+	if len(plan.GroupDomains) != 2 || plan.GroupDomains[0] != (GroupDomain{Group: "Kids", Pattern: "kids-only.example", Blocked: true}) ||
+		plan.GroupDomains[1].Pattern != `/(\.|^)ads?\.example$/` {
 		t.Fatalf("group domains: %+v", plan.GroupDomains)
 	}
 	if len(plan.Clients) != 2 || plan.Clients[0].Type != "ip" || plan.Clients[1].Type != "mac" || plan.Clients[1].Identifier != "aa:bb:cc:dd:ee:ff" || plan.Clients[0].Groups[0] != "Kids" {
 		t.Fatalf("clients: %+v", plan.Clients)
 	}
-	if len(plan.Upstreams) != 2 || plan.Upstreams[1].Address != "127.0.0.1:5335" {
+	if len(plan.Upstreams) != 2 || plan.Upstreams[0].Address != "1.1.1.1:53" || plan.Upstreams[1].Address != "127.0.0.1:5335" {
 		t.Fatalf("upstreams: %+v", plan.Upstreams)
 	}
 	wantRes := []Resolution{

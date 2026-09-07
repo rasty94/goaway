@@ -46,7 +46,7 @@ func (api *API) clusterAuth() gin.HandlerFunc {
 		}
 		c.Request.Body = io.NopCloser(bytes.NewReader(body))
 
-		if err := cluster.VerifyRequest(c.Request.Header, api.Config.HighAvailability.Secret, body, time.Now()); err != nil {
+		if err := cluster.VerifyRequest(c.Request.Header, api.Config.HighAvailability.Secret, c.Request.URL.Path, body, time.Now()); err != nil {
 			msg := fmt.Sprintf("Rejected cluster request from %s to %s: %v", c.ClientIP(), c.Request.URL.Path, err)
 			log.Warning("[HA/Cluster] %s", msg)
 			if api.AuditService != nil {
@@ -207,12 +207,21 @@ func (api *API) handleHeartbeat(c *gin.Context) {
 		return
 	}
 
-	// Signature already verified by clusterAuth; reply with our current status
+	// Signature already verified by clusterAuth; reply with our current identity and role
 	resp := cluster.HeartbeatResponse{
-		ID:        "local-node", // Should match initialized ID
+		ID:        "local-node",
 		Role:      cluster.NodeRole(api.Config.HighAvailability.Mode),
+		Priority:  api.Config.HighAvailability.Priority,
 		Timestamp: time.Now(),
 		Status:    "online",
+	}
+	if api.ClusterManager != nil {
+		resp.ID = api.ClusterManager.SelfID()
+		if api.ClusterManager.IsPrimary() {
+			resp.Role = cluster.RolePrimary
+		} else {
+			resp.Role = cluster.RoleReplica
+		}
 	}
 
 	c.JSON(http.StatusOK, resp)
@@ -250,6 +259,12 @@ func (api *API) handleReplication(c *gin.Context) {
 	var event cluster.ReplicatedEvent
 	if err := c.BindJSON(&event); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid replication event"})
+		return
+	}
+
+	// A Primary never applies foreign events: doing so would re-broadcast them and ping-pong forever.
+	if api.ClusterManager != nil && api.ClusterManager.IsPrimary() {
+		c.JSON(http.StatusConflict, gin.H{"error": "this node is primary; refusing replicated event"})
 		return
 	}
 
@@ -360,38 +375,26 @@ func (api *API) handleWhitelistRemoveReplication(payload interface{}) error {
 }
 
 func (api *API) handleGroupCreateReplication(payload interface{}) error {
-	// For Group creation, we can try to JSON decode it back to database.ClientGroup
-	// But let's keep it simple for now and just extra fields
-	m, ok := payload.(map[string]interface{})
-	if !ok {
+	var p struct {
+		Name              string `json:"name"`
+		Description       string `json:"description"`
+		UseGlobalPolicies bool   `json:"useGlobalPolicies"`
+	}
+	if err := decodePayload(payload, &p); err != nil || p.Name == "" {
 		return fmt.Errorf("invalid group payload")
 	}
-
-	name, _ := m["name"].(string)
-	desc, _ := m["description"].(string)
-	global, _ := m["useGlobalPolicies"].(bool)
-
-	if name == "" {
-		return fmt.Errorf("empty group name in replication")
-	}
-
-	_, err := api.GroupService.CreateGroup(name, desc, global)
+	_, err := api.GroupService.CreateGroup(p.Name, p.Description, p.UseGlobalPolicies)
 	return err
 }
 
 func (api *API) handleGroupDeleteReplication(payload interface{}) error {
-	m, ok := payload.(map[string]interface{})
-	if !ok {
+	var p struct {
+		ID uint `json:"id"`
+	}
+	if err := decodePayload(payload, &p); err != nil || p.ID == 0 {
 		return fmt.Errorf("invalid group delete payload")
 	}
-
-	// JSON numbers are often float64
-	idVal, _ := m["id"].(float64)
-	if idVal == 0 {
-		return fmt.Errorf("missing id in group delete")
-	}
-
-	return api.GroupService.DeleteGroup(uint(idVal))
+	return api.GroupService.DeleteGroup(p.ID)
 }
 
 // decodePayload re-encodes the generic JSON payload into a typed struct.
@@ -463,57 +466,42 @@ func (api *API) handleResolutionRemoveReplication(payload interface{}) error {
 	return err
 }
 
+// Leases are written through their natural key, never through the Primary's autoincrement ID,
+// so redelivery is idempotent and rows never collide with local ones.
 func (api *API) handleDHCPLeasev6Replication(payload interface{}) error {
 	var lease database.ActiveDHCPv6Lease
 	if err := decodePayload(payload, &lease); err != nil || lease.DUID == "" {
 		return fmt.Errorf("invalid dhcpv6 lease payload")
 	}
-	return api.DBConn.Save(&lease).Error
+	lease.ID = 0
+	var existing database.ActiveDHCPv6Lease
+	return api.DBConn.Where("duid = ? AND iaid = ?", lease.DUID, lease.IAID).Assign(lease).FirstOrCreate(&existing).Error
 }
 
 func (api *API) handleDHCPLeaseReplication(payload interface{}) error {
-	m, ok := payload.(map[string]interface{})
-	if !ok {
+	var lease database.ActiveDHCPLease
+	if err := decodePayload(payload, &lease); err != nil || lease.MAC == "" {
 		return fmt.Errorf("invalid dhcp lease payload")
 	}
-
-	// Dynamic leases are complex due to time.Time JSON marshalling
-	// We'll decode it properly
-	data, _ := json.Marshal(m)
-	var lease database.ActiveDHCPLease
-	if err := json.Unmarshal(data, &lease); err != nil {
-		return err
-	}
-
-	// Store in repository directly to avoid re-broadcast
-	return api.DBConn.Save(&lease).Error
+	lease.ID = 0
+	var existing database.ActiveDHCPLease
+	return api.DBConn.Where("mac = ?", lease.MAC).Assign(lease).FirstOrCreate(&existing).Error
 }
 
 func (api *API) handleDHCPStaticAddReplication(payload interface{}) error {
-	m, ok := payload.(map[string]interface{})
-	if !ok {
+	var lease database.StaticDHCPLease
+	if err := decodePayload(payload, &lease); err != nil || lease.MAC == "" {
 		return fmt.Errorf("invalid dhcp static payload")
 	}
-
-	data, _ := json.Marshal(m)
-	var lease database.StaticDHCPLease
-	if err := json.Unmarshal(data, &lease); err != nil {
-		return err
-	}
-
-	return api.DBConn.Save(&lease).Error
+	lease.ID = 0
+	var existing database.StaticDHCPLease
+	return api.DBConn.Where("mac = ?", lease.MAC).Assign(lease).FirstOrCreate(&existing).Error
 }
 
 func (api *API) handleDHCPStaticRemoveReplication(payload interface{}) error {
-	m, ok := payload.(map[string]interface{})
-	if !ok {
+	var lease database.StaticDHCPLease
+	if err := decodePayload(payload, &lease); err != nil || lease.MAC == "" {
 		return fmt.Errorf("invalid dhcp static remove payload")
 	}
-
-	idVal, _ := m["id"].(float64)
-	if idVal == 0 {
-		return fmt.Errorf("missing id in dhcp static delete")
-	}
-
-	return api.DBConn.Delete(&database.StaticDHCPLease{}, uint(idVal)).Error
+	return api.DBConn.Where("mac = ?", lease.MAC).Delete(&database.StaticDHCPLease{}).Error
 }

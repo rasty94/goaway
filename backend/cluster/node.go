@@ -50,6 +50,7 @@ type HeartbeatRequest struct {
 type HeartbeatResponse struct {
 	ID        string    `json:"id"`
 	Role      NodeRole  `json:"role"`
+	Priority  int       `json:"priority"`
 	Timestamp time.Time `json:"timestamp"`
 	Status    string    `json:"status"`
 }

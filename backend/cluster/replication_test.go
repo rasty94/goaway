@@ -28,7 +28,7 @@ func TestOutboxDeliversInOrderOnceThePeerIsBack(t *testing.T) {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
-		if err := VerifyRequest(r.Header, "s3cret", body, time.Now()); err != nil {
+		if err := VerifyRequest(r.Header, "s3cret", r.URL.Path, body, time.Now()); err != nil {
 			t.Errorf("peer received unsigned event: %v", err)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -94,5 +94,59 @@ func TestReplicaDoesNotQueue(t *testing.T) {
 	db.Model(&database.ReplicationOutbox{}).Count(&n)
 	if n != 0 {
 		t.Fatalf("replica queued %d events", n)
+	}
+}
+
+func TestOutboxDropsEventsThePeerRefuses(t *testing.T) {
+	var mu sync.Mutex
+	var got []EventType
+	peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		body, _ := io.ReadAll(r.Body)
+		var ev ReplicatedEvent
+		_ = json.Unmarshal(body, &ev)
+		got = append(got, ev.Type)
+		if ev.Type == EventGroupCreate {
+			w.WriteHeader(http.StatusInternalServerError) // apply error: never going to succeed
+		}
+	}))
+	defer peer.Close()
+
+	db, _ := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	_ = db.AutoMigrate(&database.ReplicationOutbox{})
+	cfg := &settings.Config{}
+	cfg.HighAvailability.Mode = "primary"
+	cfg.HighAvailability.Secret = "s3cret"
+	cfg.HighAvailability.Peers = []string{peer.URL}
+	s := NewService(cfg, "node-1", db)
+	s.initializePeers()
+
+	s.Broadcast(ReplicatedEvent{Type: EventGroupCreate})
+	s.Broadcast(ReplicatedEvent{Type: EventBlacklistAdd})
+	s.Replicator.flush()
+
+	var pending int64
+	db.Model(&database.ReplicationOutbox{}).Count(&pending)
+	mu.Lock()
+	defer mu.Unlock()
+	if pending != 0 || len(got) != 2 || got[1] != EventBlacklistAdd {
+		t.Fatalf("refused event should be dropped and the next one delivered: pending=%d got=%v", pending, got)
+	}
+}
+
+func TestBroadcastIsOffWithoutSecret(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	_ = db.AutoMigrate(&database.ReplicationOutbox{})
+	cfg := &settings.Config{}
+	cfg.HighAvailability.Mode = "primary"
+	cfg.HighAvailability.Peers = []string{"http://127.0.0.1:1"}
+	s := NewService(cfg, "node-1", db)
+	s.initializePeers()
+	s.Broadcast(ReplicatedEvent{Type: EventBlacklistAdd})
+	var n int64
+	db.Model(&database.ReplicationOutbox{}).Count(&n)
+	if n != 0 {
+		t.Fatalf("queued %d events without a secret", n)
 	}
 }

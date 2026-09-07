@@ -8,7 +8,7 @@
 * **Wider Replication Coverage**: group flags and per-group blocked/allowed domains, client group assignments, local DNS resolutions and DHCPv6 leases now replicate. Group and resolution replicators were not wired before.
 
 ### Security
-* **Cluster Authentication (HA Phase 4)**: `/api/native/cluster/heartbeat` and `/replicate` now require an HMAC-SHA256 signature over timestamp and body using the new shared key `highAvailability.secret`. Unsigned, stale (>30s) or wrongly signed requests are rejected with 401 and recorded in the audit log. Nodes fail closed when the secret is empty.
+* **Cluster Authentication (HA Phase 4)**: `/api/native/cluster/heartbeat` and `/replicate` now require an HMAC-SHA256 signature over timestamp, path and body using the new shared key `highAvailability.secret`. Unsigned, stale (>30s) or wrongly signed requests are rejected with 401 and recorded in the audit log. Nodes fail closed when the secret is empty and do not start their cluster loops. Nodes now identify themselves by hostname, heartbeats carry priority so election works, and a Primary refuses replicated events instead of echoing them.
 
 ## [0.93.0] (2026-04-11)
 

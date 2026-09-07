@@ -60,7 +60,8 @@ func (s *Service) Start() {
 		s.selfRole, s.config.HighAvailability.Priority)
 
 	if s.config.HighAvailability.Secret == "" {
-		log.Error("[HA/Cluster] highAvailability.secret is empty: peers will reject every heartbeat and replication event until it is set on all nodes")
+		log.Error("[HA/Cluster] highAvailability.secret is empty: clustering stays off until the same secret is set on every node")
+		return
 	}
 
 	s.Replicator.Start()
@@ -169,6 +170,7 @@ func (s *Service) pingNode(address string) {
 			node.Status = StateOnline
 			node.Role = hbResp.Role
 			node.ID = hbResp.ID
+			node.Priority = hbResp.Priority
 			node.LastSeen = time.Now()
 			node.LatencyMs = latency
 			node.Unreachable = false
@@ -235,6 +237,14 @@ func (s *Service) peerAddresses() []string {
 	}
 	sort.Strings(addrs)
 	return addrs
+}
+
+func (s *Service) SelfID() string { return s.selfID }
+
+func (s *Service) IsPrimary() bool {
+	s.peersMu.RLock()
+	defer s.peersMu.RUnlock()
+	return s.selfRole == RolePrimary
 }
 
 func (s *Service) GetNodes() []*ClusterNode {

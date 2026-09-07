@@ -95,7 +95,11 @@ func Parse(data []byte) (*Plan, error) {
 		return nil, fmt.Errorf("not a zip archive: %w", err)
 	}
 
-	plan := &Plan{Skipped: []string{}}
+	plan := &Plan{
+		Adlists: []Adlist{}, Blacklist: []Domain{}, Whitelist: []Domain{}, Groups: []Group{},
+		GroupDomains: []GroupDomain{}, Clients: []Client{}, Resolutions: []Resolution{},
+		Upstreams: []Upstream{}, StaticLeases: []StaticLease{}, Skipped: []string{},
+	}
 	found := false
 	for _, f := range zr.File {
 		switch path.Base(f.Name) {
@@ -185,9 +189,14 @@ func (p *Plan) readGravity(content []byte) error {
 	if err := db.Raw(`SELECT address, enabled, comment FROM adlist`).Scan(&adlists).Error; err != nil {
 		return fmt.Errorf("gravity.db: %w", err)
 	}
+	// GoAway toggles sources by name, so names must be unique: fall back to the URL on blanks and duplicates.
+	nameCount := map[string]int{}
+	for _, a := range adlists {
+		nameCount[strings.TrimSpace(a.Comment)]++
+	}
 	for _, a := range adlists {
 		name := strings.TrimSpace(a.Comment)
-		if name == "" {
+		if name == "" || nameCount[name] > 1 {
 			name = a.Address
 		}
 		p.Adlists = append(p.Adlists, Adlist{Name: name, URL: a.Address, Enabled: a.Enabled})
@@ -293,13 +302,19 @@ func isMAC(s string) bool {
 	return err == nil && len(s) == 17
 }
 
-// wildcardRegex matches the regex Pi-hole writes for "add as wildcard": (\.|^)example\.com$
-var wildcardRegex = regexp.MustCompile(`^\(\\\.\|\^\)(.+)\$$`)
+var (
+	// wildcardRegex matches the regex Pi-hole writes for "add as wildcard": (\.|^)example\.com$
+	wildcardRegex = regexp.MustCompile(`^\(\\\.\|\^\)(.+)\$$`)
+	plainDomain   = regexp.MustCompile(`^[a-z0-9.-]+$`)
+)
 
 // convertRegex maps a Pi-hole regex onto GoAway syntax: *.domain for the wildcard form, /re/ otherwise.
 func convertRegex(re string) string {
 	if m := wildcardRegex.FindStringSubmatch(re); m != nil {
-		return "*." + strings.ReplaceAll(m[1], `\.`, ".")
+		domain := strings.ToLower(strings.ReplaceAll(m[1], `\.`, "."))
+		if plainDomain.MatchString(domain) {
+			return "*." + domain
+		}
 	}
 	return "/" + re + "/"
 }
@@ -328,11 +343,12 @@ func (p *Plan) readToml(content []byte) error {
 		if u == "" {
 			continue
 		}
-		// Pi-hole writes host#port; GoAway wants host:port
+		// Pi-hole writes host#port (port optional); GoAway dials host:port, IPv6 in brackets
+		host, port := u, "53"
 		if i := strings.LastIndex(u, "#"); i > 0 {
-			u = u[:i] + ":" + u[i+1:]
+			host, port = u[:i], u[i+1:]
 		}
-		p.Upstreams = append(p.Upstreams, Upstream{Address: u})
+		p.Upstreams = append(p.Upstreams, Upstream{Address: net.JoinHostPort(host, port)})
 	}
 
 	for _, h := range cfg.DNS.Hosts {
@@ -386,8 +402,7 @@ func parseDHCPHost(h string) (StaticLease, bool) {
 			lease.MAC = strings.ToLower(f)
 		case lease.IP == "" && net.ParseIP(f) != nil && net.ParseIP(f).To4() != nil:
 			lease.IP = f
-		case f == "infinite" || (len(f) > 1 && strings.ContainsAny(f[len(f)-1:], "smhdw") && isNumber(f[:len(f)-1])):
-			// lease time
+		case leaseTime.MatchString(f):
 		case lease.Hostname == "":
 			lease.Hostname = f
 		}
@@ -395,14 +410,4 @@ func parseDHCPHost(h string) (StaticLease, bool) {
 	return lease, lease.MAC != "" && lease.IP != ""
 }
 
-func isNumber(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
-}
+var leaseTime = regexp.MustCompile(`^(\d+[smhdw]|infinite)$`)

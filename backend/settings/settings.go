@@ -97,7 +97,10 @@ func (config *Config) Update(updatedSettings Config) {
 	config.Logging = updatedSettings.Logging
 	config.Misc = updatedSettings.Misc
 	config.RemoteBackup = updatedSettings.RemoteBackup
+	// Secret is json:"-", so a JSON-decoded config never carries it; keep the stored one.
+	clusterSecret := config.HighAvailability.Secret
 	config.HighAvailability = updatedSettings.HighAvailability
+	config.HighAvailability.Secret = clusterSecret
 
 	if _, err := config.ApplySchemaUpgrades(); err != nil {
 		log.Error("Could not apply settings schema upgrades: %v", err)

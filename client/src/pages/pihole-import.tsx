@@ -126,6 +126,8 @@ export function PiholeImport() {
         return;
       }
       const parsed = data as Plan;
+      for (const s of SECTIONS) parsed[s] = parsed[s] ?? [];
+      parsed.skipped = parsed.skipped ?? [];
       setPlan(parsed);
       const enabled: Record<string, boolean> = {};
       for (const s of SECTIONS) enabled[s] = parsed[s].length > 0;

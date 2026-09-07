@@ -8,6 +8,7 @@ import (
 	"goaway/backend/api/key"
 	"goaway/backend/audit"
 	"goaway/backend/blacklist"
+	"goaway/backend/cluster"
 	"goaway/backend/dhcp"
 	"goaway/backend/group"
 	"goaway/backend/logging"
@@ -17,10 +18,10 @@ import (
 	"goaway/backend/request"
 	"goaway/backend/resolution"
 	"goaway/backend/sync"
-	"goaway/backend/cluster"
 	"goaway/backend/user"
 	"goaway/backend/whitelist"
 	"net/http"
+	"os"
 	synchronization "sync"
 
 	"codeberg.org/miekg/dns"
@@ -171,9 +172,13 @@ func (r *ServiceRegistry) setupAPIServer() {
 	// Initialize replica sync manager for HA support
 	r.APIServer.ReplicaSyncManager = sync.NewReplicaSyncManager(r.Context.Config, r.APIServer)
 
-	r.ClusterService = cluster.NewService(r.Context.Config, "local-node", r.Context.DBConn) // Using temporary fixed ID
+	nodeID, err := os.Hostname()
+	if err != nil || nodeID == "" {
+		nodeID = "goaway-" + r.Context.Config.DNS.Address
+	}
+	r.ClusterService = cluster.NewService(r.Context.Config, nodeID, r.Context.DBConn)
 	r.APIServer.ClusterManager = r.ClusterService
-	
+
 	r.BlacklistService.SetReplicator(r.ClusterService)
 	r.WhitelistService.SetReplicator(r.ClusterService)
 	r.DHCPService.SetReplicator(r.ClusterService)

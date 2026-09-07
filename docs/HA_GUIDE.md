@@ -95,7 +95,7 @@ Response:
 
 These two endpoints are not tied to a user session. Every call must carry
 `X-Cluster-Timestamp` (unix seconds) and `X-Cluster-Signature`
-(hex HMAC-SHA256 of `timestamp + "\n" + body`) computed with the shared key
+(hex HMAC-SHA256 of `timestamp + "\n" + path + "\n" + body`) computed with the shared key
 `highAvailability.secret`. Requests older than 30 seconds, unsigned, or signed
 with another key are rejected with 401 and written to the audit log.
 
@@ -107,16 +107,25 @@ highAvailability:
   secret: "<long random string, e.g. openssl rand -hex 32>"
 ```
 
-With an empty `secret` the node refuses all peer traffic (fail closed) and logs
-an error at startup, so an active cluster never runs unauthenticated.
+With an empty `secret` the node refuses all peer traffic, never starts its own
+heartbeat or replication loops, and logs an error at startup, so an active
+cluster never runs unauthenticated. Setting the secret on the normal Settings
+page is not possible; edit `settings.yaml` on each node. Other settings saves
+leave it untouched.
+
+Each node identifies itself by its hostname in heartbeats, and a node that is
+currently Primary refuses replicated events with 409 so two Primaries cannot
+bounce events between each other.
 
 ### Delivery guarantees
 The Primary writes every event to the `replication_outbox` table, one row per
 peer, and pushes them in insertion order. A row is deleted only after the peer
-returns 200; on any failure the Primary stops at that row and retries every 5
-seconds, so a replica that was down receives the backlog in the right order
-once it is back. Rows older than 24 hours are dropped; a replica that was away
-longer must re-sync through the Phase 1 backup pull.
+returns 200. If the peer is unreachable the Primary stops at that row and
+retries every 5 seconds, so a replica that was down receives the backlog in the
+right order once it is back. If the peer answers but refuses the event (an
+apply error such as a duplicate row) the row is logged and dropped so it cannot
+block the queue. Rows older than 24 hours are dropped; a replica that was away
+longer must be re-seeded from a Teleporter backup.
 
 ## How Synchronization Works
 

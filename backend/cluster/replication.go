@@ -2,10 +2,10 @@ package cluster
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"goaway/backend/database"
@@ -74,9 +74,9 @@ func (rm *ReplicationManager) Start() {
 	go rm.loop()
 }
 
-// Broadcast enqueues the event for every configured peer. Only the Primary emits events.
+// Broadcast enqueues the event for every configured peer. Only a Primary with a secret emits events.
 func (rm *ReplicationManager) Broadcast(event ReplicatedEvent) {
-	if rm.service.selfRole != RolePrimary || rm.db == nil {
+	if rm.service.selfRole != RolePrimary || rm.db == nil || rm.service.config.HighAvailability.Secret == "" {
 		return
 	}
 
@@ -120,49 +120,68 @@ func (rm *ReplicationManager) loop() {
 	}
 }
 
-// flush pushes pending events peer by peer, stopping at the first failure so ordering is preserved.
+// flush drains every peer's queue concurrently; each peer is still served strictly in order.
 func (rm *ReplicationManager) flush() {
+	var wg sync.WaitGroup
 	for _, addr := range rm.service.peerAddresses() {
-		rm.flushPeer(addr)
+		wg.Add(1)
+		go func(a string) {
+			defer wg.Done()
+			rm.flushPeer(a)
+		}(addr)
 	}
-	// ponytail: a peer removed from config or dead for a day loses its backlog; it re-syncs via the Phase 1 backup pull.
+	wg.Wait()
+	// ponytail: a peer removed from config or unreachable for a day loses its backlog; no automatic resync exists yet.
 	rm.db.Where("created_at < ?", time.Now().Add(-outboxTTL)).Delete(&database.ReplicationOutbox{})
 }
 
+// flushPeer pushes rows in id order. A transport failure stops and retries later; a rejection
+// the peer will never accept (400/500 on apply) is logged and dropped so it cannot block the queue.
 func (rm *ReplicationManager) flushPeer(addr string) {
-	var rows []database.ReplicationOutbox
-	if err := rm.db.Where("peer = ?", addr).Order("id").Limit(outboxBatch).Find(&rows).Error; err != nil {
-		log.Error("[HA/Replication] Cannot read outbox for %s: %v", addr, err)
-		return
-	}
-	for _, row := range rows {
-		if err := rm.pushToPeer(addr, []byte(row.Event)); err != nil {
-			log.Debug("[HA/Replication] Peer %s not acking (attempt %d): %v", addr, row.Attempts+1, err)
-			rm.db.Model(&row).Update("attempts", row.Attempts+1)
+	for {
+		var rows []database.ReplicationOutbox
+		if err := rm.db.Where("peer = ?", addr).Order("id").Limit(outboxBatch).Find(&rows).Error; err != nil {
+			log.Error("[HA/Replication] Cannot read outbox for %s: %v", addr, err)
 			return
 		}
-		rm.db.Delete(&row)
+		for _, row := range rows {
+			permanent, err := rm.pushToPeer(addr, []byte(row.Event))
+			if err != nil && !permanent {
+				log.Debug("[HA/Replication] Peer %s unreachable, will retry: %v", addr, err)
+				return
+			}
+			if err != nil {
+				log.Warning("[HA/Replication] Peer %s rejected event, dropping it: %v", addr, err)
+			}
+			rm.db.Delete(&row)
+		}
+		if len(rows) < outboxBatch {
+			return
+		}
 	}
 }
 
-func (rm *ReplicationManager) pushToPeer(address string, payload []byte) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, address+"/api/native/cluster/replicate", bytes.NewReader(payload))
+// pushToPeer returns permanent=true when the peer answered but refused the event.
+func (rm *ReplicationManager) pushToPeer(address string, payload []byte) (permanent bool, err error) {
+	req, err := http.NewRequest(http.MethodPost, address+"/api/native/cluster/replicate", bytes.NewReader(payload))
 	if err != nil {
-		return err
+		return true, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	SignRequest(req, rm.service.config.HighAvailability.Secret, payload)
 
 	resp, err := rm.client.Do(req)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("status %d", resp.StatusCode)
+	switch {
+	case resp.StatusCode == http.StatusOK:
+		return false, nil
+	case resp.StatusCode == http.StatusConflict, resp.StatusCode >= http.StatusBadGateway:
+		// peer is primary right now (split-brain) or a proxy in front of it is down: try again later
+		return false, fmt.Errorf("status %d", resp.StatusCode)
+	default:
+		return true, fmt.Errorf("status %d", resp.StatusCode)
 	}
-	return nil
 }

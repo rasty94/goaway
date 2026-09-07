@@ -61,7 +61,6 @@ type ReplicationOutbox struct {
 	ID        uint      `gorm:"primaryKey;autoIncrement"`
 	Peer      string    `gorm:"type:varchar(255);not null;index"`
 	Event     string    `gorm:"type:text;not null"`
-	Attempts  int       `gorm:"not null;default:0"`
 	CreatedAt time.Time `gorm:"index"`
 }
 

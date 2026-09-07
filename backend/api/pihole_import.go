@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 
@@ -55,8 +56,16 @@ func (api *API) markExisting(plan *pihole.Plan) {
 	for i := range plan.Adlists {
 		plan.Adlists[i].Exists = api.BlacklistService.URLExists(plan.Adlists[i].URL)
 	}
+	wildcards := map[string]bool{}
+	for _, w := range api.BlacklistService.GetWildcards() {
+		wildcards[w] = true
+	}
 	for i := range plan.Blacklist {
-		plan.Blacklist[i].Exists = api.BlacklistService.IsBlacklisted(strings.TrimPrefix(plan.Blacklist[i].Pattern, "*."))
+		if pattern := plan.Blacklist[i].Pattern; strings.HasPrefix(pattern, "*.") {
+			plan.Blacklist[i].Exists = wildcards[pattern]
+		} else {
+			plan.Blacklist[i].Exists = api.BlacklistService.IsBlacklisted(pattern)
+		}
 	}
 	for i := range plan.Whitelist {
 		plan.Whitelist[i].Exists = api.WhitelistService.IsWhitelisted(plan.Whitelist[i].Pattern)
@@ -82,9 +91,14 @@ func (api *API) markExisting(plan *pihole.Plan) {
 		ids, _ := api.GroupService.GetAssignmentsByIdentifier(plan.Clients[i].Identifier, plan.Clients[i].Type)
 		plan.Clients[i].Exists = len(ids) > 0
 	}
+	resolutions := map[string]bool{}
+	if rows, err := api.ResolutionService.GetResolutions(); err == nil {
+		for _, r := range rows {
+			resolutions[r.Domain] = true
+		}
+	}
 	for i := range plan.Resolutions {
-		_, err := api.ResolutionService.GetResolution(plan.Resolutions[i].Domain)
-		plan.Resolutions[i].Exists = err == nil
+		plan.Resolutions[i].Exists = resolutions[plan.Resolutions[i].Domain]
 	}
 	for i := range plan.Upstreams {
 		for _, s := range api.Config.DNS.Upstream.Servers {
@@ -259,13 +273,16 @@ func (api *API) piholeImportApply(c *gin.Context) {
 	if on("upstreams") {
 		changed := false
 		for _, u := range plan.Upstreams {
+			var err error
 			if !u.Exists {
-				api.Config.DNS.Upstream.Servers = append(api.Config.DNS.Upstream.Servers, settings.UpstreamServer{
-					Name: "Pi-hole " + u.Address, Address: u.Address, Protocol: "udp", Enabled: true,
-				})
-				changed = true
+				if _, _, err = net.SplitHostPort(u.Address); err == nil {
+					api.Config.DNS.Upstream.Servers = append(api.Config.DNS.Upstream.Servers, settings.UpstreamServer{
+						Name: "Pi-hole " + u.Address, Address: u.Address, Protocol: "udp", Enabled: true,
+					})
+					changed = true
+				}
 			}
-			count("upstreams", u.Exists, nil)
+			count("upstreams", u.Exists, err)
 		}
 		if changed {
 			api.Config.Save()
