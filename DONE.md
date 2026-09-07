@@ -158,6 +158,13 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 
 ## EPIC-06 Ecosystem (P1)
 
+- [x] FEATURE: Wizard de importacion Pi-hole (2026-09-07)
+  - Solo Pi-hole v6 (zip Teleporter con gravity.db y pihole.toml).
+  - Importa adlists, listas negra/blanca, grupos, dominios por grupo, clientes (IP/MAC), DNS local (hosts y CNAME), upstreams y leases DHCP estaticos.
+  - Vista previa con conflictos marcados por seccion y reporte final con creadas, omitidas y errores.
+  - Regex de Pi-hole en forma wildcard se convierten a `*.dominio`; el resto solo en listas de grupo. Clientes por subred, hostname o interfaz se reportan como no soportados.
+  - Test `pihole/parse_test.go` con un archivo sintetico.
+
 - [x] FEATURE: API keys con scopes
   - Scopes: read, write, backup, metrics, admin.
   - Expiracion, revocacion y nombre descriptivo.

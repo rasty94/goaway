@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Ecosystem
+* **Pi-hole Import Wizard**: upload a Pi-hole v6 Teleporter zip under *Pi-hole Import*, review every adlist, domain, group, client assignment, local DNS record, upstream and static DHCP lease it contains (entries that already exist are flagged), pick the sections to apply and get a per-section report. Pi-hole wildcard regexes become GoAway wildcards; other regexes are kept for group lists and reported as unsupported for the global blacklist.
+
 ### High Availability
 * **Persistent Replication Outbox**: cluster events are now stored per peer in the `replication_outbox` table and pushed in order until the peer acknowledges them, so a replica that was offline catches up when it returns. Replaces the in-memory queue that dropped events when full. Rows older than 24h are discarded.
 * **Wider Replication Coverage**: group flags and per-group blocked/allowed domains, client group assignments, local DNS resolutions and DHCPv6 leases now replicate. Group and resolution replicators were not wired before.

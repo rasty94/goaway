@@ -221,6 +221,7 @@ func (api *API) setupRoutes() {
 	api.registerTeleporterRoutes()
 	api.registerRemoteBackupRoutes()
 	api.registerHARoutes()
+	api.registerPiholeImportRoutes()
 
 	// Metrics route
 	api.router.GET("/metrics", gin.WrapH(promhttp.Handler()))

@@ -14,6 +14,7 @@ import { Upstream } from "./upstream";
 import { Whitelist } from "./whitelist";
 import { Users } from "./users";
 import { Cluster } from "./cluster";
+import { PiholeImport } from "./pihole-import";
 import { GenerateQuote } from "@/quotes";
 import Login from "./login";
 import { FileXIcon } from "@phosphor-icons/react";
@@ -57,6 +58,7 @@ function App() {
             <Route path="/clients" element={<Clients />} />
             <Route path="/users" element={<Users />} />
             <Route path="/cluster" element={<Cluster />} />
+            <Route path="/import/pihole" element={<PiholeImport />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/changelog" element={<Changelog />} />
             <Route path="*" element={<NotFound />} />

@@ -162,6 +162,16 @@ func (s *Service) RefreshCache() error {
 	return nil
 }
 
+func (s *Service) ListBlockedDomains() []database.GroupBlockedDomain {
+	rows, _ := s.repository.GetBlockedDomains()
+	return rows
+}
+
+func (s *Service) ListAllowedDomains() []database.GroupAllowedDomain {
+	rows, _ := s.repository.GetAllowedDomains()
+	return rows
+}
+
 func (s *Service) GetGroups() ([]database.ClientGroup, error) {
 	return s.repository.GetGroups()
 }

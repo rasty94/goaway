@@ -58,6 +58,10 @@ export function SiteHeader() {
       title: "Clients",
       description: "See connected clients and their activity"
     },
+    "/import/pihole": {
+      title: "Pi-hole Import",
+      description: "Bring lists, groups, clients and local DNS over from Pi-hole"
+    },
     "/settings": {
       title: "Settings",
       description: "Customize server behavior and UI options"

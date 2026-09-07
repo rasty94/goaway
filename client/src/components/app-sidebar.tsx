@@ -12,6 +12,7 @@ import { GenerateQuote } from "@/quotes";
 import {
   BrowserIcon,
   CloudArrowUpIcon,
+  DownloadSimpleIcon,
   GearIcon,
   GithubLogoIcon,
   HouseIcon,
@@ -94,6 +95,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             }
           ]
         : []),
+      {
+        title: t("sidebar.piholeImport"),
+        url: "/import/pihole",
+        icon: DownloadSimpleIcon
+      },
       {
         title: t("sidebar.settings"),
         url: "/settings",

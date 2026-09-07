@@ -15,7 +15,8 @@
     "changelog": "Changelog",
     "website": "Website",
     "github": "GitHub",
-    "logout": "Logout"
+    "logout": "Logout",
+    "piholeImport": "Pi-hole Import"
   },
   "common": {
     "loading": "Loading...",
@@ -287,7 +288,6 @@
         "empty": "No active dynamic leases.",
         "convertToStatic": "Convert to Static"
       },
-
       "toasts": {
         "settingsSaved": "DHCP settings saved",
         "started": "DHCP service started",
@@ -419,5 +419,43 @@
     "cannotDeleteAdmin": "Cannot delete the default admin user",
     "adminHint": "Admins can manage settings, lists, and other users.",
     "viewerHint": "Viewers have read-only access to the dashboard and logs."
+  },
+  "piholeImport": {
+    "title": "Import from Pi-hole",
+    "description": "Upload a Pi-hole v6 Teleporter archive, review what it contains and apply the parts you want.",
+    "step1": "1. Upload the Teleporter archive",
+    "step1Help": "In Pi-hole go to Settings → Teleporter → Export. The zip is read on this server and never stored.",
+    "preview": "Analyse",
+    "parsing": "Analysing...",
+    "previewError": "Could not read the archive",
+    "step2": "2. Review",
+    "step2Help": "Entries that already exist are skipped. Untick a section to leave it out.",
+    "counts": "{{pending}} new · {{conflicts}} already present",
+    "entry": "Entry",
+    "status": "Status",
+    "exists": "Exists",
+    "new": "New",
+    "showAll": "Show all {{count}}",
+    "showLess": "Show fewer",
+    "skippedTitle": "{{count}} entries cannot be imported",
+    "apply": "Import {{count}} entries",
+    "applied": "Import finished",
+    "step3": "3. Report",
+    "section": "Section",
+    "created": "Created",
+    "skipped": "Skipped",
+    "errorsTitle": "{{count}} errors",
+    "restartHint": "Adlists are downloaded on the next list update. Upstream changes need a restart to take effect.",
+    "sections": {
+      "adlists": "Block lists (adlists)",
+      "blacklist": "Blacklist domains",
+      "whitelist": "Whitelist domains",
+      "groups": "Groups",
+      "groupDomains": "Per-group domains",
+      "clients": "Client group assignments",
+      "resolutions": "Local DNS records",
+      "upstreams": "Upstream servers",
+      "staticLeases": "Static DHCP leases"
+    }
   }
 }

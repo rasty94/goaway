@@ -14,7 +14,8 @@
     "changelog": "Cambios",
     "website": "Sitio web",
     "github": "GitHub",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "piholeImport": "Importar Pi-hole"
   },
   "common": {
     "loading": "Cargando...",
@@ -286,7 +287,6 @@
         "empty": "No hay concesiones dinámicas activas.",
         "convertToStatic": "Convertir a Estática"
       },
-
       "toasts": {
         "settingsSaved": "Ajustes DHCP guardados",
         "started": "Servicio DHCP iniciado",
@@ -418,5 +418,43 @@
     "cannotDeleteAdmin": "No se puede eliminar el usuario administrador por defecto",
     "adminHint": "Los administradores pueden gestionar ajustes, listas y otros usuarios.",
     "viewerHint": "Los observadores tienen acceso de solo lectura al panel y los registros."
+  },
+  "piholeImport": {
+    "title": "Importar desde Pi-hole",
+    "description": "Sube un archivo Teleporter de Pi-hole v6, revisa lo que contiene y aplica las partes que quieras.",
+    "step1": "1. Sube el archivo Teleporter",
+    "step1Help": "En Pi-hole ve a Settings → Teleporter → Export. El zip se lee en este servidor y no se guarda.",
+    "preview": "Analizar",
+    "parsing": "Analizando...",
+    "previewError": "No se pudo leer el archivo",
+    "step2": "2. Revisión",
+    "step2Help": "Las entradas que ya existen se omiten. Desmarca una sección para dejarla fuera.",
+    "counts": "{{pending}} nuevas · {{conflicts}} ya existentes",
+    "entry": "Entrada",
+    "status": "Estado",
+    "exists": "Existe",
+    "new": "Nueva",
+    "showAll": "Mostrar las {{count}}",
+    "showLess": "Mostrar menos",
+    "skippedTitle": "{{count}} entradas no se pueden importar",
+    "apply": "Importar {{count}} entradas",
+    "applied": "Importación terminada",
+    "step3": "3. Informe",
+    "section": "Sección",
+    "created": "Creadas",
+    "skipped": "Omitidas",
+    "errorsTitle": "{{count}} errores",
+    "restartHint": "Las adlists se descargan en la próxima actualización de listas. Los cambios de upstream requieren reinicio.",
+    "sections": {
+      "adlists": "Listas de bloqueo (adlists)",
+      "blacklist": "Dominios en lista negra",
+      "whitelist": "Dominios en lista blanca",
+      "groups": "Grupos",
+      "groupDomains": "Dominios por grupo",
+      "clients": "Asignación de clientes a grupos",
+      "resolutions": "Registros DNS locales",
+      "upstreams": "Servidores upstream",
+      "staticLeases": "Leases DHCP estáticos"
+    }
   }
 }

@@ -15,7 +15,7 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
 | EPIC-05 HA Active | Versionado para conflictos tras split-brain | P2 | Auth, outbox y cobertura hechos |
-| EPIC-06 Ecosystem | Importador Pi-hole, Helm/Terraform | P1 | API keys hechas |
+| EPIC-06 Ecosystem | Helm/Terraform | P1 | API keys e importador Pi-hole hechos |
 | EPIC-07 Enterprise Auth | OIDC, LDAP/AD, passkeys, RBAC fino | P2 | Sin empezar |
 | EPIC-08 DHCPv6 y RA | Consistencia de politicas dual-stack | P2 | DHCPv6+RA hechos |
 
@@ -53,14 +53,6 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
     - Test de reconciliacion tras un cambio de lider.
 
 ### EPIC-06 Ecosystem
-
-- [ ] FEATURE: Wizard de importacion Pi-hole
-  - Prioridad: p1
-  - Labels: feature, api, frontend
-  - Criterios de aceptacion:
-    - Importa listas, grupos, clientes, DNS local, regex y settings.
-    - Vista previa con conflictos antes de aplicar.
-    - Reporte final de migracion.
 
 - [ ] FEATURE: Helm chart + provider Terraform oficial
   - Prioridad: p1
@@ -114,7 +106,7 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 - [x] v0.9 Resolver: EPIC-01 + base de EPIC-03.
 - [x] v1.0 Policy: EPIC-02 + resto de EPIC-03 + privacidad base.
-- [ ] v1.1 Cluster: importador Pi-hole. EPIC-05 (auth, outbox persistente), API keys con scopes ya hechas.
+- [x] v1.1 Cluster: EPIC-05 (auth, outbox persistente), importador Pi-hole y API keys con scopes.
 - [ ] v1.2 Enterprise: auth avanzada + consistencia dual-stack + ecosistema IaC/SDK.
 
 Nota: el CHANGELOG va por 0.93.0 mientras que v0.9 y v1.0 ya estan cubiertos funcionalmente. Decidir si se salta a 1.0.0 en la proxima release.

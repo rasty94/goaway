@@ -23,6 +23,7 @@ Instructions for installation, configuration and more can be found on the homepa
 - Web-based admin dashboard
 - Cross-platform & Docker support
 - Customizable blocking rules
+- One-click migration from Pi-hole v6 (Teleporter import with preview)
 - Real-time statistics
 - Low resource footprint
 - And much more...
