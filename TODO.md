@@ -46,10 +46,8 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 - [ ] HA: resync automatico cuando un peer pierde eventos. Bloqueado por diseno: `ImportTeleporterData` reemplaza el fichero de base de datos entero y exige reinicio, asi que no vale como resync en caliente. Hace falta un snapshot logico (listas, grupos, clientes, DNS local, leases) aplicable sin reiniciar, o un endpoint de re-seed que reinicie el nodo de forma controlada. Mientras tanto la perdida ya no es silenciosa: el nodo se marca "Out of sync" en el dashboard.
 - [ ] HA: peers por HTTPS o firma de la respuesta de heartbeat. Un MITM en la red de peers puede forzar la eleccion.
 - [ ] HA: cache de nonces en la ventana de 30 s (hoy un evento capturado se puede reenviar dentro de la ventana; efecto idempotente).
-- [ ] HA: los endpoints de cluster estan fuera del rate limiter y escriben una fila de audit por rechazo; limitar o registrar solo en log.
 - [ ] Import: `Exists` en clientes se calcula como "tiene alguna asignacion"; deberia comparar el conjunto de grupos.
 - [ ] Config: `settings.Config` se lee desde el resolver y se escribe desde la API sin mutex (upstreams, DHCP, cache). Hoy se mitiga con copy-on-write en upstreams; hace falta un puntero atomico o RWMutex en el hot path.
-- [ ] Banner de arranque (`asciiart.go`) imprime `dns.upstream.preferred`, siempre vacio tras la migracion; usar `servers[0]`.
 - [ ] Simplificaciones pendientes de ponytail-review: los nueve bloques `if !Exists` en `piholeImportApply` siguen repitiendo el mismo esqueleto.
 
 ## P1 - Operacion, Resiliencia y Ecosistema

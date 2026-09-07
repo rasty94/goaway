@@ -164,6 +164,10 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 - [x] HA: test de integracion con dos nodos reales (`api/cluster_integration_test.go`): replicacion extremo a extremo, rechazo de firmas invalidas, 409 en split-brain, eleccion por prioridad y recuperacion del outbox tras una caida. Descubrio una condicion de carrera real en el rol del nodo, ya corregida.
 - [x] HA: backlog de replicacion visible por nodo (`pendingEvents`, `needsResync`) en la API y el dashboard, con log de error al descartar eventos.
 
+- [x] HA: los rechazos en los endpoints de cluster ya no escriben una fila de audit por peticion; como maximo una por minuto.
+- [x] Banner de arranque: muestra el primer servidor configurado en vez del campo legado `preferred`, siempre vacio.
+- [x] HA: `selfRole` protegido por su propio mutex. La goroutine de eleccion lo escribia mientras las peticiones lo leian sin lock, asi que un nodo degradado podia seguir aceptando eventos replicados.
+
 ## EPIC-06 Ecosystem (P1)
 
 - [x] FEATURE: Wizard de importacion Pi-hole (2026-09-07)
