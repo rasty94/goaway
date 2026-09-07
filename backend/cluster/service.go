@@ -98,10 +98,16 @@ func (s *Service) heartbeatLoop() {
 		case <-s.stopCh:
 			return
 		case <-ticker.C:
-			s.pingPeers()
-			s.evaluateLeader()
+			s.Tick()
 		}
 	}
+}
+
+// Tick runs one heartbeat + election round. Exported so tests can drive a round
+// without waiting on the ticker.
+func (s *Service) Tick() {
+	s.pingPeers()
+	s.evaluateLeader()
 }
 
 func (s *Service) pingPeers() {

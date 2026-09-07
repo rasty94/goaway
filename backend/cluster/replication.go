@@ -121,6 +121,9 @@ func (rm *ReplicationManager) loop() {
 	}
 }
 
+// Flush drains the outbox now. Exported so tests can drive replication without the ticker.
+func (rm *ReplicationManager) Flush() { rm.flush() }
+
 // flush drains every peer's queue concurrently; each peer is still served strictly in order.
 func (rm *ReplicationManager) flush() {
 	var wg sync.WaitGroup
