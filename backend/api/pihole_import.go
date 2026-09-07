@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -31,19 +30,14 @@ func (api *API) registerPiholeImportRoutes() {
 //	@Success 200
 //	@Router /import/pihole/preview [post]
 func (api *API) piholeImportPreview(c *gin.Context) {
-	file, _, err := c.Request.FormFile("backup")
+	file, header, err := c.Request.FormFile("backup")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "backup file is required"})
 		return
 	}
 	defer file.Close()
 
-	data, err := io.ReadAll(io.LimitReader(file, 512<<20))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot read upload"})
-		return
-	}
-	plan, err := pihole.Parse(data)
+	plan, err := pihole.Parse(file, header.Size)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -195,16 +189,36 @@ func (api *API) piholeImportApply(c *gin.Context) {
 		}
 	}
 	if on("blacklist") {
+		var patterns []string
+		seen := map[string]bool{}
 		for _, d := range plan.Blacklist {
-			var err error
-			if !d.Exists {
-				if strings.HasPrefix(d.Pattern, "*.") {
-					err = api.BlacklistService.AddWildcard(ctx, d.Pattern)
-				} else {
-					err = api.BlacklistService.AddBlacklistedDomain(ctx, d.Pattern)
+			if d.Exists {
+				count("blacklist", true, nil)
+				continue
+			}
+			if !seen[d.Pattern] {
+				seen[d.Pattern] = true
+				patterns = append(patterns, d.Pattern)
+			}
+		}
+		if len(patterns) > 0 {
+			if err := api.BlacklistService.AddCustomDomains(ctx, patterns); err == nil {
+				report.Created["blacklist"] += len(patterns)
+			} else {
+				// Batch failed (e.g. one entry already exists): fall back so the report shows which entries failed.
+				for _, d := range plan.Blacklist {
+					if d.Exists {
+						continue
+					}
+					var err error
+					if strings.HasPrefix(d.Pattern, "*.") {
+						err = api.BlacklistService.AddWildcard(ctx, d.Pattern)
+					} else {
+						err = api.BlacklistService.AddBlacklistedDomain(ctx, d.Pattern)
+					}
+					count("blacklist", false, err)
 				}
 			}
-			count("blacklist", d.Exists, err)
 		}
 	}
 	if on("whitelist") {
@@ -227,19 +241,41 @@ func (api *API) piholeImportApply(c *gin.Context) {
 	}
 	groupIDs := api.groupIDsByName()
 	if on("groupDomains") {
+		blockedByGroup := map[uint][]string{}
+		allowedByGroup := map[uint][]string{}
 		for _, gd := range plan.GroupDomains {
-			var err error
-			id, ok := groupIDs[gd.Group]
-			switch {
-			case gd.Exists:
-			case !ok:
-				err = fmt.Errorf("group %q does not exist; import groups first", gd.Group)
-			case gd.Blocked:
-				err = api.GroupService.AddBlockedDomain(id, gd.Pattern)
-			default:
-				err = api.GroupService.AddAllowedDomain(id, gd.Pattern)
+			if gd.Exists {
+				count("groupDomains", true, nil)
+				continue
 			}
-			count("groupDomains", gd.Exists, err)
+			id, ok := groupIDs[gd.Group]
+			if !ok {
+				count("groupDomains", false, fmt.Errorf("group %q does not exist; import groups first", gd.Group))
+				continue
+			}
+			if gd.Blocked {
+				blockedByGroup[id] = append(blockedByGroup[id], gd.Pattern)
+			} else {
+				allowedByGroup[id] = append(allowedByGroup[id], gd.Pattern)
+			}
+		}
+		for id, patterns := range blockedByGroup {
+			if err := api.GroupService.AddBlockedDomains(id, patterns); err == nil {
+				report.Created["groupDomains"] += len(patterns)
+				continue
+			}
+			for _, pattern := range patterns {
+				count("groupDomains", false, api.GroupService.AddBlockedDomain(id, pattern))
+			}
+		}
+		for id, patterns := range allowedByGroup {
+			if err := api.GroupService.AddAllowedDomains(id, patterns); err == nil {
+				report.Created["groupDomains"] += len(patterns)
+				continue
+			}
+			for _, pattern := range patterns {
+				count("groupDomains", false, api.GroupService.AddAllowedDomain(id, pattern))
+			}
 		}
 	}
 	if on("clients") {

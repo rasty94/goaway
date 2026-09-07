@@ -135,6 +135,25 @@ func TestOutboxDropsEventsThePeerRefuses(t *testing.T) {
 	}
 }
 
+func TestBroadcastQueuesBlacklistAddBatch(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	_ = db.AutoMigrate(&database.ReplicationOutbox{})
+	cfg := &settings.Config{}
+	cfg.HighAvailability.Mode = "primary"
+	cfg.HighAvailability.Secret = "s3cret"
+	cfg.HighAvailability.Peers = []string{"http://127.0.0.1:1"}
+	s := NewService(cfg, "node-1", db)
+	s.initializePeers()
+
+	s.Broadcast(ReplicatedEvent{Type: EventBlacklistAddBatch, Payload: map[string][]string{"domains": {"a.test", "b.test"}}})
+
+	var n int64
+	db.Model(&database.ReplicationOutbox{}).Count(&n)
+	if n != 1 {
+		t.Fatalf("expected 1 queued batch event, got %d", n)
+	}
+}
+
 func TestBroadcastIsOffWithoutSecret(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
 	_ = db.AutoMigrate(&database.ReplicationOutbox{})

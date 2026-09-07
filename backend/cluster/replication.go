@@ -17,6 +17,7 @@ type EventType string
 
 const (
 	EventBlacklistAdd       EventType = "blacklist.add"
+	EventBlacklistAddBatch  EventType = "blacklist.add.batch"
 	EventBlacklistRemove    EventType = "blacklist.remove"
 	EventWhitelistAdd       EventType = "whitelist.add"
 	EventWhitelistRemove    EventType = "whitelist.remove"

@@ -72,7 +72,8 @@ func buildArchive(t *testing.T) []byte {
 }
 
 func TestParseTeleporter(t *testing.T) {
-	plan, err := Parse(buildArchive(t))
+	data := buildArchive(t)
+	plan, err := Parse(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +130,8 @@ func TestParseRejectsForeignZip(t *testing.T) {
 	w, _ := zw.Create("settings.json")
 	w.Write([]byte("{}"))
 	zw.Close()
-	if _, err := Parse(buf.Bytes()); err == nil {
+	data := buf.Bytes()
+	if _, err := Parse(bytes.NewReader(data), int64(len(data))); err == nil {
 		t.Fatal("expected error for a non Pi-hole archive")
 	}
 }

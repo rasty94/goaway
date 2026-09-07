@@ -279,6 +279,31 @@ func (s *Service) AddBlockedDomain(groupID uint, domainName string) error {
 	return s.RefreshCache()
 }
 
+// AddBlockedDomains inserts every domain in one pass and refreshes the cache exactly once at the
+// end, instead of once per domain. It keeps inserting after an error so every domain gets a
+// chance, and still refreshes the cache on partial failure so it matches what actually made it
+// into the database.
+func (s *Service) AddBlockedDomains(groupID uint, domains []string) error {
+	var firstErr error
+	for _, domainName := range domains {
+		domainName = normalizeDomain(domainName)
+		if domainName == "" {
+			continue
+		}
+		if err := s.repository.AddBlockedDomain(groupID, domainName); err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		s.broadcast(cluster.EventGroupBlockedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
+	}
+	if err := s.RefreshCache(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return firstErr
+}
+
 func (s *Service) RemoveBlockedDomain(groupID uint, domainName string) error {
 	domainName = normalizeDomain(domainName)
 	if err := s.repository.RemoveBlockedDomain(groupID, domainName); err != nil {
@@ -298,6 +323,28 @@ func (s *Service) AddAllowedDomain(groupID uint, domainName string) error {
 	}
 	s.broadcast(cluster.EventGroupAllowedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
 	return s.RefreshCache()
+}
+
+// AddAllowedDomains is the allowlist counterpart of AddBlockedDomains.
+func (s *Service) AddAllowedDomains(groupID uint, domains []string) error {
+	var firstErr error
+	for _, domainName := range domains {
+		domainName = normalizeDomain(domainName)
+		if domainName == "" {
+			continue
+		}
+		if err := s.repository.AddAllowedDomain(groupID, domainName); err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		s.broadcast(cluster.EventGroupAllowedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
+	}
+	if err := s.RefreshCache(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return firstErr
 }
 
 func (s *Service) RemoveAllowedDomain(groupID uint, domainName string) error {

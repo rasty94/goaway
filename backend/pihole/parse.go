@@ -3,7 +3,6 @@ package pihole
 
 import (
 	"archive/zip"
-	"bytes"
 	"fmt"
 	"io"
 	"net"
@@ -88,9 +87,9 @@ func (p *Plan) skip(format string, args ...interface{}) {
 	p.Skipped = append(p.Skipped, fmt.Sprintf(format, args...))
 }
 
-// Parse reads a Teleporter zip (Pi-hole v6) from memory.
-func Parse(data []byte) (*Plan, error) {
-	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+// Parse reads a Teleporter zip (Pi-hole v6) straight off r, sized size (an *os.File or multipart.File).
+func Parse(r io.ReaderAt, size int64) (*Plan, error) {
+	zr, err := zip.NewReader(r, size)
 	if err != nil {
 		return nil, fmt.Errorf("not a zip archive: %w", err)
 	}
@@ -104,11 +103,7 @@ func Parse(data []byte) (*Plan, error) {
 	for _, f := range zr.File {
 		switch path.Base(f.Name) {
 		case "gravity.db":
-			content, err := readEntry(f)
-			if err != nil {
-				return nil, err
-			}
-			if err := plan.readGravity(content); err != nil {
+			if err := plan.readGravityEntry(f); err != nil {
 				return nil, err
 			}
 			found = true
@@ -135,7 +130,6 @@ func readEntry(f *zip.File) ([]byte, error) {
 		return nil, fmt.Errorf("cannot open %s: %w", f.Name, err)
 	}
 	defer rc.Close()
-	// ponytail: 256 MB cap; a gravity.db bigger than that is all downloaded list rows we do not read anyway
 	return io.ReadAll(io.LimitReader(rc, 256<<20))
 }
 
@@ -148,19 +142,35 @@ type gravityGroup struct {
 	Description string
 }
 
-func (p *Plan) readGravity(content []byte) error {
+// readGravityEntry streams the gravity.db zip entry straight into a temp file (no in-memory copy)
+// and hands the path to readGravity to open as SQLite.
+func (p *Plan) readGravityEntry(f *zip.File) error {
+	rc, err := f.Open()
+	if err != nil {
+		return fmt.Errorf("cannot open %s: %w", f.Name, err)
+	}
+	defer rc.Close()
+
 	tmp, err := os.CreateTemp("", "pihole-gravity-*.db")
 	if err != nil {
 		return err
 	}
 	tmpPath := tmp.Name()
 	defer os.Remove(tmpPath)
-	if _, err := tmp.Write(content); err != nil {
+
+	// ponytail: 256 MB cap; a gravity.db bigger than that is all downloaded list rows we do not read anyway
+	if _, err := io.Copy(tmp, io.LimitReader(rc, 256<<20)); err != nil {
 		tmp.Close()
 		return err
 	}
-	tmp.Close()
+	if err := tmp.Close(); err != nil {
+		return err
+	}
 
+	return p.readGravity(tmpPath)
+}
+
+func (p *Plan) readGravity(tmpPath string) error {
 	db, err := gorm.Open(sqlite.Open("file:"+filepath.ToSlash(tmpPath)+"?mode=ro"), &gorm.Config{Logger: logger.Discard})
 	if err != nil {
 		return fmt.Errorf("gravity.db is not a valid SQLite database: %w", err)

@@ -569,7 +569,7 @@ func (s *Service) AddCustomDomains(ctx context.Context, domains []string) error 
 		}
 	}
 
-	return s.repository.WithTransaction(ctx, func(tx *gorm.DB) error {
+	err := s.repository.WithTransaction(ctx, func(tx *gorm.DB) error {
 		currentTime := time.Now()
 
 		source, err := s.repository.GetSourceByName(ctx, "Custom")
@@ -611,6 +611,18 @@ func (s *Service) AddCustomDomains(ctx context.Context, domains []string) error 
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	if s.replicator != nil {
+		s.replicator.Broadcast(cluster.ReplicatedEvent{
+			Type:    cluster.EventBlacklistAddBatch,
+			Payload: map[string][]string{"domains": domains},
+		})
+	}
+
+	return nil
 }
 
 func (s *Service) RemoveCustomDomain(ctx context.Context, domain string) error {

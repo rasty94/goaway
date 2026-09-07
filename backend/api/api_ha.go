@@ -275,6 +275,8 @@ func (api *API) handleReplication(c *gin.Context) {
 	switch event.Type {
 	case cluster.EventBlacklistAdd:
 		err = api.handleBlacklistReplication(event.Payload)
+	case cluster.EventBlacklistAddBatch:
+		err = api.handleBlacklistAddBatchReplication(event.Payload)
 	case cluster.EventBlacklistRemove:
 		err = api.handleBlacklistRemoveReplication(event.Payload)
 	case cluster.EventWhitelistAdd:
@@ -330,6 +332,30 @@ func (api *API) handleBlacklistReplication(payload interface{}) error {
 
 	// Add without re-broadcasting
 	return api.BlacklistService.AddBlacklistedDomain(context.Background(), domainStr)
+}
+
+// handleBlacklistAddBatchReplication applies a batch add on a replica. AddCustomDomains errors on
+// the first domain that is already blacklisted, so redelivery would otherwise fail on domains this
+// replica already applied; filter those out first so a retried batch is a no-op instead of an error.
+func (api *API) handleBlacklistAddBatchReplication(payload interface{}) error {
+	var p struct {
+		Domains []string `json:"domains"`
+	}
+	if err := decodePayload(payload, &p); err != nil {
+		return fmt.Errorf("invalid blacklist batch payload")
+	}
+
+	remaining := make([]string, 0, len(p.Domains))
+	for _, d := range p.Domains {
+		if !api.BlacklistService.IsBlacklisted(d) {
+			remaining = append(remaining, d)
+		}
+	}
+	if len(remaining) == 0 {
+		return nil
+	}
+
+	return api.BlacklistService.AddCustomDomains(context.Background(), remaining)
 }
 
 func (api *API) handleBlacklistRemoveReplication(payload interface{}) error {
