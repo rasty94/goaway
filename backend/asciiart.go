@@ -41,7 +41,11 @@ func ASCIIArt(config *settings.Config, blockedDomains int, version string, disab
 
 	portFormatted := colorize(Green, fmt.Sprintf("%d", config.DNS.Ports.TCPUDP))
 	adminPanelFormatted := colorize(Red, fmt.Sprintf("%d", config.API.Port))
-	upstreamFormatted := colorize(Cyan, config.DNS.Upstream.Preferred)
+	preferredUpstream := ""
+	if len(config.DNS.Upstream.Servers) > 0 {
+		preferredUpstream = config.DNS.Upstream.Servers[0].Address
+	}
+	upstreamFormatted := colorize(Cyan, preferredUpstream)
 	authFormatted := colorize(Yellow, fmt.Sprintf("%v", disableAuth))
 	cacheTTLFormatted := colorize(Blue, fmt.Sprintf("%d", config.DNS.CacheTTL))
 	blockedDomainsFormatted := colorize(Magenta, fmt.Sprintf("%d", blockedDomains))

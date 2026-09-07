@@ -92,8 +92,9 @@ type API struct {
 	ClusterManager      *cluster.Service
 	DNSProxy            *cluster.DNSProxy
 
-	server         *http.Server
-	IsShuttingDown bool
+	server           *http.Server
+	IsShuttingDown   bool
+	clusterAuthAudit auditThrottle
 }
 
 func (api *API) Start(content embed.FS, errorChannel chan struct{}) {

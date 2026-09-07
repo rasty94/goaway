@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"goaway/backend/cluster"
 	"goaway/backend/settings"
@@ -192,5 +193,19 @@ func TestClusterAuthAcceptsSignedRequest(t *testing.T) {
 	var resp cluster.HeartbeatResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil || resp.Status != "online" {
 		t.Fatalf("unexpected heartbeat response: %s", w.Body.String())
+	}
+}
+
+func TestAuditThrottleAllowsOnePerWindow(t *testing.T) {
+	var throttle auditThrottle
+	if !throttle.allow() {
+		t.Fatal("first rejection should be audited")
+	}
+	if throttle.allow() {
+		t.Fatal("second rejection inside the window should not be audited")
+	}
+	throttle.last = time.Now().Add(-2 * clusterAuditWindow)
+	if !throttle.allow() {
+		t.Fatal("rejection after the window should be audited again")
 	}
 }

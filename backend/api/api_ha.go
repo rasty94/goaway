@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,25 @@ func (api *API) registerHARoutes() {
 	native.POST("/replicate", api.handleReplication)
 }
 
-// clusterAuth verifies the peer signature over timestamp+body and fails closed when no secret is configured.
+const clusterAuditWindow = time.Minute
+
+// auditThrottle keeps a flood of rejected cluster requests from filling the audit table.
+type auditThrottle struct {
+	mu   sync.Mutex
+	last time.Time
+}
+
+func (t *auditThrottle) allow() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if time.Since(t.last) < clusterAuditWindow {
+		return false
+	}
+	t.last = time.Now()
+	return true
+}
+
+// clusterAuth verifies the peer signature over timestamp+path+body and fails closed when no secret is configured.
 func (api *API) clusterAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body, err := io.ReadAll(io.LimitReader(c.Request.Body, 1<<20))
@@ -49,7 +68,9 @@ func (api *API) clusterAuth() gin.HandlerFunc {
 		if err := cluster.VerifyRequest(c.Request.Header, api.Config.HighAvailability.Secret, c.Request.URL.Path, body, time.Now()); err != nil {
 			msg := fmt.Sprintf("Rejected cluster request from %s to %s: %v", c.ClientIP(), c.Request.URL.Path, err)
 			log.Warning("[HA/Cluster] %s", msg)
-			if api.AuditService != nil {
+			// These routes are unauthenticated by definition, so one audit row per request
+			// would let anyone fill the table. Record at most one per window.
+			if api.AuditService != nil && api.clusterAuthAudit.allow() {
 				api.AuditService.CreateAudit(&audit.Entry{Topic: audit.TopicAPI, Message: msg, CreatedAt: time.Now()})
 			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid cluster signature"})
