@@ -48,9 +48,7 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 - [ ] HA: cache de nonces en la ventana de 30 s (hoy un evento capturado se puede reenviar dentro de la ventana; efecto idempotente).
 - [ ] HA: los endpoints de cluster estan fuera del rate limiter y escriben una fila de audit por rechazo; limitar o registrar solo en log.
 - [ ] HA: test de integracion con dos nodos en proceso (eleccion por prioridad, replicacion extremo a extremo, 409 en split-brain).
-- [ ] Import: lotes en vez de una transaccion por entrada (`AddCustomDomains` una vez, `RefreshCache` una vez por seccion) y lectura del zip en streaming. Un export con 20k entradas tarda minutos y bloquea el escritor de SQLite.
 - [ ] Import: `Exists` en clientes se calcula como "tiene alguna asignacion"; deberia comparar el conjunto de grupos.
-- [ ] Upstreams: la API (`/api/upstream`) escribe en `dns.upstream.fallback`, campo legado que la migracion de esquema vacia, mientras el resolver lee `servers`. Verificar y unificar.
 - [ ] Simplificaciones pendientes de ponytail-review: truncado JS de tablas por `max-h` CSS, `describe()` como mapa tipado, nueve bloques `if !Exists` en apply, helper `broadcast` en resolution como en group.
 
 ## P1 - Operacion, Resiliencia y Ecosistema
