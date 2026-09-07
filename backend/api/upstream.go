@@ -82,12 +82,17 @@ func (api *API) createUpstream(c *gin.Context) {
 		name = getUpstreamName(host)
 	}
 
-	api.Config.DNS.Upstream.Servers = append(api.Config.DNS.Upstream.Servers, settings.UpstreamServer{
+	cur := api.Config.DNS.Upstream.Servers
+	// copy-on-write: the resolver ranges over Servers concurrently
+	next := make([]settings.UpstreamServer, 0, len(cur)+1)
+	next = append(next, cur...)
+	next = append(next, settings.UpstreamServer{
 		Name:     name,
 		Address:  upstream,
 		Protocol: "udp",
 		Enabled:  true,
 	})
+	api.Config.DNS.Upstream.Servers = next
 	api.Config.Save()
 
 	log.Info("Added %s as a new upstream", upstream)
@@ -379,9 +384,16 @@ func (api *API) updatePreferredUpstream(c *gin.Context) {
 		return
 	}
 
-	server := api.Config.DNS.Upstream.Servers[idx]
-	servers := append(api.Config.DNS.Upstream.Servers[:idx], api.Config.DNS.Upstream.Servers[idx+1:]...)
-	api.Config.DNS.Upstream.Servers = append([]settings.UpstreamServer{server}, servers...)
+	cur := api.Config.DNS.Upstream.Servers
+	// copy-on-write: the resolver ranges over Servers concurrently
+	next := make([]settings.UpstreamServer, 0, len(cur))
+	next = append(next, cur[idx])
+	for i, s := range cur {
+		if i != idx {
+			next = append(next, s)
+		}
+	}
+	api.Config.DNS.Upstream.Servers = next
 
 	message := fmt.Sprintf("Preferred upstream set to %s", request.Upstream)
 	log.Info("%s", message)
@@ -407,9 +419,15 @@ func (api *API) deleteUpstream(c *gin.Context) {
 		return
 	}
 
-	api.Config.DNS.Upstream.Servers = slices.DeleteFunc(api.Config.DNS.Upstream.Servers, func(s settings.UpstreamServer) bool {
-		return s.Address == upstreamToDelete
-	})
+	cur := api.Config.DNS.Upstream.Servers
+	// copy-on-write: the resolver ranges over Servers concurrently
+	next := make([]settings.UpstreamServer, 0, len(cur))
+	for _, s := range cur {
+		if s.Address != upstreamToDelete {
+			next = append(next, s)
+		}
+	}
+	api.Config.DNS.Upstream.Servers = next
 	api.Config.Save()
 	log.Info("Removed upstream: %s", upstreamToDelete)
 

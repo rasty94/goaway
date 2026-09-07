@@ -282,26 +282,27 @@ func (s *Service) AddBlockedDomain(groupID uint, domainName string) error {
 // AddBlockedDomains inserts every domain in one pass and refreshes the cache exactly once at the
 // end, instead of once per domain. It keeps inserting after an error so every domain gets a
 // chance, and still refreshes the cache on partial failure so it matches what actually made it
-// into the database.
-func (s *Service) AddBlockedDomains(groupID uint, domains []string) error {
-	var firstErr error
+// into the database. inserted reports how many domains actually landed, since err only ever
+// carries the first failure.
+func (s *Service) AddBlockedDomains(groupID uint, domains []string) (inserted int, err error) {
 	for _, domainName := range domains {
 		domainName = normalizeDomain(domainName)
 		if domainName == "" {
 			continue
 		}
-		if err := s.repository.AddBlockedDomain(groupID, domainName); err != nil {
-			if firstErr == nil {
-				firstErr = err
+		if insErr := s.repository.AddBlockedDomain(groupID, domainName); insErr != nil {
+			if err == nil {
+				err = insErr
 			}
 			continue
 		}
+		inserted++
 		s.broadcast(cluster.EventGroupBlockedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
 	}
-	if err := s.RefreshCache(); err != nil && firstErr == nil {
-		firstErr = err
+	if refreshErr := s.RefreshCache(); refreshErr != nil && err == nil {
+		err = refreshErr
 	}
-	return firstErr
+	return inserted, err
 }
 
 func (s *Service) RemoveBlockedDomain(groupID uint, domainName string) error {
@@ -326,25 +327,25 @@ func (s *Service) AddAllowedDomain(groupID uint, domainName string) error {
 }
 
 // AddAllowedDomains is the allowlist counterpart of AddBlockedDomains.
-func (s *Service) AddAllowedDomains(groupID uint, domains []string) error {
-	var firstErr error
+func (s *Service) AddAllowedDomains(groupID uint, domains []string) (inserted int, err error) {
 	for _, domainName := range domains {
 		domainName = normalizeDomain(domainName)
 		if domainName == "" {
 			continue
 		}
-		if err := s.repository.AddAllowedDomain(groupID, domainName); err != nil {
-			if firstErr == nil {
-				firstErr = err
+		if insErr := s.repository.AddAllowedDomain(groupID, domainName); insErr != nil {
+			if err == nil {
+				err = insErr
 			}
 			continue
 		}
+		inserted++
 		s.broadcast(cluster.EventGroupAllowedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
 	}
-	if err := s.RefreshCache(); err != nil && firstErr == nil {
-		firstErr = err
+	if refreshErr := s.RefreshCache(); refreshErr != nil && err == nil {
+		err = refreshErr
 	}
-	return firstErr
+	return inserted, err
 }
 
 func (s *Service) RemoveAllowedDomain(groupID uint, domainName string) error {

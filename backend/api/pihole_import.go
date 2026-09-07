@@ -30,6 +30,7 @@ func (api *API) registerPiholeImportRoutes() {
 //	@Success 200
 //	@Router /import/pihole/preview [post]
 func (api *API) piholeImportPreview(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 512<<20)
 	file, header, err := c.Request.FormFile("backup")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "backup file is required"})
@@ -241,40 +242,35 @@ func (api *API) piholeImportApply(c *gin.Context) {
 	}
 	groupIDs := api.groupIDsByName()
 	if on("groupDomains") {
-		blockedByGroup := map[uint][]string{}
-		allowedByGroup := map[uint][]string{}
+		blockedByGroup := map[string][]string{}
+		allowedByGroup := map[string][]string{}
 		for _, gd := range plan.GroupDomains {
 			if gd.Exists {
 				count("groupDomains", true, nil)
 				continue
 			}
-			id, ok := groupIDs[gd.Group]
-			if !ok {
+			if _, ok := groupIDs[gd.Group]; !ok {
 				count("groupDomains", false, fmt.Errorf("group %q does not exist; import groups first", gd.Group))
 				continue
 			}
 			if gd.Blocked {
-				blockedByGroup[id] = append(blockedByGroup[id], gd.Pattern)
+				blockedByGroup[gd.Group] = append(blockedByGroup[gd.Group], gd.Pattern)
 			} else {
-				allowedByGroup[id] = append(allowedByGroup[id], gd.Pattern)
+				allowedByGroup[gd.Group] = append(allowedByGroup[gd.Group], gd.Pattern)
 			}
 		}
-		for id, patterns := range blockedByGroup {
-			if err := api.GroupService.AddBlockedDomains(id, patterns); err == nil {
-				report.Created["groupDomains"] += len(patterns)
-				continue
-			}
-			for _, pattern := range patterns {
-				count("groupDomains", false, api.GroupService.AddBlockedDomain(id, pattern))
+		for name, patterns := range blockedByGroup {
+			n, err := api.GroupService.AddBlockedDomains(groupIDs[name], patterns)
+			report.Created["groupDomains"] += n
+			if err != nil {
+				report.fail("groupDomains", fmt.Errorf("group %q: %w", name, err))
 			}
 		}
-		for id, patterns := range allowedByGroup {
-			if err := api.GroupService.AddAllowedDomains(id, patterns); err == nil {
-				report.Created["groupDomains"] += len(patterns)
-				continue
-			}
-			for _, pattern := range patterns {
-				count("groupDomains", false, api.GroupService.AddAllowedDomain(id, pattern))
+		for name, patterns := range allowedByGroup {
+			n, err := api.GroupService.AddAllowedDomains(groupIDs[name], patterns)
+			report.Created["groupDomains"] += n
+			if err != nil {
+				report.fail("groupDomains", fmt.Errorf("group %q: %w", name, err))
 			}
 		}
 	}

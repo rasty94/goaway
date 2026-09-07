@@ -569,6 +569,7 @@ func (s *Service) AddCustomDomains(ctx context.Context, domains []string) error 
 		}
 	}
 
+	var created []string
 	err := s.repository.WithTransaction(ctx, func(tx *gorm.DB) error {
 		currentTime := time.Now()
 
@@ -604,9 +605,8 @@ func (s *Service) AddCustomDomains(ctx context.Context, domains []string) error 
 					return fmt.Errorf("%s is already blacklisted", domain)
 				}
 				return err
-			} else {
-				s.updateCache([]string{domain}, true)
 			}
+			created = append(created, domain)
 		}
 
 		return nil
@@ -614,6 +614,8 @@ func (s *Service) AddCustomDomains(ctx context.Context, domains []string) error 
 	if err != nil {
 		return err
 	}
+
+	s.updateCache(created, true)
 
 	if s.replicator != nil {
 		s.replicator.Broadcast(cluster.ReplicatedEvent{
