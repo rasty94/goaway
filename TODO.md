@@ -14,21 +14,13 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-11 Paridad Final & v1.0.0 | Modo stateless ligero, soak/benchmarks v1.0.0 | P1 | En curso (DoH3 + Grafana/ServiceMonitor hechos) |
+| EPIC-11 Paridad Final & v1.0.0 | Soak/benchmarks, cobertura Vitest y release v1.0.0 | P1 | En curso (solo falta cierre v1.0.0) |
 
 ---
 
 ## P1 - Paridad Final (Blocky) y Preparacion v1.0.0
 
 ### EPIC-11 Paridad Final & v1.0.0
-
-- [ ] FEATURE: Perfil ligero stateless (sin SQLite persistente ni UI)
-  - Prioridad: p2
-  - Labels: feature, enhancement, api
-  - Contexto: para usuarios de Kubernetes/GitOps que buscan un proxy DNS 100% stateless como Blocky, apoyado en `settings.yaml` (`api.readOnly: true`), cache Redis y exportacion externa de logs.
-  - Criterios de aceptacion:
-    - Modo `stateless` con BD en memoria (`:memory:`) y `misc.dashboard: false`.
-    - Ejemplo de values en `charts/goaway/` para despliegue multi-replica stateless.
 
 - [ ] TECH: Endurecimiento, soak tests y release v1.0.0
   - Prioridad: p1

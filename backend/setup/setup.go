@@ -27,6 +27,7 @@ type SetFlags struct {
 	Ansi                *bool
 	JSON                *bool
 	InAppUpdate         *bool
+	Stateless           *bool
 }
 
 func UpdateConfig(config *settings.Config, flags *SetFlags) {
@@ -100,6 +101,18 @@ func UpdateConfig(config *settings.Config, flags *SetFlags) {
 	}
 	if flags.InAppUpdate != nil {
 		config.Misc.InAppUpdate = *flags.InAppUpdate
+	}
+	if flags.Stateless != nil {
+		config.Misc.Stateless = *flags.Stateless
+	} else if envVal, ok := os.LookupEnv("GOAWAY_STATELESS"); ok {
+		if parsed, err := strconv.ParseBool(envVal); err == nil {
+			config.Misc.Stateless = parsed
+		}
+	}
+	if config.Misc.Stateless {
+		config.Misc.Dashboard = false
+		config.API.ReadOnly = true
+		config.Misc.InAppUpdate = false
 	}
 
 	if flags.JSON != nil {

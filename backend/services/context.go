@@ -28,7 +28,11 @@ func NewAppContext(config *settings.Config) (*AppContext, error) {
 }
 
 func (ctx *AppContext) initialize() error {
-	ctx.DBConn = database.Initialize()
+	dbConn, err := database.InitializeWithOptions(ctx.Config.Misc.Stateless)
+	if err != nil {
+		return fmt.Errorf("failed to initialize database: %w", err)
+	}
+	ctx.DBConn = dbConn
 
 	cert, err := ctx.Config.GetCertificate()
 	if err != nil {

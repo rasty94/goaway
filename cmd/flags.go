@@ -19,6 +19,7 @@ type Flags struct {
 	Ansi                bool
 	JSON                bool
 	InAppUpdate         bool
+	Stateless           bool
 }
 
 func NewFlags() *Flags {
@@ -38,6 +39,7 @@ func (f *Flags) Register(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&f.Ansi, "ansi", true, "Toggle colorized logs. Only available in non-json formatted logs")
 	cmd.Flags().BoolVar(&f.JSON, "json", false, "Toggle JSON formatted logs")
 	cmd.Flags().BoolVar(&f.InAppUpdate, "in-app-update", false, "Toggle ability to update via dashboard")
+	cmd.Flags().BoolVar(&f.Stateless, "stateless", false, "Run in lightweight stateless mode (in-memory SQLite, dashboard disabled, read-only API)")
 }
 
 func (f *Flags) GetSetFlags(cmd *cobra.Command) *setup.SetFlags {
@@ -78,6 +80,9 @@ func (f *Flags) GetSetFlags(cmd *cobra.Command) *setup.SetFlags {
 	}
 	if cmd.Flags().Changed("in-app-update") {
 		setFlags.InAppUpdate = &f.InAppUpdate
+	}
+	if cmd.Flags().Changed("stateless") {
+		setFlags.Stateless = &f.Stateless
 	}
 
 	return setFlags

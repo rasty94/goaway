@@ -1,0 +1,70 @@
+# Lightweight multi-replica stateless GitOps profile for Kubernetes.
+# Usage:
+#   helm install goaway ./charts/goaway -f ./charts/goaway/values-stateless.yaml
+#
+# No PVC required: SQLite runs purely in-memory, the web dashboard is disabled,
+# API mutations are locked (readOnly: true), DNS cache is shared via Redis,
+# and query logs stream to stdout as NDJSON for Fluent Bit / Vector / Loki.
+
+replicaCount: 3
+
+persistence:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 48Mi
+  limits:
+    cpu: 500m
+    memory: 192Mi
+
+settings:
+  enabled: true
+  content: |
+    schemaVersion: 2
+    api:
+      port: 8080
+      authentication: true
+      readOnly: true
+    dns:
+      address: "0.0.0.0"
+      cacheEnabled: true
+      cacheTTL: 300
+      edeEnabled: true
+      redisCache:
+        enabled: true
+        address: "redis-master.default.svc.cluster.local:6379"
+        db: 0
+        prefix: "goaway:dns:"
+      ports:
+        udptcp: 53
+        dot: 853
+        doh: 443
+      upstream:
+        strategy: "parallel_best"
+        servers:
+          - name: "Cloudflare"
+            address: "1.1.1.1:53"
+            protocol: "udp"
+            enabled: true
+          - name: "Quad9"
+            address: "9.9.9.9:53"
+            protocol: "udp"
+            enabled: true
+    logging:
+      enabled: true
+      level: 1
+      queryLogExport:
+        enabled: true
+        format: "json"
+        target: "stdout"
+    misc:
+      stateless: true
+      dashboard: false
+      inAppUpdate: false
+      scheduledBlacklistUpdates: true

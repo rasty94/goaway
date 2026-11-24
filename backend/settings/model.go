@@ -151,6 +151,7 @@ type MiscConfig struct {
 	AnonymizeIP               bool `yaml:"anonymizeIP" json:"anonymizeIP"`
 	Dashboard                 bool `yaml:"dashboard" json:"dashboard"`
 	ScheduledBlacklistUpdates bool `yaml:"scheduledBlacklistUpdates" json:"scheduledBlacklistUpdates"`
+	Stateless                 bool `yaml:"stateless,omitempty" json:"stateless,omitempty"`
 }
 
 type DHCPPortsConfig struct {
