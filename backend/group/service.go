@@ -208,7 +208,45 @@ func (s *Service) CreateGroup(name, description string, useGlobalPolicies bool) 
 	return group, nil
 }
 
+func (s *Service) groupNameByID(id uint) string {
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+	if g, ok := s.groupsByID[id]; ok {
+		return g.Name
+	}
+	return ""
+}
+
+func (s *Service) groupNamesByIDs(ids []uint) []string {
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+	names := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if g, ok := s.groupsByID[id]; ok && g.Name != "" {
+			names = append(names, g.Name)
+		}
+	}
+	return names
+}
+
+// GetGroupIDByName resolves a stable group name to its local database ID.
+func (s *Service) GetGroupIDByName(name string) (uint, bool) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return 0, false
+	}
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+	for id, g := range s.groupsByID {
+		if g.Name == name {
+			return id, true
+		}
+	}
+	return 0, false
+}
+
 func (s *Service) DeleteGroup(id uint) error {
+	name := s.groupNameByID(id)
 	if err := s.repository.DeleteGroup(id); err != nil {
 		return err
 	}
@@ -219,7 +257,7 @@ func (s *Service) DeleteGroup(id uint) error {
 	if s.replicator != nil {
 		s.replicator.Broadcast(cluster.ReplicatedEvent{
 			Type:    cluster.EventGroupDelete,
-			Payload: map[string]uint{"id": id},
+			Payload: map[string]interface{}{"id": id, "name": name},
 		})
 	}
 
@@ -236,7 +274,7 @@ func (s *Service) SetGroupUseGlobalPolicies(id uint, enabled bool) error {
 	if err := s.repository.SetGroupUseGlobalPolicies(id, enabled); err != nil {
 		return err
 	}
-	s.broadcast(cluster.EventGroupUpdate, map[string]interface{}{"id": id, "useGlobalPolicies": enabled})
+	s.broadcast(cluster.EventGroupUpdate, map[string]interface{}{"id": id, "name": s.groupNameByID(id), "useGlobalPolicies": enabled})
 	return s.RefreshCache()
 }
 
@@ -264,7 +302,12 @@ func (s *Service) ReplaceAssignments(identifier, identifierType string, groupIDs
 	if err := s.repository.ReplaceAssignments(identifier, identifierType, cleanGroupIDs); err != nil {
 		return err
 	}
-	s.broadcast(cluster.EventClientUpdate, map[string]interface{}{"identifier": identifier, "identifierType": identifierType, "groupIds": cleanGroupIDs})
+	s.broadcast(cluster.EventClientUpdate, map[string]interface{}{
+		"identifier":     identifier,
+		"identifierType": identifierType,
+		"groupIds":       cleanGroupIDs,
+		"groupNames":     s.groupNamesByIDs(cleanGroupIDs),
+	})
 	return s.RefreshCache()
 }
 
@@ -276,7 +319,7 @@ func (s *Service) AddBlockedDomain(groupID uint, domainName string) error {
 	if err := s.repository.AddBlockedDomain(groupID, domainName); err != nil {
 		return err
 	}
-	s.broadcast(cluster.EventGroupBlockedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
+	s.broadcast(cluster.EventGroupBlockedAdd, map[string]interface{}{"groupId": groupID, "groupName": s.groupNameByID(groupID), "domain": domainName})
 	return s.RefreshCache()
 }
 
@@ -286,6 +329,7 @@ func (s *Service) AddBlockedDomain(groupID uint, domainName string) error {
 // into the database. inserted reports how many domains actually landed, since err only ever
 // carries the first failure.
 func (s *Service) AddBlockedDomains(groupID uint, domains []string) (inserted int, err error) {
+	groupName := s.groupNameByID(groupID)
 	for _, domainName := range domains {
 		domainName = normalizeDomain(domainName)
 		if domainName == "" {
@@ -298,7 +342,7 @@ func (s *Service) AddBlockedDomains(groupID uint, domains []string) (inserted in
 			continue
 		}
 		inserted++
-		s.broadcast(cluster.EventGroupBlockedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
+		s.broadcast(cluster.EventGroupBlockedAdd, map[string]interface{}{"groupId": groupID, "groupName": groupName, "domain": domainName})
 	}
 	if refreshErr := s.RefreshCache(); refreshErr != nil && err == nil {
 		err = refreshErr
@@ -311,7 +355,7 @@ func (s *Service) RemoveBlockedDomain(groupID uint, domainName string) error {
 	if err := s.repository.RemoveBlockedDomain(groupID, domainName); err != nil {
 		return err
 	}
-	s.broadcast(cluster.EventGroupBlockedRemove, map[string]interface{}{"groupId": groupID, "domain": domainName})
+	s.broadcast(cluster.EventGroupBlockedRemove, map[string]interface{}{"groupId": groupID, "groupName": s.groupNameByID(groupID), "domain": domainName})
 	return s.RefreshCache()
 }
 
@@ -323,12 +367,13 @@ func (s *Service) AddAllowedDomain(groupID uint, domainName string) error {
 	if err := s.repository.AddAllowedDomain(groupID, domainName); err != nil {
 		return err
 	}
-	s.broadcast(cluster.EventGroupAllowedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
+	s.broadcast(cluster.EventGroupAllowedAdd, map[string]interface{}{"groupId": groupID, "groupName": s.groupNameByID(groupID), "domain": domainName})
 	return s.RefreshCache()
 }
 
 // AddAllowedDomains is the allowlist counterpart of AddBlockedDomains.
 func (s *Service) AddAllowedDomains(groupID uint, domains []string) (inserted int, err error) {
+	groupName := s.groupNameByID(groupID)
 	for _, domainName := range domains {
 		domainName = normalizeDomain(domainName)
 		if domainName == "" {
@@ -341,7 +386,7 @@ func (s *Service) AddAllowedDomains(groupID uint, domains []string) (inserted in
 			continue
 		}
 		inserted++
-		s.broadcast(cluster.EventGroupAllowedAdd, map[string]interface{}{"groupId": groupID, "domain": domainName})
+		s.broadcast(cluster.EventGroupAllowedAdd, map[string]interface{}{"groupId": groupID, "groupName": groupName, "domain": domainName})
 	}
 	if refreshErr := s.RefreshCache(); refreshErr != nil && err == nil {
 		err = refreshErr
@@ -354,7 +399,7 @@ func (s *Service) RemoveAllowedDomain(groupID uint, domainName string) error {
 	if err := s.repository.RemoveAllowedDomain(groupID, domainName); err != nil {
 		return err
 	}
-	s.broadcast(cluster.EventGroupAllowedRemove, map[string]interface{}{"groupId": groupID, "domain": domainName})
+	s.broadcast(cluster.EventGroupAllowedRemove, map[string]interface{}{"groupId": groupID, "groupName": s.groupNameByID(groupID), "domain": domainName})
 	return s.RefreshCache()
 }
 

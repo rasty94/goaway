@@ -449,14 +449,28 @@ func (api *API) handleGroupCreateReplication(payload interface{}) error {
 	return err
 }
 
+func (api *API) resolveGroupID(name string, fallbackID uint) uint {
+	if name != "" && api.GroupService != nil {
+		if id, ok := api.GroupService.GetGroupIDByName(name); ok {
+			return id
+		}
+	}
+	return fallbackID
+}
+
 func (api *API) handleGroupDeleteReplication(payload interface{}) error {
 	var p struct {
-		ID uint `json:"id"`
+		ID   uint   `json:"id"`
+		Name string `json:"name"`
 	}
-	if err := decodePayload(payload, &p); err != nil || p.ID == 0 {
+	if err := decodePayload(payload, &p); err != nil {
 		return fmt.Errorf("invalid group delete payload")
 	}
-	return api.GroupService.DeleteGroup(p.ID)
+	targetID := api.resolveGroupID(p.Name, p.ID)
+	if targetID == 0 {
+		return fmt.Errorf("invalid group delete payload")
+	}
+	return api.GroupService.DeleteGroup(targetID)
 }
 
 // decodePayload re-encodes the generic JSON payload into a typed struct.
@@ -470,45 +484,68 @@ func decodePayload(payload interface{}, out interface{}) error {
 
 func (api *API) handleGroupUpdateReplication(payload interface{}) error {
 	var p struct {
-		ID                uint `json:"id"`
-		UseGlobalPolicies bool `json:"useGlobalPolicies"`
+		ID                uint   `json:"id"`
+		Name              string `json:"name"`
+		UseGlobalPolicies bool   `json:"useGlobalPolicies"`
 	}
-	if err := decodePayload(payload, &p); err != nil || p.ID == 0 {
+	if err := decodePayload(payload, &p); err != nil {
 		return fmt.Errorf("invalid group update payload")
 	}
-	return api.GroupService.SetGroupUseGlobalPolicies(p.ID, p.UseGlobalPolicies)
+	targetID := api.resolveGroupID(p.Name, p.ID)
+	if targetID == 0 {
+		return fmt.Errorf("invalid group update payload")
+	}
+	return api.GroupService.SetGroupUseGlobalPolicies(targetID, p.UseGlobalPolicies)
 }
 
 func (api *API) handleGroupDomainReplication(t cluster.EventType, payload interface{}) error {
 	var p struct {
-		GroupID uint   `json:"groupId"`
-		Domain  string `json:"domain"`
+		GroupID   uint   `json:"groupId"`
+		GroupName string `json:"groupName"`
+		Domain    string `json:"domain"`
 	}
-	if err := decodePayload(payload, &p); err != nil || p.GroupID == 0 || p.Domain == "" {
+	if err := decodePayload(payload, &p); err != nil || p.Domain == "" {
+		return fmt.Errorf("invalid group domain payload")
+	}
+	targetID := api.resolveGroupID(p.GroupName, p.GroupID)
+	if targetID == 0 {
 		return fmt.Errorf("invalid group domain payload")
 	}
 	switch t {
 	case cluster.EventGroupBlockedAdd:
-		return api.GroupService.AddBlockedDomain(p.GroupID, p.Domain)
+		return api.GroupService.AddBlockedDomain(targetID, p.Domain)
 	case cluster.EventGroupBlockedRemove:
-		return api.GroupService.RemoveBlockedDomain(p.GroupID, p.Domain)
+		return api.GroupService.RemoveBlockedDomain(targetID, p.Domain)
 	case cluster.EventGroupAllowedAdd:
-		return api.GroupService.AddAllowedDomain(p.GroupID, p.Domain)
+		return api.GroupService.AddAllowedDomain(targetID, p.Domain)
 	default:
-		return api.GroupService.RemoveAllowedDomain(p.GroupID, p.Domain)
+		return api.GroupService.RemoveAllowedDomain(targetID, p.Domain)
 	}
 }
 
 func (api *API) handleClientUpdateReplication(payload interface{}) error {
 	var p struct {
-		Identifier     string `json:"identifier"`
-		IdentifierType string `json:"identifierType"`
-		GroupIDs       []uint `json:"groupIds"`
+		Identifier     string   `json:"identifier"`
+		IdentifierType string   `json:"identifierType"`
+		GroupIDs       []uint   `json:"groupIds"`
+		GroupNames     []string `json:"groupNames"`
 	}
 	if err := decodePayload(payload, &p); err != nil || p.Identifier == "" {
 		return fmt.Errorf("invalid client update payload")
 	}
-	return api.GroupService.ReplaceAssignments(p.Identifier, p.IdentifierType, p.GroupIDs)
+	groupIDs := p.GroupIDs
+	if len(p.GroupNames) > 0 && api.GroupService != nil {
+		resolved := make([]uint, 0, len(p.GroupNames))
+		for _, name := range p.GroupNames {
+			if id, ok := api.GroupService.GetGroupIDByName(name); ok {
+				resolved = append(resolved, id)
+			}
+		}
+		if len(resolved) > 0 {
+			groupIDs = resolved
+		}
+	}
+	return api.GroupService.ReplaceAssignments(p.Identifier, p.IdentifierType, groupIDs)
 }
 
 func (api *API) handleResolutionAddReplication(payload interface{}) error {
