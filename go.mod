@@ -5,7 +5,7 @@ go 1.26.0
 toolchain go1.26.5
 
 require (
-	codeberg.org/miekg/dns v0.6.73
+	codeberg.org/miekg/dns v0.6.85
 	github.com/Masterminds/semver v1.5.0
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-contrib/gzip v1.2.5

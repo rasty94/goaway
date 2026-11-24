@@ -107,13 +107,6 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
     - Soporte configurable en `dns.upstream.strategy` manteniendo compatibilidad con el orden actual.
     - Metricas de latencia y tasa de victoria por upstream.
 
-- [ ] FEATURE: Extended DNS Errors (RFC 8914 / EDE)
-  - Prioridad: p1
-  - Labels: feature, dns, observability
-  - Criterios de aceptacion:
-    - Adjuntar opcion EDNS0 EDE en respuestas bloqueadas (`Filtered` / `Blocked`) con motivo legible y en fallos DNSSEC (`DNSSEC Bogus`).
-    - Toggle en configuracion y tests unitarios verificando el registro OPT.
-
 - [ ] FEATURE: Bloqueo por tipo de consulta DNS (qtype)
   - Prioridad: p2
   - Labels: feature, dns

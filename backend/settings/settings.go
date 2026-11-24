@@ -88,6 +88,7 @@ func (config *Config) Update(updatedSettings Config) {
 	config.DNS.Ports = updatedSettings.DNS.Ports
 	config.DNS.UDPSize = updatedSettings.DNS.UDPSize
 	config.DNS.CacheTTL = updatedSettings.DNS.CacheTTL
+	config.DNS.EDEEnabled = updatedSettings.DNS.EDEEnabled
 	config.DNS.DNSSEC = updatedSettings.DNS.DNSSEC
 	config.DNS.TLS = updatedSettings.DNS.TLS
 	config.DNS.Upstream = updatedSettings.DNS.Upstream

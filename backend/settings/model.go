@@ -46,6 +46,7 @@ type DNSConfig struct {
 	Gateway               string                 `yaml:"gateway" json:"gateway"`
 	CacheEnabled          bool                   `yaml:"cacheEnabled" json:"cacheEnabled"`
 	CacheTTL              int                    `yaml:"cacheTTL" json:"cacheTTL"`
+	EDEEnabled            bool                   `yaml:"edeEnabled" json:"edeEnabled"`
 	DNSSEC                DNSSECConfig           `yaml:"dnssec" json:"dnssec"`
 	RateLimit             DNSRateLimitConfig     `yaml:"rateLimit" json:"rateLimit"`
 	UDPSize               int                    `yaml:"udpSize" json:"udpSize"`

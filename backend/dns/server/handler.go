@@ -200,6 +200,7 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 			metrics.CategoriesBlocked.WithLabelValues(clientIP, category).Inc()
 		}
 		metrics.DNSLatency.WithLabelValues(clientIP, "blocked").Observe(time.Since(start).Seconds())
+		s.attachEDE(request.Msg, dns.ExtendedErrorFiltered, blockedEDEText(category))
 		entry := s.handleBlacklisted(request)
 		return s.finalizeDNSSECStatus(entry, clientIP)
 	}
@@ -610,6 +611,10 @@ func (s *DNSServer) handleStandardQuery(request *Request) model.RequestLogEntry 
 		}
 	}
 
+	if stale {
+		s.attachEDE(request.Msg, dns.ExtendedErrorStaleAnswer, "served from stale cache")
+	}
+
 	request.Respond(s.NotificationService)
 	return model.RequestLogEntry{
 		Domain:            request.QName(),
@@ -828,6 +833,7 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string, strin
 		go s.WSCom(communicationMessage{IP: "", Client: false, Upstream: false, DNS: true})
 		dnssecStatus := s.classifyDNSSECResponse(in, nil)
 		if s.dnssecMode() == "strict" && dnssecStatus == DNSSECStatusBogus {
+			s.attachEDE(req.Msg, dns.ExtendedErrorDNSBogus, "DNSSEC validation failed (strict mode)")
 			return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], dnssecStatus
 		}
 
