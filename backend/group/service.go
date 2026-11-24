@@ -29,6 +29,7 @@ type Service struct {
 	blockedByGroup map[uint]*domain.Matcher
 	allowedByGroup map[uint]*domain.Matcher
 	replicator     cluster.Replicator
+	dualStack      DualStackCorrelator
 }
 
 
@@ -357,14 +358,27 @@ func (s *Service) RemoveAllowedDomain(groupID uint, domainName string) error {
 	return s.RefreshCache()
 }
 
+// RecordClientIdentity registers an IP/MAC/hostname tuple for dual-stack IPv4/IPv6 correlation.
+func (s *Service) RecordClientIdentity(ip, mac, hostname string) {
+	s.dualStack.Record(ip, mac, hostname)
+}
+
 func (s *Service) getGroupIDsForClient(ip, mac string) []uint {
+	correlatedIPs, resolvedMAC := s.dualStack.CorrelatedIdentifiers(ip, mac)
+
 	s.cacheMu.RLock()
 	defer s.cacheMu.RUnlock()
 
 	ids := make([]uint, 0, 4)
 	seen := map[uint]struct{}{}
 
-	for _, key := range []string{identifierKey(IdentifierTypeIP, ip), identifierKey(IdentifierTypeMAC, mac)} {
+	keys := make([]string, 0, 2+len(correlatedIPs))
+	keys = append(keys, identifierKey(IdentifierTypeIP, ip), identifierKey(IdentifierTypeMAC, resolvedMAC))
+	for _, peerIP := range correlatedIPs {
+		keys = append(keys, identifierKey(IdentifierTypeIP, peerIP))
+	}
+
+	for _, key := range keys {
 		for _, groupID := range s.assignments[key] {
 			if _, ok := seen[groupID]; ok {
 				continue

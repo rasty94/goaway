@@ -67,6 +67,10 @@ func (s *DNSServer) getClientInfo(clientIP netip.Addr) *model.Client {
 		Bypass:   false,
 	}
 
+	if s.GroupService != nil {
+		s.GroupService.RecordClientIdentity(client.IP.String(), client.Mac, client.Name)
+	}
+
 	log.Debug("Saving new client: %s", client.IP)
 	_ = s.PopulateClientCaches()
 
