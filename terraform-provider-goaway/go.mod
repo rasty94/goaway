@@ -1,6 +1,8 @@
 module github.com/rasty94/terraform-provider-goaway
 
-go 1.26.0
+go 1.27
+
+toolchain go1.27.4
 
 require github.com/hashicorp/terraform-plugin-framework v1.19.0
 

@@ -1,8 +1,8 @@
 module goaway
 
-go 1.26.0
+go 1.27
 
-toolchain go1.26.5
+toolchain go1.27.4
 
 require (
 	codeberg.org/miekg/dns v0.6.85

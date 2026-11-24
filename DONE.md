@@ -251,4 +251,4 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 - [x] CI: `.github/dependabot.yml` semanal para gomod (raiz y provider), npm (`client/`), docker y github-actions con grupos minor/patch.
 - [x] FIX: backend limpio con golangci-lint v2.15.0 (0 issues): 30 `Close`/`Write` sin comprobar, `PreferServerCipherSuites` obsoleto en DoH, simplificaciones staticcheck y bug en DHCPv4 donde los errores de `handleRelease`/`handleDecline` se descartaban sin log (`backend/dhcp/service.go`).
 - [x] FIX: E2E con imagen `golang:1.26.5-alpine` (igual que la toolchain de `go.mod`, evita descarga en cada run) y timeout de arranque 180 s.
-
+- [x] DEPS (EPIC-11): Go 1.26.5 -> 1.27.4 (`go 1.27` + `toolchain go1.27.4` en `go.mod` raiz y del provider, imagenes `golang:1.27.4-alpine` en `Dockerfile.dev`, `Dockerfile.multi` y `docker-compose.e2e.yml`). Corrige GO-2026-6859, GO-2026-6809, GO-2026-6617 y GO-2026-6613 de la stdlib detectadas por govulncheck en el primer run de CI.

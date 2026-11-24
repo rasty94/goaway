@@ -59,7 +59,6 @@ Umbrales propuestos (revisar antes de empezar).
   - Labels: enhancement, security, breaking-change
   - Contexto: inventario a 2026-11-24 (`go list -m -u`, `pnpm outdated`).
   - Toolchain e imagenes:
-    - Go `1.26.5` -> `1.27.x` (`go.mod`, `Dockerfile.dev`, `Dockerfile.multi`, `docker-compose.e2e.yml`; los workflows leen `go.mod`).
     - Node `22` -> LTS actual (`Dockerfile.multi`, `ci.yml`, `release.yml`); pnpm `10.23.0` fijado en ambos workflows.
     - `alpine:3.23` -> ultima estable (`Dockerfile`, `Dockerfile.multi`).
   - Go (11 directas desactualizadas, todas minor/patch o pre-1.0):

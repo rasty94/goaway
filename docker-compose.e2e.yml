@@ -1,6 +1,6 @@
 services:
   goaway-e2e:
-    image: golang:1.26.5-alpine
+    image: golang:1.27.4-alpine
     container_name: goaway-e2e
     working_dir: /app
     volumes:
