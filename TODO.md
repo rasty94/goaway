@@ -14,7 +14,19 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-11 Paridad Final & v1.0.0 | Soak/benchmarks, cobertura Vitest y release v1.0.0 | P1 | En curso (solo falta cierre v1.0.0) |
+| EPIC-11 Paridad Final & v1.0.0 | Soak/benchmarks, cobertura Vitest y release v1.0.0 | P1 | En curso (las tres tareas sin empezar) |
+
+---
+
+## P0 - Deuda que bloquea lo demas
+
+- [ ] SECURITY: Rotar el `jwtSecret` filtrado
+  - Prioridad: p0
+  - Labels: security
+  - Contexto: `settings.yaml` ya esta fuera del repo (ver DONE.md), pero el secreto que contenia sigue en el historial de git y no se ha rotado.
+  - Criterios de aceptacion:
+    - Nuevo `jwtSecret` generado en todos los despliegues; los tokens antiguos dejan de validar.
+    - Decidido si se purga el historial (`git filter-repo`) o se asume el secreto como quemado.
 
 ---
 
@@ -22,32 +34,43 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 ### EPIC-11 Paridad Final & v1.0.0
 
-- [ ] TECH: Endurecimiento, soak tests y release v1.0.0
+Umbrales propuestos (revisar antes de empezar).
+
+- [ ] TECH: Benchmarks y soak tests del resolver
   - Prioridad: p1
-  - Labels: enhancement
-  - Contexto: todas las epicas de v0.9 a v1.2 estan completas en `v0.96.0`; falta validar estabilidad bajo carga sostenida antes de cortar `v1.0.0`.
+  - Labels: enhancement, dns
+  - Contexto: no existe ningun `Benchmark*` ni test de fugas en el repo.
   - Criterios de aceptacion:
-    - Benchmarks/soak tests en UDP, TCP, DoT, DoH y DoQ sin fugas de goroutines ni memoria.
-    - Cobertura de componentes clave en Vitest (`client/`).
-    - Guia de migracion y corte oficial de `v1.0.0`.
+    - `Benchmark*` para UDP, TCP, DoT, DoH y DoQ (y DoH3 si esta habilitado).
+    - `goleak.VerifyNone` en los tests de arranque/parada de cada servidor.
+    - Soak de 4h a 1000 QPS por protocolo: RSS estable (crecimiento < 10% tras la primera hora) y numero de goroutines estable.
+    - Resultados documentados como baseline en `docs/`.
+
+- [ ] TECH: Cobertura Vitest de componentes clave
+  - Prioridad: p1
+  - Labels: frontend
+  - Contexto: hoy solo hay `client/src/lib/utils.test.ts` y `client/src/pages/validation.test.ts`, sin tests de componentes.
+  - Criterios de aceptacion:
+    - Tests de login (incl. OIDC/2FA), settings, listas (blacklist/whitelist) y query log.
+    - Cobertura >= 60% de lineas en `client/src/` y `npm test` en CI.
+
+- [ ] RELEASE: Guia de migracion y corte de v1.0.0
+  - Prioridad: p1
+  - Labels: migration
+  - Criterios de aceptacion:
+    - Guia de migracion 0.9x -> 1.0.0 en `docs/` (cambios de config, `schemaVersion`, rollback).
+    - CHANGELOG, tag y release `v1.0.0`.
 
 ---
 
-## P0 - Deuda que bloquea lo demas
+## P2 - Mejoras menores
 
-(Sin bloqueantes P0 pendientes; ver [DONE.md](DONE.md).)
-
----
-
-## Seguimiento de la revision del 2026-11-24
-
-Hallazgos resueltos (ver [DONE.md](DONE.md)).
-
----
-
-## Seguimiento de la revision del 2026-09-07
-
-Hallazgos resueltos (ver [DONE.md](DONE.md)).
+- [ ] BUG: Tamano de BD en modo stateless
+  - Prioridad: p2
+  - Labels: api
+  - Contexto: `getDBSizeMB` (`backend/api/server.go`) lee `data/database.db`, que no existe con `misc.stateless: true`.
+  - Criterios de aceptacion:
+    - En stateless devuelve el tamano de la BD en memoria (`PRAGMA page_count * page_size`) o 0 sin error.
 
 ---
 
