@@ -800,19 +800,9 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string, strin
 		}
 
 		if !isForwarded {
-			// Iterate over enabled upstreams
-			for _, upstream := range s.Config.DNS.Upstream.Servers {
-				if !upstream.Enabled {
-					continue
-				}
-
-				log.Debug("Sending query to '%s' (%s) using %s", upstream.Name, upstream.Address, upstream.Protocol)
-				in, err = s.exchangeWithProtocol(upstreamMsg, upstream.Address, upstream.Protocol)
-				if err == nil && in != nil {
-					break
-				}
-				log.Warning("Upstream '%s' failed: %v", upstream.Name, err)
-			}
+			upstreamCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			in, err = s.queryUpstreams(upstreamCtx, upstreamMsg)
+			cancel()
 		}
 
 		if err != nil {

@@ -99,14 +99,6 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
     - Listener servidor DoQ opcional configurable en `dns.ports.doq`.
     - Tests de integracion y metricas por protocolo.
 
-- [ ] FEATURE: Estrategias de seleccion de upstreams (`parallel_best`, `strict`, `random`)
-  - Prioridad: p1
-  - Labels: feature, dns
-  - Criterios de aceptacion:
-    - Estrategia `parallel_best` que consulta los N upstreams mas rapidos en paralelo y devuelve la primera respuesta valida.
-    - Soporte configurable en `dns.upstream.strategy` manteniendo compatibilidad con el orden actual.
-    - Metricas de latencia y tasa de victoria por upstream.
-
 - [ ] FEATURE: Bloqueo por tipo de consulta DNS (qtype)
   - Prioridad: p2
   - Labels: feature, dns

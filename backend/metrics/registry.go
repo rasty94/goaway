@@ -93,6 +93,23 @@ var (
 		},
 		[]string{"component"},
 	)
+
+	UpstreamWins = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "goaway_dns_upstream_wins_total",
+			Help: "Total number of DNS queries won by each upstream server",
+		},
+		[]string{"upstream", "protocol", "strategy"},
+	)
+
+	UpstreamLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "goaway_dns_upstream_latency_seconds",
+			Help:    "Latency of upstream DNS exchanges",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"upstream", "protocol"},
+	)
 )
 
 func init() {
@@ -107,4 +124,6 @@ func init() {
 	prometheus.MustRegister(DNSSECResponses)
 	prometheus.MustRegister(CategoriesBlocked)
 	prometheus.MustRegister(ServiceHealth)
+	prometheus.MustRegister(UpstreamWins)
+	prometheus.MustRegister(UpstreamLatency)
 }

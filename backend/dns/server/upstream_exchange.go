@@ -18,7 +18,10 @@ import (
 func (s *DNSServer) exchangeWithProtocol(msg *dns.Msg, addr, proto string) (*dns.Msg, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	return s.exchangeWithProtocolContext(ctx, msg, addr, proto)
+}
 
+func (s *DNSServer) exchangeWithProtocolContext(ctx context.Context, msg *dns.Msg, addr, proto string) (*dns.Msg, error) {
 	switch strings.ToLower(proto) {
 	case "udp":
 		client := dns.NewClient()

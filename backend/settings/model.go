@@ -22,7 +22,8 @@ type UpstreamServer struct {
 }
 
 type UpstreamConfig struct {
-	Servers []UpstreamServer `yaml:"servers" json:"servers"`
+	Strategy string           `yaml:"strategy,omitempty" json:"strategy,omitempty"` // "strict" (default), "parallel_best", "random"
+	Servers  []UpstreamServer `yaml:"servers" json:"servers"`
 
 	// Legacy fields for migration
 	Preferred string   `yaml:"preferred,omitempty" json:"preferred,omitempty"`
