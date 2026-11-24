@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { IPEntry } from "@/pages/logs";
 import { CaretDownIcon, CaretUpIcon } from "@phosphor-icons/react";
-import { Header } from "@tanstack/react-table";
-
+import { Column } from "@tanstack/react-table";
+import { logsTableFeatures } from "./tableFeatures";
 type Client = {
   ip: string;
   name: string;
@@ -23,7 +23,7 @@ export type Queries = {
 };
 
 interface Props {
-  column: Header<object, unknown>["column"];
+  column: Column<typeof logsTableFeatures, Queries, unknown>;
   title: string;
 }
 

@@ -2,6 +2,7 @@
 
 import { ClientDetails } from "@/app/clients/details";
 import { Queries } from "@/app/logs/columns";
+import { logsTableFeatures } from "@/app/logs/tableFeatures";
 import { columns } from "@/app/logs/columnsData";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,10 +59,9 @@ import {
 import {
   ColumnFiltersState,
   flexRender,
-  getCoreRowModel,
   SortingState,
-  useReactTable,
-  VisibilityState
+  useTable,
+  ColumnVisibilityState
 } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -213,7 +213,7 @@ export function Logs() {
   const [wsConnected, setWsConnected] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
 
   const [selectedClient, setSelectedClient] = useState<ClientEntry | null>(
@@ -397,10 +397,10 @@ export function Logs() {
   }, [showClientDetails]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+  const table = useTable({
+    features: logsTableFeatures,
     data: queries,
     columns: columnsWithClientHandler,
-    getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualSorting: true,
     pageCount: totalPages,

@@ -1,6 +1,7 @@
 import { IPEntry } from "@/pages/logs";
 import { ColumnDef } from "@tanstack/react-table";
 import { Queries } from "./columns";
+import { logsTableFeatures } from "./tableFeatures";
 import { BlacklistDomain, WhitelistDomain } from "./domainActions";
 import { SortableHeader } from "./columns";
 import {
@@ -9,7 +10,7 @@ import {
   ShieldSlashIcon
 } from "@phosphor-icons/react";
 
-export const columns: ColumnDef<Queries>[] = [
+export const columns: ColumnDef<typeof logsTableFeatures, Queries>[] = [
   {
     accessorKey: "timestamp",
     header: ({ column }) => <SortableHeader column={column} title="Time" />,
