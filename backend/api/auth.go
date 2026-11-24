@@ -18,6 +18,8 @@ func (api *API) registerAuthRoutes() {
 	api.router.POST("/api/login", api.handleLogin)
 	api.router.GET("/api/authentication", api.getAuthentication)
 	api.registerOIDCRoutes()
+	api.registerTOTPRoutes()
+	api.registerWebAuthnRoutes()
 	api.routes.PUT("/password", api.updatePassword)
 
 	api.routes.POST("/users", api.requireAdmin(), api.createUser)
@@ -39,11 +41,16 @@ func (api *API) handleLogin(c *gin.Context) {
 		return
 	}
 
-	var loginUser user.User
-	if err := c.BindJSON(&loginUser); err != nil {
+	var loginPayload struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		TOTPCode string `json:"totpCode"`
+	}
+	if err := c.BindJSON(&loginPayload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
+	loginUser := user.User{Username: loginPayload.Username, Password: loginPayload.Password}
 
 	if err := api.UserService.ValidateCredentials(loginUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
@@ -83,6 +90,14 @@ func (api *API) handleLogin(c *gin.Context) {
 	}
 
 	if authenticated {
+		if required, valid := api.checkUserTOTP(loginUser.Username, loginPayload.TOTPCode); required && !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":       "Valid 2FA TOTP code required",
+				"requires2FA": true,
+			})
+			return
+		}
+
 		token, err := generateToken(loginUser.Username, api.Config.API.JWTSecret)
 		if err != nil {
 			log.Info("Token generation failed for user %s: %v", loginUser.Username, err)

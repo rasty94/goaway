@@ -72,5 +72,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&PolicyCategory{},
 		&Resolution{},
 		&ReplicationOutbox{},
+		&WebAuthnCredential{},
+		&UserTOTP{},
 	)
 }

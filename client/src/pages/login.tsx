@@ -55,6 +55,8 @@ interface LoginProps extends React.ComponentPropsWithoutRef<"div"> {
 export default function Login({ className, quote, ...props }: LoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [requires2FA, setRequires2FA] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,7 +80,8 @@ export default function Login({ className, quote, ...props }: LoginProps) {
         "login",
         {
           username,
-          password
+          password,
+          ...(totpCode ? { totpCode } : {})
         },
         true,
         true
@@ -94,6 +97,12 @@ export default function Login({ className, quote, ...props }: LoginProps) {
         localStorage.setItem("username", username);
 
         navigate("/");
+      } else if (statusCode === 401 && response?.requires2FA) {
+        setRequires2FA(true);
+        toast.info("Two-factor authentication required", {
+          description: "Enter the 6-digit code from your authenticator app."
+        });
+        return;
       } else if (statusCode === 429) {
         toast.warning("Rate limit exceeded", {
           description: `Retry again in ${response?.retryAfterSeconds || "some"} seconds`
@@ -210,6 +219,28 @@ export default function Login({ className, quote, ...props }: LoginProps) {
                       </button>
                     </div>
                   </div>
+
+                  {requires2FA && (
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="totpCode"
+                        className="text-sm font-medium block text-left"
+                      >
+                        2FA Code (6 digits)
+                      </Label>
+                      <Input
+                        id="totpCode"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={totpCode}
+                        onChange={(e) => setTotpCode(e.target.value)}
+                        placeholder="123456"
+                        autoFocus
+                        required
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center space-x-2">
                     <Checkbox

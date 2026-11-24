@@ -245,3 +245,21 @@ type PolicyCategory struct {
 	PolicyID uint   `gorm:"not null;index" json:"policyID"`
 	Category string `gorm:"type:varchar(64);not null" json:"category"` // ads, trackers, malware, adult, gambling, social
 }
+
+type WebAuthnCredential struct {
+	ID             uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Username       string    `gorm:"type:varchar(64);not null;index" json:"username"`
+	Name           string    `gorm:"type:varchar(128);not null" json:"name"`
+	CredentialID   string    `gorm:"type:varchar(512);not null;uniqueIndex" json:"credentialId"`
+	CredentialJSON string    `gorm:"type:text;not null" json:"-"`
+	CreatedAt      time.Time `json:"createdAt"`
+}
+
+type UserTOTP struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Username  string    `gorm:"type:varchar(64);not null;uniqueIndex" json:"username"`
+	Secret    string    `gorm:"type:varchar(128);not null" json:"-"`
+	Enabled   bool      `gorm:"default:false" json:"enabled"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}

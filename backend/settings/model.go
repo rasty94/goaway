@@ -114,6 +114,13 @@ type LDAPConfig struct {
 	LocalFallback  bool     `yaml:"localFallback,omitempty" json:"localFallback,omitempty"`
 }
 
+type WebAuthnConfig struct {
+	Enabled       bool     `yaml:"enabled" json:"enabled"`
+	RPDisplayName string   `yaml:"rpDisplayName,omitempty" json:"rpDisplayName,omitempty"`
+	RPID          string   `yaml:"rpId,omitempty" json:"rpId,omitempty"`
+	RPOrigins     []string `yaml:"rpOrigins,omitempty" json:"rpOrigins,omitempty"`
+}
+
 type APIConfig struct {
 	Port           int             `yaml:"port" json:"port"`
 	Authentication bool            `yaml:"authentication" json:"authentication"`
@@ -122,6 +129,7 @@ type APIConfig struct {
 	RateLimit      RateLimitConfig `yaml:"rateLimit" json:"rateLimit"`
 	OIDC           OIDCConfig      `yaml:"oidc,omitempty" json:"oidc,omitempty"`
 	LDAP           LDAPConfig      `yaml:"ldap,omitempty" json:"ldap,omitempty"`
+	WebAuthn       WebAuthnConfig  `yaml:"webauthn,omitempty" json:"webauthn,omitempty"`
 }
 
 type QueryLogExportConfig struct {
