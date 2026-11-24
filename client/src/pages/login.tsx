@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { Metrics } from "@/components/server-statistics";
 import { type ISourceOptions } from "@tsparticles/engine";
 import { loadStarsPreset } from "@tsparticles/preset-stars";
-import Particles, { initParticlesEngine } from "@tsparticles/react";
+import Particles, { ParticlesProvider } from "@tsparticles/react";
 
 function FloatingTitle({ quote }: { quote: string }) {
   return (
@@ -30,23 +30,14 @@ function FloatingTitle({ quote }: { quote: string }) {
   );
 }
 
-const FloatingParticles = () => {
-  const [, setInit] = useState(false);
+const particlesOptions: ISourceOptions = { preset: "stars" };
 
-  useEffect(() => {
-    initParticlesEngine(async (engine) => {
-      await loadStarsPreset(engine);
-    }).then(() => {
-      setInit(true);
-    });
-  }, []);
-
-  const options: ISourceOptions = {
-    preset: "stars"
-  };
-
-  return <Particles id="tsparticles" options={options} />;
-};
+const FloatingParticles = () => (
+  // ParticlesProvider requires a stable init and renders children once plugins are loaded.
+  <ParticlesProvider init={loadStarsPreset}>
+    <Particles id="tsparticles" options={particlesOptions} />
+  </ParticlesProvider>
+);
 
 interface LoginProps extends React.ComponentPropsWithoutRef<"div"> {
   quote: string;
