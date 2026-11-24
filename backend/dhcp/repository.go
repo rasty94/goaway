@@ -137,14 +137,17 @@ func (r *repository) CreateStaticv6Lease(lease *database.StaticDHCPv6Lease) erro
 }
 
 func (r *repository) UpdateStaticv6Lease(id uint, lease *database.StaticDHCPv6Lease) error {
-	updates := map[string]interface{}{
-		"duid":     strings.TrimSpace(lease.DUID),
-		"ip":       strings.TrimSpace(lease.IP),
-		"hostname": strings.TrimSpace(lease.Hostname),
-		"enabled":  lease.Enabled,
+	updated := database.StaticDHCPv6Lease{
+		DUID:     strings.TrimSpace(lease.DUID),
+		IP:       strings.TrimSpace(lease.IP),
+		Hostname: strings.TrimSpace(lease.Hostname),
+		Enabled:  lease.Enabled,
 	}
 
-	result := r.db.Model(&database.StaticDHCPv6Lease{}).Where("id = ?", id).Updates(updates)
+	result := r.db.Model(&database.StaticDHCPv6Lease{}).
+		Where("id = ?", id).
+		Select("DUID", "IP", "Hostname", "Enabled").
+		Updates(&updated)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update static DHCPv6 lease: %w", result.Error)
 	}
@@ -178,8 +181,11 @@ func (r *repository) CreateOrUpdateActivev6Lease(lease *database.ActiveDHCPv6Lea
 	lease.IP = strings.TrimSpace(lease.IP)
 	lease.Hostname = strings.TrimSpace(lease.Hostname)
 
-	// Upsert based on DUID/IAID
-	result := r.db.Where("duid = ? AND iaid = ?", lease.DUID, lease.IAID).Assign(database.ActiveDHCPv6Lease{
+	// Upsert based on DUID/IAID using struct fields so GORM resolves exact column names.
+	result := r.db.Where(&database.ActiveDHCPv6Lease{
+		DUID: lease.DUID,
+		IAID: lease.IAID,
+	}).Assign(database.ActiveDHCPv6Lease{
 		IP:        lease.IP,
 		Hostname:  lease.Hostname,
 		ExpiresAt: lease.ExpiresAt,
