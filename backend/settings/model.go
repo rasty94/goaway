@@ -101,6 +101,19 @@ type OIDCConfig struct {
 	AdminGroups  []string `yaml:"adminGroups,omitempty" json:"adminGroups,omitempty"`
 }
 
+type LDAPConfig struct {
+	Enabled        bool     `yaml:"enabled" json:"enabled"`
+	URL            string   `yaml:"url,omitempty" json:"url,omitempty"`
+	StartTLS       bool     `yaml:"startTLS,omitempty" json:"startTLS,omitempty"`
+	BindDN         string   `yaml:"bindDN,omitempty" json:"bindDN,omitempty"`
+	BindPassword   string   `yaml:"bindPassword,omitempty" json:"-"`
+	BaseDN         string   `yaml:"baseDN,omitempty" json:"baseDN,omitempty"`
+	UserFilter     string   `yaml:"userFilter,omitempty" json:"userFilter,omitempty"`
+	GroupAttribute string   `yaml:"groupAttribute,omitempty" json:"groupAttribute,omitempty"`
+	AdminGroups    []string `yaml:"adminGroups,omitempty" json:"adminGroups,omitempty"`
+	LocalFallback  bool     `yaml:"localFallback,omitempty" json:"localFallback,omitempty"`
+}
+
 type APIConfig struct {
 	Port           int             `yaml:"port" json:"port"`
 	Authentication bool            `yaml:"authentication" json:"authentication"`
@@ -108,6 +121,7 @@ type APIConfig struct {
 	JWTSecret      string          `yaml:"jwtSecret" json:"-"`
 	RateLimit      RateLimitConfig `yaml:"rateLimit" json:"rateLimit"`
 	OIDC           OIDCConfig      `yaml:"oidc,omitempty" json:"oidc,omitempty"`
+	LDAP           LDAPConfig      `yaml:"ldap,omitempty" json:"ldap,omitempty"`
 }
 
 type QueryLogExportConfig struct {

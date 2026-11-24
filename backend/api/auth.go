@@ -50,7 +50,39 @@ func (api *API) handleLogin(c *gin.Context) {
 		return
 	}
 
-	if api.UserService.Authenticate(loginUser.Username, loginUser.Password) {
+	authenticated := false
+	role := "admin"
+
+	var ldapCfg = api.Config.API.LDAP
+	if ldapCfg.Enabled {
+		ok, ldapRole, ldapErr := authenticateLDAP(ldapCfg, loginUser.Username, loginUser.Password)
+		if ldapErr != nil {
+			log.Warning("LDAP authentication error for %s (localFallback=%t): %v", loginUser.Username, ldapCfg.LocalFallback, ldapErr)
+		}
+		if ok {
+			authenticated = true
+			role = ldapRole
+			if api.UserService != nil && !api.UserService.Exists(loginUser.Username) {
+				randPass, _ := randomHex(24)
+				_ = api.UserService.CreateUser(loginUser.Username, randPass, role)
+			}
+		} else if ldapCfg.LocalFallback || (ldapErr != nil && loginUser.Username == "admin") {
+			// Emergency local fallback when LDAP is unavailable or localFallback is enabled.
+			if api.UserService.Authenticate(loginUser.Username, loginUser.Password) {
+				authenticated = true
+				if userObj, _ := api.UserService.GetUser(loginUser.Username); userObj != nil && userObj.Role != "" {
+					role = userObj.Role
+				}
+			}
+		}
+	} else if api.UserService.Authenticate(loginUser.Username, loginUser.Password) {
+		authenticated = true
+		if userObj, _ := api.UserService.GetUser(loginUser.Username); userObj != nil && userObj.Role != "" {
+			role = userObj.Role
+		}
+	}
+
+	if authenticated {
 		token, err := generateToken(loginUser.Username, api.Config.API.JWTSecret)
 		if err != nil {
 			log.Info("Token generation failed for user %s: %v", loginUser.Username, err)
@@ -58,12 +90,6 @@ func (api *API) handleLogin(c *gin.Context) {
 				"error": "Authentication service temporarily unavailable",
 			})
 			return
-		}
-
-		userObj, _ := api.UserService.GetUser(loginUser.Username)
-		role := "admin"
-		if userObj != nil && userObj.Role != "" {
-			role = userObj.Role
 		}
 
 		setAuthCookie(c.Writer, token)
