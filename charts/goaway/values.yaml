@@ -1,0 +1,87 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/rasty94/goaway
+  pullPolicy: IfNotPresent
+  tag: "v0.93.0"
+
+serviceAccount:
+  create: false
+  name: ""
+
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - NET_BIND_SERVICE
+
+ports:
+  dns: 53
+  api: 8080
+  dot: 853
+  doh: 443
+  doq: 0
+
+service:
+  dns:
+    type: LoadBalancer
+    annotations: {}
+  web:
+    type: ClusterIP
+    annotations: {}
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClass: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Declarative settings.yaml mounted into /app/config/settings.yaml
+settings:
+  enabled: true
+  content: |
+    schemaVersion: 2
+    api:
+      port: 8080
+      authentication: true
+      readOnly: true
+    dns:
+      address: "0.0.0.0"
+      cacheEnabled: true
+      cacheTTL: 300
+      edeEnabled: true
+      ports:
+        udptcp: 53
+        dot: 853
+        doh: 443
+      upstream:
+        strategy: "parallel_best"
+        servers:
+          - name: "Cloudflare"
+            address: "1.1.1.1:53"
+            protocol: "udp"
+            enabled: true
+          - name: "Quad9"
+            address: "9.9.9.9:53"
+            protocol: "udp"
+            enabled: true
+    logging:
+      enabled: true
+      level: 1
+    misc:
+      dashboard: true
+      scheduledBlacklistUpdates: true

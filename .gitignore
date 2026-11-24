@@ -1,8 +1,8 @@
 tmp
 requests.json
 counters.json
-main
-goaway
+/main
+/goaway
 *.db**
 .vite
 dist

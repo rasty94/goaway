@@ -1,0 +1,11 @@
+{{- if .Values.settings.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goaway.fullname" . }}-config
+  labels:
+    {{- include "goaway.labels" . | nindent 4 }}
+data:
+  settings.yaml: |
+    {{- .Values.settings.content | nindent 4 }}
+{{- end }}

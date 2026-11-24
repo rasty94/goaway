@@ -15,10 +15,10 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
 | EPIC-05 HA Active | Versionado para conflictos tras split-brain | P2 | Auth, outbox y cobertura hechos |
-| EPIC-06 Ecosystem | Helm/Terraform y modo declarativo GitOps | P1 | API keys e importador Pi-hole hechos |
+| EPIC-06 Ecosystem | Provider Terraform oficial | P1 | API keys, Pi-hole import, GitOps y Helm hechos |
 | EPIC-07 Enterprise Auth | OIDC, LDAP/AD, passkeys, RBAC fino | P2 | Sin empezar |
 | EPIC-08 DHCPv6 y RA | Consistencia de politicas dual-stack | P2 | DHCPv6+RA hechos |
-| EPIC-09 Resolver Avanzado | DoQ, parallel_best, EDE, Redis/logs externos | P1 | DoQ, parallel_best y EDE hechos |
+| EPIC-09 Resolver Avanzado | Cache Redis y logs externos | P1 | DoQ, parallel_best, EDE y qtype hechos |
 
 ---
 
@@ -38,8 +38,7 @@ Hallazgos resueltos (ver [DONE.md](DONE.md)).
 
 Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigieron en `3b10071`.
 
-- [ ] HA: resync automatico cuando un peer pierde eventos. Bloqueado por diseno: `ImportTeleporterData` reemplaza el fichero de base de datos entero y exige reinicio, asi que no vale como resync en caliente. Hace falta un snapshot logico (listas, grupos, clientes, DNS local, leases) aplicable sin reiniciar, o un endpoint de re-seed que reinicie el nodo de forma controlada. Mientras tanto la perdida ya no es silenciosa: el nodo se marca "Out of sync" en el dashboard.
-- [ ] HA: peers por HTTPS (TLS mutuo/certificados entre nodos; la firma HMAC de la respuesta de heartbeat ya esta implementada).
+- [ ] HA: peers por HTTPS (TLS mutuo/certificados entre nodos; la firma HMAC de la respuesta de heartbeat y el resync logico en caliente ya estan implementados).
 
 ## P1 - Operacion, Resiliencia y Ecosistema
 
@@ -56,30 +55,14 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 
 ### EPIC-06 Ecosystem
 
-- [ ] FEATURE: Helm chart + provider Terraform oficial
+- [ ] FEATURE: Provider Terraform oficial
   - Prioridad: p1
   - Labels: feature, api
   - Criterios de aceptacion:
-    - Instalacion reproducible en Kubernetes.
     - Recursos de provider para upstreams, listas, grupos, politicas.
     - Ejemplos verificados en CI.
 
-- [ ] FEATURE: Modo declarativo / GitOps-first opcional
-  - Prioridad: p2
-  - Labels: feature, api, enhancement
-  - Contexto: complemento del Helm chart para entornos Kubernetes/homelab declarativos (inspirado en Blocky), donde `settings.yaml` y listas/reglas se gestionan desde Git sin estado mutable en UI.
-  - Criterios de aceptacion:
-    - Flag/opcion de configuracion de solo lectura para bloquear mutaciones desde API/UI.
-    - Carga y recarga declarativa (SIGHUP o watcher) de upstreams, listas, grupos y resoluciones locales.
-
 ### EPIC-09 Resolver Avanzado (Paridad DNS / Blocky)
-
-- [ ] FEATURE: Bloqueo por tipo de consulta DNS (qtype)
-  - Prioridad: p2
-  - Labels: feature, dns
-  - Criterios de aceptacion:
-    - Regla por grupo o cliente para bloquear/responder NODATA a tipos concretos (p. ej. `AAAA`, `HTTPS`, `SVCB`).
-    - Reflejado en el simulador de politicas y endpoint de explicacion DNS.
 
 - [ ] FEATURE: Cache compartida opcional en Redis y exportacion externa de query logs
   - Prioridad: p2

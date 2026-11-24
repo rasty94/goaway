@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "goaway.fullname" . }}-dns
+  labels:
+    {{- include "goaway.labels" . | nindent 4 }}
+  {{- with .Values.service.dns.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.dns.type }}
+  selector:
+    {{- include "goaway.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: dns-udp
+      port: {{ .Values.ports.dns }}
+      targetPort: dns-udp
+      protocol: UDP
+    - name: dns-tcp
+      port: {{ .Values.ports.dns }}
+      targetPort: dns-tcp
+      protocol: TCP
+    {{- if gt (int .Values.ports.doq) 0 }}
+    - name: doq-udp
+      port: {{ .Values.ports.doq }}
+      targetPort: doq-udp
+      protocol: UDP
+    {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "goaway.fullname" . }}-web
+  labels:
+    {{- include "goaway.labels" . | nindent 4 }}
+  {{- with .Values.service.web.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.web.type }}
+  selector:
+    {{- include "goaway.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.ports.api }}
+      targetPort: http
+      protocol: TCP

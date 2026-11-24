@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "goaway.fullname" . }}
+  labels:
+    {{- include "goaway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "goaway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "goaway.selectorLabels" . | nindent 8 }}
+      {{- if .Values.settings.enabled }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- end }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: goaway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: dns-udp
+              containerPort: {{ .Values.ports.dns }}
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: {{ .Values.ports.dns }}
+              protocol: TCP
+            - name: http
+              containerPort: {{ .Values.ports.api }}
+              protocol: TCP
+            {{- if gt (int .Values.ports.doq) 0 }}
+            - name: doq-udp
+              containerPort: {{ .Values.ports.doq }}
+              protocol: UDP
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            {{- if .Values.settings.enabled }}
+            - name: config
+              mountPath: /app/config/settings.yaml
+              subPath: settings.yaml
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "goaway.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.settings.enabled }}
+        - name: config
+          configMap:
+            name: {{ include "goaway.fullname" . }}-config
+        {{- end }}
