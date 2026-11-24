@@ -42,22 +42,7 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 ## Seguimiento de la revision del 2026-11-24
 
-Hallazgos detectados en la auditoria de seguridad, linting, configuracion y comparativa con Blocky.
-
-- [ ] TECH: Limpiar warnings de ESLint en el cliente React
-  - Prioridad: p1
-  - Labels: frontend, enhancement
-  - Contexto: 8 warnings de `react-hooks/exhaustive-deps` en `app/clients/map.tsx`, `pages/blacklist.tsx`, `pages/prefetch.tsx`, `pages/settings.tsx`, `pages/upstream.tsx` y `pages/whitelist.tsx`.
-  - Criterios de aceptacion:
-    - `pnpm -C client lint` termina con 0 errores y 0 warnings.
-
-- [ ] CHORE: Alinear versiones, puertos Docker y enlaces del repositorio
-  - Prioridad: p1
-  - Labels: enhancement
-  - Contexto: tag actual `v0.93.0` frente a `docker-compose.yml` (`v0.92`) y `client/package.json` (`0.90.0`); `Dockerfile` expone `PROXY_PORT=5353` mientras `docker-compose.yml` usa `5354`; `README.md` mezcla enlaces de `pommee/goaway` y `rasty94/goaway`.
-  - Criterios de aceptacion:
-    - Versiones y `PROXY_PORT` consistentes entre `Dockerfile`, `docker-compose.yml` y `client/package.json`.
-    - Enlaces y badges de `README.md` unificados.
+Hallazgos resueltos (ver [DONE.md](DONE.md)).
 
 ---
 

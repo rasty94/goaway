@@ -59,7 +59,7 @@ export function Blacklist() {
     }
 
     fetchLists();
-  }, []);
+  }, [t]);
 
   const handleDelete = (name: string, url: string) => {
     setDeleting((prev) => new Set(prev).add(name + url));

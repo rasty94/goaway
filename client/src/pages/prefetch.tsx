@@ -33,7 +33,7 @@ import {
   SpinnerIcon,
   TrashIcon
 } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { validateFQDN } from "./validation";
 import { NoContent } from "@/shared";
@@ -107,7 +107,7 @@ export function Prefetch() {
   const [searchTerm, setSearchTerm] = useState("");
   const [domainError, setDomainError] = useState<string>("");
 
-  const fetchPrefetches = async () => {
+  const fetchPrefetches = useCallback(async () => {
     setLoading(true);
     const [code, response] = await GetRequest("prefetch");
     if (code !== 200) {
@@ -118,14 +118,14 @@ export function Prefetch() {
 
     setPrefetches(response || []);
     setLoading(false);
-  };
+  }, [t]);
 
   useEffect(() => {
     const id = setTimeout(() => {
       void fetchPrefetches();
     }, 0);
     return () => clearTimeout(id);
-  }, []);
+  }, [fetchPrefetches]);
 
   useEffect(() => {
     if (domainName) {

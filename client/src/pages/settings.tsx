@@ -94,7 +94,7 @@ export function Settings() {
     null
   );
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const [status, response] = await GetRequest("settings");
       if (status === 200) {
@@ -106,11 +106,11 @@ export function Settings() {
     } finally {
       setLoading((prev) => ({ ...prev, main: false }));
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
   const handleSettingChange = (
     key: string,
@@ -232,7 +232,7 @@ export function Settings() {
       toast.dismiss(unsavedToastId);
       setUnsavedToastId(null);
     }
-  }, [isChanged, unsavedToastId, saveSettingsCallback]);
+  }, [isChanged, unsavedToastId, saveSettingsCallback, t]);
 
   const getSettingValue = (key: string): number | string | boolean => {
     const valueMap: Record<string, number | string | boolean> = {

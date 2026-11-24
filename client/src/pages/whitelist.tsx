@@ -75,7 +75,7 @@ export function Whitelist() {
     };
 
     loadDomains();
-  }, []);
+  }, [t]);
 
   const handleSave = async () => {
     if (!domainName) {

@@ -225,7 +225,7 @@ export default function DNSServerVisualizer() {
     };
 
     fetchClients();
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -394,7 +394,7 @@ export default function DNSServerVisualizer() {
     }
 
     setNetworkData({ nodes, links });
-  }, [filteredClients, viewSettings]);
+  }, [filteredClients, viewSettings, t]);
 
   const handleNodeClick = (node: NetworkNode, event: MouseEvent) => {
     if (node.type === "client") {

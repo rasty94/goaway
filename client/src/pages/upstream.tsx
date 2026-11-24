@@ -30,7 +30,7 @@ export function Upstream() {
     };
 
     fetchupstreams();
-  }, []);
+  }, [t]);
 
   const handleAddUpstream = (entry: UpstreamEntry) => {
     setUpstreams((prev) => [...prev, entry]);
