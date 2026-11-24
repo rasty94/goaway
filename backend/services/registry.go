@@ -10,6 +10,7 @@ import (
 	"goaway/backend/blacklist"
 	"goaway/backend/cluster"
 	"goaway/backend/dhcp"
+	dnsserver "goaway/backend/dns/server"
 	"goaway/backend/group"
 	"goaway/backend/logging"
 	"goaway/backend/notification"
@@ -40,6 +41,7 @@ type ServiceRegistry struct {
 	TCPServer *dns.Server
 	DoTServer *dns.Server
 	DoHServer *http.Server
+	DoQServer *dnsserver.DoQServer
 
 	Context *AppContext
 
@@ -139,6 +141,14 @@ func (r *ServiceRegistry) setupSecureServers() error {
 		return fmt.Errorf("failed to initialize DoH server: %w", err)
 	}
 	r.DoHServer = dohServer
+
+	if r.Context.Config.DNS.Ports.DoQ > 0 {
+		doqServer, err := r.Context.DNSServer.InitDoQ(r.Context.Certificate)
+		if err != nil {
+			return fmt.Errorf("failed to initialize DoQ server: %w", err)
+		}
+		r.DoQServer = doqServer
+	}
 
 	return nil
 }
@@ -261,6 +271,16 @@ func (r *ServiceRegistry) startSecureServers() {
 			r.errorChan <- ServiceError{Service: "DoH", Err: err}
 		}
 	}()
+
+	if r.DoQServer != nil {
+		r.wg.Add(1)
+		go func() {
+			defer r.wg.Done()
+			if err := r.DoQServer.ListenAndServe(); err != nil {
+				r.errorChan <- ServiceError{Service: "DoQ", Err: err}
+			}
+		}()
+	}
 }
 
 func (r *ServiceRegistry) startDHCPService() {

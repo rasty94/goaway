@@ -90,15 +90,6 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 
 ### EPIC-09 Resolver Avanzado (Paridad DNS / Blocky)
 
-- [ ] FEATURE: Soporte DoQ (DNS over QUIC) en upstream y servidor
-  - Prioridad: p1
-  - Labels: feature, dns
-  - Contexto: `protocol: "doq"` ya figura comentado en `backend/settings/model.go` y `quic-go` esta en `go.mod`, pero `upstream_exchange.go` aun no lo implementa ni existe listener DoQ.
-  - Criterios de aceptacion:
-    - Cliente upstream DoQ (RFC 9250) con reutilizacion de sesiones QUIC y validacion TLS.
-    - Listener servidor DoQ opcional configurable en `dns.ports.doq`.
-    - Tests de integracion y metricas por protocolo.
-
 - [ ] FEATURE: Bloqueo por tipo de consulta DNS (qtype)
   - Prioridad: p2
   - Labels: feature, dns

@@ -28,6 +28,7 @@ import (
 
 	"codeberg.org/miekg/dns"
 	"github.com/gorilla/websocket"
+	"github.com/quic-go/quic-go"
 	"gorm.io/gorm"
 )
 
@@ -47,6 +48,11 @@ type DNSServer struct {
 	// Persistent HTTP/2-capable client for DoH upstream queries
 	dohClient     *http.Client
 	dohClientOnce sync.Once
+
+	// Persistent QUIC session pool for DoQ upstream queries
+	doqMu        sync.Mutex
+	doqConns     map[string]*quic.Conn
+	doqTLSConfig *tls.Config
 
 	// Application level settings, mostly used for DNS behaviour
 	Config *settings.Config
@@ -253,9 +259,11 @@ func (s *DNSServer) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 }
 
 func (s *DNSServer) detectProtocol(ctx context.Context, w dns.ResponseWriter) model.Protocol {
-	isDoH := ctx.Value(model.DoH) == true
-	if isDoH {
+	if ctx.Value(model.DoH) == true {
 		return model.DoH
+	}
+	if ctx.Value(model.DoQ) == true {
+		return model.DoQ
 	}
 
 	if conn, ok := w.(interface{ ConnectionState() *tls.ConnectionState }); ok {

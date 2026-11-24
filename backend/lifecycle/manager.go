@@ -99,6 +99,13 @@ func (m *Manager) shutdown() {
 		log.Info("Stopped DNS-over-HTTPS server")
 	}
 
+	if m.services.DoQServer != nil {
+		if err := m.services.DoQServer.Shutdown(ctx); err != nil {
+			log.Error("Error stopping DoQ server: %v", err)
+		}
+		log.Info("Stopped DNS-over-QUIC server")
+	}
+
 	if m.services.DHCPService != nil {
 		m.services.DHCPService.Stop()
 		log.Info("Stopped DHCP service")

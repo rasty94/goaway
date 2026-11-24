@@ -105,6 +105,10 @@ func (a *Application) RestartApplication() {
 			a.services.DoTServer.Shutdown(ctx)
 			log.Warning("Stopped DNS-over-TLS server")
 		}
+		if a.services.DoQServer != nil {
+			_ = a.services.DoQServer.Shutdown(ctx)
+			log.Warning("Stopped DNS-over-QUIC server")
+		}
 	}()
 
 	go func() {

@@ -50,6 +50,7 @@ const (
 	TCP Protocol = "TCP"
 	DoT Protocol = "DoT"
 	DoH Protocol = "DoH"
+	DoQ Protocol = "DoQ"
 )
 
 type ResolvedIP struct {
