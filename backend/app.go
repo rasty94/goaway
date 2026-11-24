@@ -117,6 +117,10 @@ func (a *Application) RestartApplication() {
 
 	wg.Wait()
 
+	if a.context != nil && a.context.DNSServer != nil {
+		a.context.DNSServer.CloseIdleConnections()
+	}
+
 	if len(shutdownErrors) > 0 {
 		log.Warning("Shutdown completed with errors:")
 		for _, err := range shutdownErrors {

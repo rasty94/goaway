@@ -44,14 +44,6 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 Hallazgos detectados en la auditoria de seguridad, linting, configuracion y comparativa con Blocky.
 
-- [ ] PERF: Reutilizar `http.Client` / pool HTTP/2 en upstream DoH
-  - Prioridad: p0
-  - Labels: dns, enhancement
-  - Contexto: `exchangeDoH` en `backend/dns/server/upstream_exchange.go` instancia un `&http.Client{Timeout: 5 * time.Second}` nuevo por cada consulta, perdiendo keep-alive y multiplexing HTTP/2.
-  - Criterios de aceptacion:
-    - Pool persistente de `http.Client`/`http.Transport` en `DNSServer` (con cierre limpio en shutdown).
-    - Benchmark o test que verifique reutilizacion de conexiones DoH.
-
 - [ ] TECH: Limpiar warnings de ESLint en el cliente React
   - Prioridad: p1
   - Labels: frontend, enhancement

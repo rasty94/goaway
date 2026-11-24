@@ -44,36 +44,75 @@ func (s *DNSServer) exchangeWithProtocol(msg *dns.Msg, addr, proto string) (*dns
 		in, _, err := client.Exchange(ctx, msg, "tcp", addr)
 		return in, err
 	case "doh":
-		return s.exchangeDoH(msg, addr)
+		return s.exchangeDoH(ctx, msg, addr)
 	default:
 		return nil, fmt.Errorf("unsupported protocol: %s", proto)
 	}
 }
 
-func (s *DNSServer) exchangeDoH(msg *dns.Msg, url string) (*dns.Msg, error) {
+func newDoHHTTPClient() *http.Client {
+	transport := &http.Transport{
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   20,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		TLSClientConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
+
+	return &http.Client{
+		Transport: transport,
+		Timeout:   5 * time.Second,
+	}
+}
+
+func (s *DNSServer) getDoHClient() *http.Client {
+	s.dohClientOnce.Do(func() {
+		if s.dohClient == nil {
+			s.dohClient = newDoHHTTPClient()
+		}
+	})
+	return s.dohClient
+}
+
+// CloseIdleConnections releases idle upstream HTTP/2 connections during shutdown.
+func (s *DNSServer) CloseIdleConnections() {
+	if s.dohClient != nil {
+		s.dohClient.CloseIdleConnections()
+	}
+}
+
+func (s *DNSServer) exchangeDoH(ctx context.Context, msg *dns.Msg, url string) (*dns.Msg, error) {
 	if err := msg.Pack(); err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(msg.Data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(msg.Data))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/dns-message")
 	req.Header.Set("Accept", "application/dns-message")
 
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := s.getDoHClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 		return nil, fmt.Errorf("DoH server returned status %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
 	if err != nil {
 		return nil, err
 	}

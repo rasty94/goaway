@@ -213,3 +213,4 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 
 - [x] SECURITY: Resueltas las 7 vulnerabilidades de `govulncheck` actualizando `golang.org/x/net` a `v0.63.0` (junto con `golang.org/x/crypto` y demas `golang.org/x/*`) y `github.com/gorilla/websocket` a `v1.5.4-0.20240701034025-d67f41855da4`. Verificado con `govulncheck ./...` (0 vulnerabilidades).
 - [x] SECURITY: Corregido hallazgo `gosec` G104 en `backend/pihole/parse.go:163` devolviendo `errors.Join(err, tmp.Close())`. Verificado con `gosec -quiet ./backend/...` (0 hallazgos).
+- [x] PERF: Pool persistente de `http.Client`/`http.Transport` con HTTP/2 en `DNSServer` para consultas upstream DoH (`backend/dns/server/upstream_exchange.go`), con contexto de cancelacion, limite de lectura de 64 KiB, drenado del body en errores y `CloseIdleConnections()` en shutdown/restart. Test de reutilizacion HTTP/2 en `backend/dns/server/upstream_exchange_test.go`.

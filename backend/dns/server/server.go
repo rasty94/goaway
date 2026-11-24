@@ -21,6 +21,7 @@ import (
 	"goaway/backend/whitelist"
 	"io"
 	"net"
+	"net/http"
 	"net/netip"
 	"sync"
 	"time"
@@ -42,6 +43,10 @@ type DNSServer struct {
 
 	// Client used when querying upstream servers
 	dnsClient *dns.Client
+
+	// Persistent HTTP/2-capable client for DoH upstream queries
+	dohClient     *http.Client
+	dohClientOnce sync.Once
 
 	// Application level settings, mostly used for DNS behaviour
 	Config *settings.Config
@@ -164,6 +169,7 @@ func NewDNSServer(config *settings.Config, dbconn *gorm.DB, cert tls.Certificate
 		dbConn:               dbconn,
 		logEntryChannel:      make(chan model.RequestLogEntry, 1000),
 		dnsClient:            dnsClient,
+		dohClient:            newDoHHTTPClient(),
 		DomainCache:          sync.Map{},
 		clientRateLimitCache: make(map[string]*clientRateLimitWindow),
 		WSQueries:            make(map[*websocket.Conn]bool),

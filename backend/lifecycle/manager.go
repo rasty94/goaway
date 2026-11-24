@@ -104,6 +104,10 @@ func (m *Manager) shutdown() {
 		log.Info("Stopped DHCP service")
 	}
 
+	if m.services.Context != nil && m.services.Context.DNSServer != nil {
+		m.services.Context.DNSServer.CloseIdleConnections()
+	}
+
 	// Wait for all goroutines to finish with timeout
 	done := make(chan struct{})
 	go func() {
