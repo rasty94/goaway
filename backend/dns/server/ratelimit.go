@@ -93,7 +93,8 @@ func (s *DNSServer) isDNSRateLimited(clientIP string) (bool, int) {
 }
 
 func (s *DNSServer) writeRateLimitedResponse(req *Request, _ int) model.RequestLogEntry {
-	msg := dnsutil.SetReply(new(dns.Msg), req.Msg)
+	// SetReply mutates its argument in place; copy so req.Msg stays intact for logging.
+	msg := dnsutil.SetReply(req.Msg.Copy())
 	msg.Authoritative = false
 	msg.RecursionAvailable = true
 	msg.Rcode = dns.RcodeRefused
