@@ -253,3 +253,9 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 - [x] FIX: E2E con imagen `golang:1.26.5-alpine` (igual que la toolchain de `go.mod`, evita descarga en cada run) y timeout de arranque 180 s.
 - [x] DEPS (EPIC-11): Go 1.26.5 -> 1.27.4 (`go 1.27` + `toolchain go1.27.4` en `go.mod` raiz y del provider, imagenes `golang:1.27.4-alpine` en `Dockerfile.dev`, `Dockerfile.multi` y `docker-compose.e2e.yml`). Corrige GO-2026-6859, GO-2026-6809, GO-2026-6617 y GO-2026-6613 de la stdlib detectadas por govulncheck en el primer run de CI.
 - [x] OPS (EPIC-12): Actions verificado en `rasty94/goaway` (primer run de `CI` en verde en `6234490`), branch protection en `main` con checks obligatorios `frontend`, `backend`, `e2e`, `helm` y `terraform-provider` (sin force-push ni borrado; admins exentos con `enforce_admins: false`) y `can_approve_pull_request_reviews: false` para `GITHUB_TOKEN`.
+- [x] DEPS (EPIC-11): Actualizacion de dependencias para v1.0.0 (2026-11-25):
+  - Go: 11 modulos directos al dia (`miekg/dns` v0.6.143, `quic-go` v0.66.0, `minio-go` v7.4.1, `client_golang` v1.25.0, ...); `dnsutil.SetReply` ahora muta en sitio, la respuesta de rate-limit copia el mensaje (`ratelimit_reply_test.go`).
+  - Toolchain/imagenes: Node 26 LTS, Alpine 3.24, pnpm 10.23.0 fijado en `Dockerfile.multi` (pnpm 11 rechazaba el lockfile). La imagen ahora incrusta la version (`--build-arg VERSION`).
+  - Frontend minor/patch al dia; `react-hooks/set-state-in-effect` como warning, `useIsMobile` con `useSyncExternalStore`.
+  - Majors frontend: commitlint 21 (declarado `conventional-changelog-conventionalcommits`), `@tanstack/react-table` 9 (tabla de logs con `useTable` y features explicitas, `table.test.tsx`), i18next 27 + react-i18next 18 (`i18n.test.ts`), motion 14, tsparticles 4 (`ParticlesProvider`, verificado en navegador). Pendiente solo TypeScript 7 (ver TODO.md).
+

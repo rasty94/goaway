@@ -14,9 +14,9 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-11 Paridad Final & v1.0.0 | Dependencias al dia, soak/benchmarks, cobertura Vitest y release v1.0.0 | P1 | En curso (tareas sin empezar) |
+| EPIC-11 Paridad Final & v1.0.0 | Soak/benchmarks, cobertura Vitest y release v1.0.0 | P1 | En curso (dependencias hechas salvo TS 7) |
 
-Orden sugerido: actualizacion de dependencias, luego soak/Vitest, y por ultimo release.
+Orden sugerido: soak/Vitest y por ultimo release.
 
 ---
 
@@ -38,27 +38,13 @@ Orden sugerido: actualizacion de dependencias, luego soak/Vitest, y por ultimo r
 
 Umbrales propuestos (revisar antes de empezar).
 
-- [ ] DEPS: Actualizacion completa de dependencias para v1.0.0
-  - Prioridad: p1
-  - Labels: enhancement, security, breaking-change
-  - Contexto: inventario a 2026-11-24 (`go list -m -u`, `pnpm outdated`).
-  - Toolchain e imagenes:
-    - Node `22` -> LTS actual (`Dockerfile.multi`, `ci.yml`, `release.yml`); pnpm `10.23.0` fijado en ambos workflows.
-    - `alpine:3.23` -> ultima estable (`Dockerfile`, `Dockerfile.multi`).
-  - Go (11 directas desactualizadas, todas minor/patch o pre-1.0):
-    - `codeberg.org/miekg/dns` v0.6.85 -> v0.6.143 (pre-1.0, revisar API: es el nucleo del resolver).
-    - `quic-go/quic-go` v0.59.1 -> v0.66.0 (pre-1.0, afecta DoQ/DoH3).
-    - `minio/minio-go/v7` v7.0.97 -> v7.4.1, `prometheus/client_golang` v1.23.2 -> v1.25.0, `pro-bing` v0.8.0 -> v0.9.1, `go-toml/v2` v2.2.4 -> v2.4.3.
-    - Resto patch: `gin-contrib/cors`, `gin-contrib/gzip`, `insomniacslk/dhcp`, `gopsutil/v4`, `gorm`.
-    - `go get -u ./... && go mod tidy` tambien en `terraform-provider-goaway/` (hoy sin pendientes directas; revisar indirectas).
-  - Frontend (`client/`, 35 desactualizadas: 24 minor/patch, 11 major):
-    - Majors: `typescript` 6 -> 7, `@tanstack/react-table` 8 -> 9, `i18next` 25 -> 27 + `react-i18next` 16 -> 18, `motion` 12 -> 14, `@tsparticles/*` 3 -> 4, `@commitlint/*` 20 -> 21.
-    - Minor/patch: react, react-dom, react-router-dom, vite, tailwindcss, eslint, radix-ui, recharts, etc.
+- [ ] DEPS: TypeScript 7 (bloqueado)
+  - Prioridad: p2
+  - Labels: frontend, enhancement
+  - Contexto: resto de la actualizacion de dependencias para v1.0.0 hecha (ver DONE.md). `typescript` 6.0.3 -> 7.0.2 rompe ESLint: `typescript-eslint` (latest 8.74.0 y canary) solo admite `typescript >=4.8.4 <6.1.0`.
   - Criterios de aceptacion:
-    - Una PR (o commit) por grupo: toolchain, Go, frontend minor, cada frontend major; cada uno con CI verde.
-    - Majors con notas de migracion revisadas (changelog upstream) y cambios de API aplicados.
-    - `govulncheck` y `pnpm audit --prod` sin hallazgos high/critical.
-    - Tests Go (`-race`), Vitest y E2E en verde tras el ultimo grupo.
+    - Actualizar cuando `typescript-eslint` publique soporte para TS 7; `pnpm -C client exec eslint`, build y Vitest en verde.
+    - Opcional: `tsc -b` tiene ~36 errores de tipos preexistentes (CI no lo ejecuta); limpiarlos y anadir `tsc -b` al job `frontend`.
 
 - [ ] TECH: Benchmarks y soak tests del resolver
   - Prioridad: p1
