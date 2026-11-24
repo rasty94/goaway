@@ -1,6 +1,6 @@
 # GoAway - Hoja de Ruta y TODO
 
-Ultima actualizacion: 2026-09-07
+Ultima actualizacion: 2026-11-24
 
 Este archivo solo contiene trabajo pendiente. Lo completado esta en [DONE.md](DONE.md).
 
@@ -15,9 +15,10 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
 | EPIC-05 HA Active | Versionado para conflictos tras split-brain | P2 | Auth, outbox y cobertura hechos |
-| EPIC-06 Ecosystem | Helm/Terraform | P1 | API keys e importador Pi-hole hechos |
+| EPIC-06 Ecosystem | Helm/Terraform y modo declarativo GitOps | P1 | API keys e importador Pi-hole hechos |
 | EPIC-07 Enterprise Auth | OIDC, LDAP/AD, passkeys, RBAC fino | P2 | Sin empezar |
 | EPIC-08 DHCPv6 y RA | Consistencia de politicas dual-stack | P2 | DHCPv6+RA hechos |
+| EPIC-09 Resolver Avanzado | DoQ, parallel_best, EDE, Redis/logs externos | P1 | Sin empezar |
 
 ---
 
@@ -36,6 +37,35 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
   - Labels: frontend, enhancement
   - Criterios de aceptacion:
     - Script `test` en `client/package.json` y ejecucion en CI.
+
+---
+
+## Seguimiento de la revision del 2026-11-24
+
+Hallazgos detectados en la auditoria de seguridad, linting, configuracion y comparativa con Blocky.
+
+- [ ] PERF: Reutilizar `http.Client` / pool HTTP/2 en upstream DoH
+  - Prioridad: p0
+  - Labels: dns, enhancement
+  - Contexto: `exchangeDoH` en `backend/dns/server/upstream_exchange.go` instancia un `&http.Client{Timeout: 5 * time.Second}` nuevo por cada consulta, perdiendo keep-alive y multiplexing HTTP/2.
+  - Criterios de aceptacion:
+    - Pool persistente de `http.Client`/`http.Transport` en `DNSServer` (con cierre limpio en shutdown).
+    - Benchmark o test que verifique reutilizacion de conexiones DoH.
+
+- [ ] TECH: Limpiar warnings de ESLint en el cliente React
+  - Prioridad: p1
+  - Labels: frontend, enhancement
+  - Contexto: 8 warnings de `react-hooks/exhaustive-deps` en `app/clients/map.tsx`, `pages/blacklist.tsx`, `pages/prefetch.tsx`, `pages/settings.tsx`, `pages/upstream.tsx` y `pages/whitelist.tsx`.
+  - Criterios de aceptacion:
+    - `pnpm -C client lint` termina con 0 errores y 0 warnings.
+
+- [ ] CHORE: Alinear versiones, puertos Docker y enlaces del repositorio
+  - Prioridad: p1
+  - Labels: enhancement
+  - Contexto: tag actual `v0.93.0` frente a `docker-compose.yml` (`v0.92`) y `client/package.json` (`0.90.0`); `Dockerfile` expone `PROXY_PORT=5353` mientras `docker-compose.yml` usa `5354`; `README.md` mezcla enlaces de `pommee/goaway` y `rasty94/goaway`.
+  - Criterios de aceptacion:
+    - Versiones y `PROXY_PORT` consistentes entre `Dockerfile`, `docker-compose.yml` y `client/package.json`.
+    - Enlaces y badges de `README.md` unificados.
 
 ---
 
@@ -72,6 +102,55 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
     - Instalacion reproducible en Kubernetes.
     - Recursos de provider para upstreams, listas, grupos, politicas.
     - Ejemplos verificados en CI.
+
+- [ ] FEATURE: Modo declarativo / GitOps-first opcional
+  - Prioridad: p2
+  - Labels: feature, api, enhancement
+  - Contexto: complemento del Helm chart para entornos Kubernetes/homelab declarativos (inspirado en Blocky), donde `settings.yaml` y listas/reglas se gestionan desde Git sin estado mutable en UI.
+  - Criterios de aceptacion:
+    - Flag/opcion de configuracion de solo lectura para bloquear mutaciones desde API/UI.
+    - Carga y recarga declarativa (SIGHUP o watcher) de upstreams, listas, grupos y resoluciones locales.
+
+### EPIC-09 Resolver Avanzado (Paridad DNS / Blocky)
+
+- [ ] FEATURE: Soporte DoQ (DNS over QUIC) en upstream y servidor
+  - Prioridad: p1
+  - Labels: feature, dns
+  - Contexto: `protocol: "doq"` ya figura comentado en `backend/settings/model.go` y `quic-go` esta en `go.mod`, pero `upstream_exchange.go` aun no lo implementa ni existe listener DoQ.
+  - Criterios de aceptacion:
+    - Cliente upstream DoQ (RFC 9250) con reutilizacion de sesiones QUIC y validacion TLS.
+    - Listener servidor DoQ opcional configurable en `dns.ports.doq`.
+    - Tests de integracion y metricas por protocolo.
+
+- [ ] FEATURE: Estrategias de seleccion de upstreams (`parallel_best`, `strict`, `random`)
+  - Prioridad: p1
+  - Labels: feature, dns
+  - Criterios de aceptacion:
+    - Estrategia `parallel_best` que consulta los N upstreams mas rapidos en paralelo y devuelve la primera respuesta valida.
+    - Soporte configurable en `dns.upstream.strategy` manteniendo compatibilidad con el orden actual.
+    - Metricas de latencia y tasa de victoria por upstream.
+
+- [ ] FEATURE: Extended DNS Errors (RFC 8914 / EDE)
+  - Prioridad: p1
+  - Labels: feature, dns, observability
+  - Criterios de aceptacion:
+    - Adjuntar opcion EDNS0 EDE en respuestas bloqueadas (`Filtered` / `Blocked`) con motivo legible y en fallos DNSSEC (`DNSSEC Bogus`).
+    - Toggle en configuracion y tests unitarios verificando el registro OPT.
+
+- [ ] FEATURE: Bloqueo por tipo de consulta DNS (qtype)
+  - Prioridad: p2
+  - Labels: feature, dns
+  - Criterios de aceptacion:
+    - Regla por grupo o cliente para bloquear/responder NODATA a tipos concretos (p. ej. `AAAA`, `HTTPS`, `SVCB`).
+    - Reflejado en el simulador de politicas y endpoint de explicacion DNS.
+
+- [ ] FEATURE: Cache compartida opcional en Redis y exportacion externa de query logs
+  - Prioridad: p2
+  - Labels: feature, ha, observability
+  - Contexto: permite escalar despliegues multi-instancia reduciendo carga sobre SQLite en redes grandes.
+  - Criterios de aceptacion:
+    - Backend de cache opcional en Redis (write-through) compartiendo entradas y estado de pausa entre nodos.
+    - Exportador configurable de query logs a PostgreSQL/TimescaleDB o salida estructurada (JSON/CSV) sin bloquear el hot path DNS.
 
 ---
 

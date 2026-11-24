@@ -1,6 +1,6 @@
 # GoAway - Tareas Completadas
 
-Ultima actualizacion: 2026-09-07
+Ultima actualizacion: 2026-11-24
 
 Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, se mueve aqui con sus criterios de aceptacion.
 
@@ -208,3 +208,8 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
   - Campo de version de configuracion.
   - Hooks de upgrade/validacion al cargar settings.
   - Persistencia automatica de upgrades compatibles.
+
+## Correcciones de la revision del 2026-11-24
+
+- [x] SECURITY: Resueltas las 7 vulnerabilidades de `govulncheck` actualizando `golang.org/x/net` a `v0.63.0` (junto con `golang.org/x/crypto` y demas `golang.org/x/*`) y `github.com/gorilla/websocket` a `v1.5.4-0.20240701034025-d67f41855da4`. Verificado con `govulncheck ./...` (0 vulnerabilidades).
+- [x] SECURITY: Corregido hallazgo `gosec` G104 en `backend/pihole/parse.go:163` devolviendo `errors.Join(err, tmp.Close())`. Verificado con `gosec -quiet ./backend/...` (0 hallazgos).

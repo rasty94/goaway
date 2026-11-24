@@ -3,6 +3,7 @@ package pihole
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -160,8 +161,7 @@ func (p *Plan) readGravityEntry(f *zip.File) error {
 
 	// ponytail: 256 MB cap; a gravity.db bigger than that is all downloaded list rows we do not read anyway
 	if _, err := io.Copy(tmp, io.LimitReader(rc, 256<<20)); err != nil {
-		tmp.Close()
-		return err
+		return errors.Join(err, tmp.Close())
 	}
 	if err := tmp.Close(); err != nil {
 		return err
