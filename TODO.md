@@ -14,8 +14,7 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-06 Ecosystem | Provider Terraform oficial | P1 | API keys, Pi-hole import, GitOps y Helm hechos |
-| EPIC-07 Enterprise Auth | WebAuthn / passkeys | P2 | OIDC y LDAP/AD hechos |
+| — | Todas las epicas planificadas (EPIC-01 a EPIC-10) completadas | — | Ver [DONE.md](DONE.md) |
 
 ---
 
@@ -35,41 +34,16 @@ Hallazgos resueltos (ver [DONE.md](DONE.md)).
 
 Hallazgos resueltos (ver [DONE.md](DONE.md)).
 
-## P1 - Operacion, Resiliencia y Ecosistema
-
-### EPIC-06 Ecosystem
-
-- [ ] FEATURE: Provider Terraform oficial
-  - Prioridad: p1
-  - Labels: feature, api
-  - Criterios de aceptacion:
-    - Recursos de provider para upstreams, listas, grupos, politicas.
-    - Ejemplos verificados en CI.
-
----
-
-## P2 - Enterprise
-
-### EPIC-07 Enterprise Auth
-
-- [ ] FEATURE: WebAuthn/passkeys
-  - Prioridad: p2
-  - Labels: feature, security, frontend
-  - Criterios de aceptacion:
-    - Alta/baja de credenciales.
-    - Step-up para acciones sensibles.
-    - 2FA por usuario.
-
 ---
 
 ## Milestones
 
 - [x] v0.9 Resolver: EPIC-01 + base de EPIC-03.
 - [x] v1.0 Policy: EPIC-02 + resto de EPIC-03 + privacidad base.
-- [x] v1.1 Cluster: EPIC-05 (auth, outbox persistente), importador Pi-hole y API keys con scopes.
-- [ ] v1.2 Enterprise: auth avanzada + consistencia dual-stack + ecosistema IaC/SDK.
+- [x] v1.1 Cluster: EPIC-05 (auth, outbox persistente, resync logico, reloj logico, nombres estables, mTLS), importador Pi-hole y API keys con scopes.
+- [x] v1.2 Enterprise: auth avanzada (OIDC, LDAP/AD, TOTP 2FA, WebAuthn/passkeys) + consistencia dual-stack + ecosistema IaC (Helm chart + Terraform provider) + paridad resolver (DoQ, parallel_best, EDE, qtype, Redis, exportador JSON/CSV/Postgres).
 
-Nota: el CHANGELOG va por 0.93.0 mientras que v0.9 y v1.0 ya estan cubiertos funcionalmente. Decidir si se salta a 1.0.0 en la proxima release.
+Nota: el CHANGELOG va por 0.95.0 mientras que v0.9, v1.0, v1.1 y v1.2 ya estan cubiertos funcionalmente. Listo para saltar a **v1.0.0** cuando se decida.
 
 ---
 
