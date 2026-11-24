@@ -18,18 +18,13 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 | EPIC-06 Ecosystem | Helm/Terraform y modo declarativo GitOps | P1 | API keys e importador Pi-hole hechos |
 | EPIC-07 Enterprise Auth | OIDC, LDAP/AD, passkeys, RBAC fino | P2 | Sin empezar |
 | EPIC-08 DHCPv6 y RA | Consistencia de politicas dual-stack | P2 | DHCPv6+RA hechos |
-| EPIC-09 Resolver Avanzado | DoQ, parallel_best, EDE, Redis/logs externos | P1 | Sin empezar |
+| EPIC-09 Resolver Avanzado | DoQ, parallel_best, EDE, Redis/logs externos | P1 | DoQ, parallel_best y EDE hechos |
 
 ---
 
 ## P0 - Deuda que bloquea lo demas
 
-- [ ] TECH: Ampliar cobertura de tests en backend
-  - Prioridad: p0
-  - Labels: enhancement
-  - Contexto: cubiertos `cluster`, `dhcp`, `user`, `api/key`, `resolution` y `dns/server`; faltan aun `audit`, `whitelist`, `prefetch`, `request` y `api/ratelimit`.
-  - Criterios de aceptacion:
-    - Tests en `audit`, `whitelist`, `prefetch` y `api/ratelimit`.
+(Sin bloqueantes P0 pendientes; ver [DONE.md](DONE.md).)
 
 ---
 
@@ -44,11 +39,7 @@ Hallazgos resueltos (ver [DONE.md](DONE.md)).
 Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigieron en `3b10071`.
 
 - [ ] HA: resync automatico cuando un peer pierde eventos. Bloqueado por diseno: `ImportTeleporterData` reemplaza el fichero de base de datos entero y exige reinicio, asi que no vale como resync en caliente. Hace falta un snapshot logico (listas, grupos, clientes, DNS local, leases) aplicable sin reiniciar, o un endpoint de re-seed que reinicie el nodo de forma controlada. Mientras tanto la perdida ya no es silenciosa: el nodo se marca "Out of sync" en el dashboard.
-- [ ] HA: peers por HTTPS o firma de la respuesta de heartbeat. Un MITM en la red de peers puede forzar la eleccion.
-- [ ] HA: cache de nonces en la ventana de 30 s (hoy un evento capturado se puede reenviar dentro de la ventana; efecto idempotente).
-- [ ] Import: `Exists` en clientes se calcula como "tiene alguna asignacion"; deberia comparar el conjunto de grupos.
-- [ ] Config: `settings.Config` se lee desde el resolver y se escribe desde la API sin mutex (upstreams, DHCP, cache). Hoy se mitiga con copy-on-write en upstreams; hace falta un puntero atomico o RWMutex en el hot path.
-- [ ] Simplificaciones pendientes de ponytail-review: los nueve bloques `if !Exists` en `piholeImportApply` siguen repitiendo el mismo esqueleto.
+- [ ] HA: peers por HTTPS (TLS mutuo/certificados entre nodos; la firma HMAC de la respuesta de heartbeat ya esta implementada).
 
 ## P1 - Operacion, Resiliencia y Ecosistema
 
