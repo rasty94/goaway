@@ -28,6 +28,7 @@ func (api *API) registerHARoutes() {
 		haRoutes.GET("/config", api.getHAConfig)
 		haRoutes.POST("/config", api.saveHAConfig)
 		haRoutes.POST("/sync-now", api.triggerHASync)
+		haRoutes.POST("/resync", api.triggerLogicalResync)
 		haRoutes.GET("/cluster", api.getClusterStatus)
 	}
 
@@ -35,6 +36,7 @@ func (api *API) registerHARoutes() {
 	native := api.router.Group("/api/native/cluster", api.clusterAuth())
 	native.POST("/heartbeat", api.handleHeartbeat)
 	native.POST("/replicate", api.handleReplication)
+	native.GET("/snapshot", api.handleClusterSnapshot)
 }
 
 const clusterAuditWindow = time.Minute
