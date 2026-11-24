@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"goaway/backend/database"
+	"goaway/backend/settings"
 
 	"gorm.io/gorm"
 )
@@ -62,11 +63,20 @@ type ReplicationManager struct {
 }
 
 func NewReplicationManager(service *Service, db *gorm.DB) *ReplicationManager {
+	var tlsCfg settings.ClusterTLSConfig
+	if service != nil && service.config != nil {
+		tlsCfg = service.config.HighAvailability.TLS
+	}
+	client, err := NewPeerHTTPClient(tlsCfg, 10*time.Second)
+	if err != nil {
+		log.Warning("[HA/Replication] Falling back to default HTTP client: %v", err)
+		client = &http.Client{Timeout: 10 * time.Second}
+	}
 	return &ReplicationManager{
 		service: service,
 		db:      db,
 		wake:    make(chan struct{}, 1),
-		client:  &http.Client{Timeout: 10 * time.Second},
+		client:  client,
 	}
 }
 

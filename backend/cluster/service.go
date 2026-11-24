@@ -157,7 +157,11 @@ func (s *Service) pingNode(address string) {
 	httpReq.Header.Set("Content-Type", "application/json")
 	SignRequest(httpReq, s.config.HighAvailability.Secret, payload)
 
-	client := &http.Client{}
+	client, err := NewPeerHTTPClient(s.config.HighAvailability.TLS, 5*time.Second)
+	if err != nil {
+		log.Warning("[HA/Cluster] Falling back to default heartbeat HTTP client: %v", err)
+		client = &http.Client{Timeout: 5 * time.Second}
+	}
 	resp, err := client.Do(httpReq)
 
 	latency := time.Since(startTime).Milliseconds()

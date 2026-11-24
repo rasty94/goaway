@@ -130,7 +130,10 @@ func (api *API) fetchClusterSnapshot(ctx context.Context, peerAddr string) (Clus
 	}
 	cluster.SignRequest(req, api.Config.HighAvailability.Secret, nil)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client, err := cluster.NewPeerHTTPClient(api.Config.HighAvailability.TLS, 10*time.Second)
+	if err != nil {
+		return ClusterSnapshot{}, err
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return ClusterSnapshot{}, err
