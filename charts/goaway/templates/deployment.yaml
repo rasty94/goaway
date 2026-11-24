@@ -41,6 +41,11 @@ spec:
               containerPort: {{ .Values.ports.doq }}
               protocol: UDP
             {{- end }}
+            {{- if gt (int .Values.ports.doh3) 0 }}
+            - name: doh3-udp
+              containerPort: {{ .Values.ports.doh3 }}
+              protocol: UDP
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health

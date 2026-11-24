@@ -27,6 +27,12 @@ spec:
       targetPort: doq-udp
       protocol: UDP
     {{- end }}
+    {{- if gt (int .Values.ports.doh3) 0 }}
+    - name: doh3-udp
+      port: {{ .Values.ports.doh3 }}
+      targetPort: doh3-udp
+      protocol: UDP
+    {{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -34,6 +40,7 @@ metadata:
   name: {{ include "goaway.fullname" . }}-web
   labels:
     {{- include "goaway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
   {{- with .Values.service.web.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

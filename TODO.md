@@ -14,21 +14,13 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-11 Paridad Final & v1.0.0 | Dashboards Grafana, modo stateless ligero, soak/benchmarks v1.0.0 | P1 | En curso (DoH3 hecho) |
+| EPIC-11 Paridad Final & v1.0.0 | Modo stateless ligero, soak/benchmarks v1.0.0 | P1 | En curso (DoH3 + Grafana/ServiceMonitor hechos) |
 
 ---
 
 ## P1 - Paridad Final (Blocky) y Preparacion v1.0.0
 
 ### EPIC-11 Paridad Final & v1.0.0
-
-- [ ] FEATURE: Dashboards oficiales de Grafana y ServiceMonitor en Helm
-  - Prioridad: p1
-  - Labels: feature, observability
-  - Contexto: las metricas Prometheus ya cubren queries, bloqueos, cache, DNSSEC, latencia y victorias por upstream; falta entregar el dashboard JSON listo para importar (como Blocky).
-  - Criterios de aceptacion:
-    - Dashboard JSON versionado en `docs/grafana/goaway-dashboard.json` (y documentado).
-    - Plantilla opcional `ServiceMonitor` en `charts/goaway/templates/`.
 
 - [ ] FEATURE: Perfil ligero stateless (sin SQLite persistente ni UI)
   - Prioridad: p2

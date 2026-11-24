@@ -27,6 +27,7 @@ ports:
   dot: 853
   doh: 443
   doq: 0
+  doh3: 0
 
 service:
   dns:
@@ -35,6 +36,16 @@ service:
   web:
     type: ClusterIP
     annotations: {}
+
+serviceMonitor:
+  enabled: false
+  namespace: ""
+  path: /metrics
+  interval: 15s
+  scrapeTimeout: 10s
+  additionalLabels: {}
+  relabelings: []
+  metricRelabelings: []
 
 persistence:
   enabled: true
