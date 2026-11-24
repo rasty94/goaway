@@ -42,6 +42,8 @@ type ReplicatedEvent struct {
 	Type      EventType   `json:"type"`
 	Payload   interface{} `json:"payload"`
 	Timestamp time.Time   `json:"timestamp"`
+	Version   int64       `json:"version,omitempty"`
+	OriginID  string      `json:"originId,omitempty"`
 }
 
 const (
@@ -52,10 +54,11 @@ const (
 
 // ReplicationManager persists every event per peer and pushes them in order until the peer acks.
 type ReplicationManager struct {
-	service *Service
-	db      *gorm.DB
-	wake    chan struct{}
-	client  *http.Client
+	service  *Service
+	db       *gorm.DB
+	wake     chan struct{}
+	client   *http.Client
+	versions VersionTracker
 }
 
 func NewReplicationManager(service *Service, db *gorm.DB) *ReplicationManager {
@@ -82,6 +85,12 @@ func (rm *ReplicationManager) Broadcast(event ReplicatedEvent) {
 	}
 
 	event.Timestamp = time.Now()
+	if event.Version == 0 {
+		event.Version = rm.versions.NextVersion()
+	}
+	if event.OriginID == "" {
+		event.OriginID = rm.service.SelfID()
+	}
 	payload, err := json.Marshal(event)
 	if err != nil {
 		log.Error("[HA/Replication] Cannot encode event %s: %v", event.Type, err)

@@ -297,6 +297,13 @@ func (api *API) handleReplication(c *gin.Context) {
 		return
 	}
 
+	entityKey := cluster.EventEntityKey(event)
+	if !api.clusterVersions.ShouldApply(entityKey, event.Version) {
+		log.Info("[HA/Replication] Discarding stale event %s (key=%s, version=%d)", event.Type, entityKey, event.Version)
+		c.Status(http.StatusOK)
+		return
+	}
+
 	log.Info("[HA/Replication] Received event: %s", event.Type)
 
 	// Dispatch event to appropriate service

@@ -96,6 +96,7 @@ type API struct {
 	IsShuttingDown   bool
 	clusterAuthAudit auditThrottle
 	clusterNonces    cluster.NonceCache
+	clusterVersions  cluster.VersionTracker
 }
 
 func (api *API) Start(content embed.FS, errorChannel chan struct{}) {
