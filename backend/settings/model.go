@@ -42,6 +42,7 @@ type PortsConfig struct {
 	TCPUDP int `yaml:"udptcp" json:"udptcp"`
 	DoT    int `yaml:"dot" json:"dot"`
 	DoH    int `yaml:"doh" json:"doh"`
+	DoH3   int `yaml:"doh3,omitempty" json:"doh3,omitempty"`
 	DoQ    int `yaml:"doq,omitempty" json:"doq,omitempty"`
 }
 

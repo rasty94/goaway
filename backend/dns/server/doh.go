@@ -55,6 +55,9 @@ func (s *DNSServer) handleHealthCheck(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *DNSServer) handleDoHRequest(w http.ResponseWriter, r *http.Request) {
+	if s.Config != nil && s.Config.DNSSnapshot().Ports.DoH3 > 0 {
+		w.Header().Set("Alt-Svc", fmt.Sprintf(`h3=":%d"; ma=2592000`, s.Config.DNSSnapshot().Ports.DoH3))
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	ctxVal := context.WithValue(ctx, model.DoH, true)
 	defer cancel()

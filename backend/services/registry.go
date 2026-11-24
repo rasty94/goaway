@@ -37,11 +37,12 @@ type ServiceRegistry struct {
 	readyChan chan struct{}
 	content   embed.FS
 
-	UDPServer *dns.Server
-	TCPServer *dns.Server
-	DoTServer *dns.Server
-	DoHServer *http.Server
-	DoQServer *dnsserver.DoQServer
+	UDPServer  *dns.Server
+	TCPServer  *dns.Server
+	DoTServer  *dns.Server
+	DoHServer  *http.Server
+	DoH3Server *dnsserver.DoH3Server
+	DoQServer  *dnsserver.DoQServer
 
 	Context *AppContext
 
@@ -141,6 +142,14 @@ func (r *ServiceRegistry) setupSecureServers() error {
 		return fmt.Errorf("failed to initialize DoH server: %w", err)
 	}
 	r.DoHServer = dohServer
+
+	if r.Context.Config.DNS.Ports.DoH3 > 0 {
+		doh3Server, err := r.Context.DNSServer.InitDoH3(r.Context.Certificate)
+		if err != nil {
+			return fmt.Errorf("failed to initialize DoH3 server: %w", err)
+		}
+		r.DoH3Server = doh3Server
+	}
 
 	if r.Context.Config.DNS.Ports.DoQ > 0 {
 		doqServer, err := r.Context.DNSServer.InitDoQ(r.Context.Certificate)
@@ -271,6 +280,16 @@ func (r *ServiceRegistry) startSecureServers() {
 			r.errorChan <- ServiceError{Service: "DoH", Err: err}
 		}
 	}()
+
+	if r.DoH3Server != nil {
+		r.wg.Add(1)
+		go func() {
+			defer r.wg.Done()
+			if err := r.DoH3Server.ListenAndServe(); err != nil {
+				r.errorChan <- ServiceError{Service: "DoH3", Err: err}
+			}
+		}()
+	}
 
 	if r.DoQServer != nil {
 		r.wg.Add(1)

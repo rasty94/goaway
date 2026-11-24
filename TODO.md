@@ -14,7 +14,38 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| — | Todas las epicas planificadas (EPIC-01 a EPIC-10) completadas | — | Ver [DONE.md](DONE.md) |
+| EPIC-11 Paridad Final & v1.0.0 | Dashboards Grafana, modo stateless ligero, soak/benchmarks v1.0.0 | P1 | En curso (DoH3 hecho) |
+
+---
+
+## P1 - Paridad Final (Blocky) y Preparacion v1.0.0
+
+### EPIC-11 Paridad Final & v1.0.0
+
+- [ ] FEATURE: Dashboards oficiales de Grafana y ServiceMonitor en Helm
+  - Prioridad: p1
+  - Labels: feature, observability
+  - Contexto: las metricas Prometheus ya cubren queries, bloqueos, cache, DNSSEC, latencia y victorias por upstream; falta entregar el dashboard JSON listo para importar (como Blocky).
+  - Criterios de aceptacion:
+    - Dashboard JSON versionado en `docs/grafana/goaway-dashboard.json` (y documentado).
+    - Plantilla opcional `ServiceMonitor` en `charts/goaway/templates/`.
+
+- [ ] FEATURE: Perfil ligero stateless (sin SQLite persistente ni UI)
+  - Prioridad: p2
+  - Labels: feature, enhancement, api
+  - Contexto: para usuarios de Kubernetes/GitOps que buscan un proxy DNS 100% stateless como Blocky, apoyado en `settings.yaml` (`api.readOnly: true`), cache Redis y exportacion externa de logs.
+  - Criterios de aceptacion:
+    - Modo `stateless` con BD en memoria (`:memory:`) y `misc.dashboard: false`.
+    - Ejemplo de values en `charts/goaway/` para despliegue multi-replica stateless.
+
+- [ ] TECH: Endurecimiento, soak tests y release v1.0.0
+  - Prioridad: p1
+  - Labels: enhancement
+  - Contexto: todas las epicas de v0.9 a v1.2 estan completas en `v0.96.0`; falta validar estabilidad bajo carga sostenida antes de cortar `v1.0.0`.
+  - Criterios de aceptacion:
+    - Benchmarks/soak tests en UDP, TCP, DoT, DoH y DoQ sin fugas de goroutines ni memoria.
+    - Cobertura de componentes clave en Vitest (`client/`).
+    - Guia de migracion y corte oficial de `v1.0.0`.
 
 ---
 
@@ -43,7 +74,7 @@ Hallazgos resueltos (ver [DONE.md](DONE.md)).
 - [x] v1.1 Cluster: EPIC-05 (auth, outbox persistente, resync logico, reloj logico, nombres estables, mTLS), importador Pi-hole y API keys con scopes.
 - [x] v1.2 Enterprise: auth avanzada (OIDC, LDAP/AD, TOTP 2FA, WebAuthn/passkeys) + consistencia dual-stack + ecosistema IaC (Helm chart + Terraform provider) + paridad resolver (DoQ, parallel_best, EDE, qtype, Redis, exportador JSON/CSV/Postgres).
 
-Nota: el CHANGELOG va por 0.95.0 mientras que v0.9, v1.0, v1.1 y v1.2 ya estan cubiertos funcionalmente. Listo para saltar a **v1.0.0** cuando se decida.
+Nota: el CHANGELOG va por 0.96.0 mientras que v0.9, v1.0, v1.1 y v1.2 ya estan cubiertos funcionalmente. Tras cerrar EPIC-11, listo para saltar a **v1.0.0**.
 
 ---
 

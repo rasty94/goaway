@@ -112,6 +112,13 @@ func (m *Manager) shutdown() {
 		log.Info("Stopped DNS-over-HTTPS server")
 	}
 
+	if m.services.DoH3Server != nil {
+		if err := m.services.DoH3Server.Shutdown(ctx); err != nil {
+			log.Error("Error stopping DoH3 server: %v", err)
+		}
+		log.Info("Stopped DNS-over-HTTP/3 server")
+	}
+
 	if m.services.DoQServer != nil {
 		if err := m.services.DoQServer.Shutdown(ctx); err != nil {
 			log.Error("Error stopping DoQ server: %v", err)

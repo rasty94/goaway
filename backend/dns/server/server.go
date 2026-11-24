@@ -29,6 +29,7 @@ import (
 	"codeberg.org/miekg/dns"
 	"github.com/gorilla/websocket"
 	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/http3"
 	"gorm.io/gorm"
 )
 
@@ -48,6 +49,12 @@ type DNSServer struct {
 	// Persistent HTTP/2-capable client for DoH upstream queries
 	dohClient     *http.Client
 	dohClientOnce sync.Once
+
+	// Persistent HTTP/3 (QUIC) client for DoH3 upstream queries
+	doh3Client     *http.Client
+	doh3Transport  *http3.Transport
+	doh3ClientOnce sync.Once
+	doh3TLSConfig  *tls.Config
 
 	// Persistent QUIC session pool for DoQ upstream queries
 	doqMu        sync.Mutex
@@ -259,6 +266,9 @@ func (s *DNSServer) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 }
 
 func (s *DNSServer) detectProtocol(ctx context.Context, w dns.ResponseWriter) model.Protocol {
+	if ctx.Value(model.DoH3) == true {
+		return model.DoH3
+	}
 	if ctx.Value(model.DoH) == true {
 		return model.DoH
 	}

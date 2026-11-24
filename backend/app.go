@@ -97,6 +97,10 @@ func (a *Application) RestartApplication() {
 			}
 			log.Warning("Stopped DNS-over-HTTPS server")
 		}
+		if a.services.DoH3Server != nil {
+			_ = a.services.DoH3Server.Shutdown(ctx)
+			log.Warning("Stopped DNS-over-HTTP/3 server")
+		}
 	}()
 
 	go func() {

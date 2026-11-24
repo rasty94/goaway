@@ -48,6 +48,8 @@ func (s *DNSServer) exchangeWithProtocolContext(ctx context.Context, msg *dns.Ms
 		return in, err
 	case "doh":
 		return s.exchangeDoH(ctx, msg, addr)
+	case "doh3", "h3":
+		return s.exchangeDoH3(ctx, msg, addr)
 	case "doq", "quic":
 		return s.exchangeDoQ(ctx, msg, addr)
 	default:
@@ -87,11 +89,12 @@ func (s *DNSServer) getDoHClient() *http.Client {
 	return s.dohClient
 }
 
-// CloseIdleConnections releases idle upstream HTTP/2 and QUIC connections during shutdown.
+// CloseIdleConnections releases idle upstream HTTP/2, HTTP/3 and QUIC connections during shutdown.
 func (s *DNSServer) CloseIdleConnections() {
 	if s.dohClient != nil {
 		s.dohClient.CloseIdleConnections()
 	}
+	s.closeDoH3Transport()
 	s.closeDoQConns()
 }
 

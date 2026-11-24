@@ -46,11 +46,12 @@ func (r *RequestLogEntry) String() string {
 type Protocol string
 
 const (
-	UDP Protocol = "UDP"
-	TCP Protocol = "TCP"
-	DoT Protocol = "DoT"
-	DoH Protocol = "DoH"
-	DoQ Protocol = "DoQ"
+	UDP  Protocol = "UDP"
+	TCP  Protocol = "TCP"
+	DoT  Protocol = "DoT"
+	DoH  Protocol = "DoH"
+	DoH3 Protocol = "DoH3"
+	DoQ  Protocol = "DoQ"
 )
 
 type ResolvedIP struct {
