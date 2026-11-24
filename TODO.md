@@ -43,7 +43,7 @@ Umbrales propuestos (revisar antes de empezar).
   - Criterios de aceptacion:
     - `Benchmark*` para UDP, TCP, DoT, DoH y DoQ (y DoH3 si esta habilitado).
     - `goleak.VerifyNone` en los tests de arranque/parada de cada servidor.
-    - Soak de 4h a 1000 QPS por protocolo: RSS estable (crecimiento < 10% tras la primera hora) y numero de goroutines estable.
+    - Soak de 10 min a 1000 QPS por protocolo: RSS estable (crecimiento < 10% tras 2 min de calentamiento) y numero de goroutines estable.
     - Resultados documentados como baseline en `docs/`.
 
 - [ ] TECH: Cobertura Vitest de componentes clave
