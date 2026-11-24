@@ -15,8 +15,7 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
 | EPIC-06 Ecosystem | Provider Terraform oficial | P1 | API keys, Pi-hole import, GitOps y Helm hechos |
-| EPIC-07 Enterprise Auth | LDAP/AD, passkeys | P2 | OIDC hecho |
-| EPIC-09 Resolver Avanzado | Sink SQL externo (PostgreSQL/TimescaleDB) | P1 | DoQ, parallel_best, EDE, qtype, Redis y export JSON/CSV hechos |
+| EPIC-07 Enterprise Auth | WebAuthn / passkeys | P2 | OIDC y LDAP/AD hechos |
 
 ---
 
@@ -47,27 +46,11 @@ Hallazgos resueltos (ver [DONE.md](DONE.md)).
     - Recursos de provider para upstreams, listas, grupos, politicas.
     - Ejemplos verificados en CI.
 
-### EPIC-09 Resolver Avanzado (Paridad DNS / Blocky)
-
-- [ ] FEATURE: Sink SQL externo para query logs (PostgreSQL/TimescaleDB)
-  - Prioridad: p2
-  - Labels: feature, observability
-  - Contexto: la cache compartida Redis y el exportador estructurado JSON/CSV/stdout ya estan implementados.
-  - Criterios de aceptacion:
-    - Exportador opcional a PostgreSQL/TimescaleDB.
-
 ---
 
-## P2 - Enterprise y Dual Stack Completo
+## P2 - Enterprise
 
 ### EPIC-07 Enterprise Auth
-
-- [ ] FEATURE: Integracion LDAP/AD
-  - Prioridad: p2
-  - Labels: feature, security, api
-  - Criterios de aceptacion:
-    - Bind seguro y mapeo de grupos.
-    - Fallback local de emergencia.
 
 - [ ] FEATURE: WebAuthn/passkeys
   - Prioridad: p2

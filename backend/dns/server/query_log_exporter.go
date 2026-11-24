@@ -45,6 +45,11 @@ func (s *DNSServer) exportQueryLogs(entries []model.RequestLogEntry) {
 
 func writeQueryLogExport(cfg settings.QueryLogExportConfig, entries []model.RequestLogEntry) error {
 	target := strings.TrimSpace(cfg.Target)
+	format := strings.ToLower(strings.TrimSpace(cfg.Format))
+	if format == "postgres" || format == "timescaledb" {
+		return writeQueryLogPostgres(target, entries)
+	}
+
 	var out io.Writer
 	var needHeader bool
 
