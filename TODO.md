@@ -27,16 +27,9 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 - [ ] TECH: Ampliar cobertura de tests en backend
   - Prioridad: p0
   - Labels: enhancement
-  - Contexto: 13 ficheros `_test.go`. Sin tests en `cluster`, `dhcp`, `dns` (fuera de server), `audit`, `user`, `whitelist`, `prefetch`, `resolution`.
+  - Contexto: cubiertos `cluster`, `dhcp`, `user`, `api/key`, `resolution` y `dns/server`; faltan aun `audit`, `whitelist`, `prefetch`, `request` y `api/ratelimit`.
   - Criterios de aceptacion:
-    - Tests en `cluster` (replicacion, election) y `dhcp` (v4/v6 handlers).
-    - Tests en el cliente React (hoy no hay script `test` en package.json).
-
-- [ ] TECH: Runner de tests en el cliente
-  - Prioridad: p0
-  - Labels: frontend, enhancement
-  - Criterios de aceptacion:
-    - Script `test` en `client/package.json` y ejecucion en CI.
+    - Tests en `audit`, `whitelist`, `prefetch` y `api/ratelimit`.
 
 ---
 

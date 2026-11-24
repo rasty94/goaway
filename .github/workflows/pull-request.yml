@@ -38,6 +38,9 @@ jobs:
       - name: ESLint
         run: pnpm -C ./client exec eslint
 
+      - name: Frontend unit tests
+        run: pnpm -C ./client test
+
       - name: Frontend dependency audit
         run: pnpm -C ./client audit --prod --audit-level high
 
