@@ -45,12 +45,21 @@ type PortsConfig struct {
 	DoQ    int `yaml:"doq,omitempty" json:"doq,omitempty"`
 }
 
+type RedisCacheConfig struct {
+	Enabled  bool   `yaml:"enabled" json:"enabled"`
+	Address  string `yaml:"address" json:"address"`
+	Password string `yaml:"password,omitempty" json:"-"`
+	DB       int    `yaml:"db,omitempty" json:"db,omitempty"`
+	Prefix   string `yaml:"prefix,omitempty" json:"prefix,omitempty"`
+}
+
 type DNSConfig struct {
 	Status                Status                 `yaml:"-" json:"status"`
 	Address               string                 `yaml:"address" json:"address"`
 	Gateway               string                 `yaml:"gateway" json:"gateway"`
 	CacheEnabled          bool                   `yaml:"cacheEnabled" json:"cacheEnabled"`
 	CacheTTL              int                    `yaml:"cacheTTL" json:"cacheTTL"`
+	RedisCache            RedisCacheConfig       `yaml:"redisCache,omitempty" json:"redisCache,omitempty"`
 	EDEEnabled            bool                   `yaml:"edeEnabled" json:"edeEnabled"`
 	DNSSEC                DNSSECConfig           `yaml:"dnssec" json:"dnssec"`
 	RateLimit             DNSRateLimitConfig     `yaml:"rateLimit" json:"rateLimit"`
@@ -81,12 +90,24 @@ type RateLimitConfig struct {
 	Window   int  `yaml:"window" json:"window"`
 }
 
+type OIDCConfig struct {
+	Enabled      bool     `yaml:"enabled" json:"enabled"`
+	Issuer       string   `yaml:"issuer,omitempty" json:"issuer,omitempty"`
+	ClientID     string   `yaml:"clientId,omitempty" json:"clientId,omitempty"`
+	ClientSecret string   `yaml:"clientSecret,omitempty" json:"-"`
+	RedirectURL  string   `yaml:"redirectUrl,omitempty" json:"redirectUrl,omitempty"`
+	Scopes       []string `yaml:"scopes,omitempty" json:"scopes,omitempty"`
+	RoleClaim    string   `yaml:"roleClaim,omitempty" json:"roleClaim,omitempty"`
+	AdminGroups  []string `yaml:"adminGroups,omitempty" json:"adminGroups,omitempty"`
+}
+
 type APIConfig struct {
 	Port           int             `yaml:"port" json:"port"`
 	Authentication bool            `yaml:"authentication" json:"authentication"`
 	ReadOnly       bool            `yaml:"readOnly,omitempty" json:"readOnly,omitempty"`
 	JWTSecret      string          `yaml:"jwtSecret" json:"-"`
 	RateLimit      RateLimitConfig `yaml:"rateLimit" json:"rateLimit"`
+	OIDC           OIDCConfig      `yaml:"oidc,omitempty" json:"oidc,omitempty"`
 }
 
 type QueryLogExportConfig struct {

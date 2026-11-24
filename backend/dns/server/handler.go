@@ -680,6 +680,11 @@ func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, bool, bool, string, s
 				staleSource = source
 				hasStaleCandidate = true
 			}
+		} else if redisRecords, dnssecStatus, source, ok := s.redisCacheGet(cacheKey); ok {
+			if dnssecStatus == "" {
+				dnssecStatus = s.defaultDNSSECStatus()
+			}
+			return redisRecords, true, false, source == "prefetch", dnsutil.CodeToString(dns.RcodeSuccess), dnssecStatus
 		}
 	}
 

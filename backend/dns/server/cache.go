@@ -122,4 +122,7 @@ func (s *DNSServer) CacheRecordWithSource(cacheKey, domain string, ipAddresses [
 		Source:       source,
 		DNSSECStatus: dnssecStatus,
 	})
+
+	// #nosec G115 - cacheTTL is positive and bounded by DNS TTL seconds
+	s.redisCacheSet(cacheKey, domain, ipAddresses, uint32(max(1, int(cacheTTL.Seconds()))), dnssecStatus, source)
 }
