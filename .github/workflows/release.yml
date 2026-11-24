@@ -1,72 +1,75 @@
-name: Build & Deploy GoAway release and Docker image
+name: Release
 
+# Manual releases: update CHANGELOG.md and charts/goaway/Chart.yaml, commit
+# "chore(release): prepare vX.Y.Z", then push the tag vX.Y.Z.
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - "docs/**"
-      - ".github/workflows/docs.yml"
+    tags: ["v*"]
+
+permissions:
+  contents: read
 
 jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: validate
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: write
-
+      packages: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install conventionalcommits
-        run: npm install conventional-changelog-conventionalcommits -D
-
-      - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
-        id: semantic
+      - uses: actions/checkout@v7
         with:
-          extra_plugins: |
-            @semantic-release/git
-            @semantic-release/exec
-            @semantic-release/changelog
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          fetch-depth: 0
 
-      - name: Set up Node.js
-        if: steps.semantic.outputs.new_release_published == 'true'
-        uses: actions/setup-node@v4
+      - name: Check chart version matches tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          chart=$(awk '/^version:/{print $2}' charts/goaway/Chart.yaml)
+          app=$(awk -F'"' '/^appVersion:/{print $2}' charts/goaway/Chart.yaml)
+          if [ "$chart" != "$tag" ] || [ "$app" != "$tag" ]; then
+            echo "::error::Chart.yaml version=$chart appVersion=$app, expected $tag"
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.23.0
+
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
 
-      - name: Install pnpm
-        if: steps.semantic.outputs.new_release_published == 'true'
-        uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - name: Build website
-        if: steps.semantic.outputs.new_release_published == 'true'
+      - name: Build frontend
         run: make build
 
-      - name: Remove dirty git state (according to goreleaser)
-        if: steps.semantic.outputs.new_release_published == 'true'
-        run: rm package-lock.json package.json
-
-      - name: Run GoReleaser
-        if: steps.semantic.outputs.new_release_published == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          curl -sL https://git.io/goreleaser | bash
-
-      - name: Log in to DockerHub
-        if: success() && steps.semantic.outputs.new_release_published == 'true'
-        uses: docker/login-action@v3
+      - uses: actions/setup-go@v7
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          go-version-file: go.mod
+
+      - name: GoReleaser
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: v2.20.3
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        if: success() && steps.semantic.outputs.new_release_published == 'true'
-        run: |
-          make publish
+        run: make publish

@@ -3,7 +3,7 @@ set -euo pipefail
 
 COMPOSE_FILE="docker-compose.e2e.yml"
 API_BASE_URL="http://127.0.0.1:9877"
-RETRY_TIMEOUT=90
+RETRY_TIMEOUT=180
 RETRY_INTERVAL=2
 
 if ! command -v docker >/dev/null 2>&1; then

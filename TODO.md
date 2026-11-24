@@ -14,7 +14,7 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-12 CI/CD GitHub | Que el pipeline corra de verdad, valide `main` y publique releases | P0 | Sin empezar (0 runs en `rasty94/goaway`) |
+| EPIC-12 CI/CD GitHub | Que el pipeline corra de verdad, valide `main` y publique releases | P0 | Codigo hecho; falta configuracion manual en GitHub |
 | EPIC-11 Paridad Final & v1.0.0 | Dependencias al dia, soak/benchmarks, cobertura Vitest y release v1.0.0 | P1 | En curso (tareas sin empezar) |
 
 Orden sugerido: EPIC-12 primero (sin CI no se valida nada de lo demas), luego actualizacion de dependencias, y despues soak/Vitest/release.
@@ -33,62 +33,18 @@ Orden sugerido: EPIC-12 primero (sin CI no se valida nada de lo demas), luego ac
 
 ### EPIC-12 CI/CD GitHub
 
-Estado a 2026-11-24: los 3 workflows estan `active` pero `rasty94/goaway` tiene 0 runs, 0 secrets y `main` sin proteccion. Los runs que aparecen en `gh run list` sin `-R` son del remote `upstream` (`pommee/goaway`).
+Estado a 2026-11-24: `rasty94/goaway` tiene 0 runs y `main` sin proteccion. Los runs que aparecen en `gh run list` sin `-R` son del remote `upstream` (`pommee/goaway`); usar `gh ... -R rasty94/goaway`.
 
 - [ ] OPS (manual, en GitHub): Activar Actions y configurar el repo
   - Prioridad: p0
   - Labels: ci
+  - Contexto: el codigo de EPIC-12 esta hecho (ver DONE.md); falta la parte que solo se puede hacer en la web/admin de GitHub. Releases por tag usan `GITHUB_TOKEN`, no hacen falta secrets propios.
   - Criterios de aceptacion:
-    - Averiguado por que no se disparan los workflows (pestana Actions / billing) y un push a `main` genera run.
-    - Branch protection en `main`: checks obligatorios del workflow de validacion.
-    - Secrets necesarios creados segun la estrategia de release elegida (ver abajo).
-
-- [ ] DECISION: Estrategia de release
-  - Prioridad: p0
-  - Labels: ci
-  - Contexto: v0.95/v0.96 se hicieron a mano (`chore(release): prepare ...` + tag), pero `release.yml` usa semantic-release, que tambien escribe CHANGELOG y tags. Son incompatibles.
-  - Opciones: (a) semantic-release automatico en cada push a `main`; (b) release manual, workflow disparado por tag `v*`.
-  - Criterio: una sola via documentada en `CONTRIBUTING`/README; la otra eliminada.
-
-- [ ] CI: Validacion tambien en push a `main`
-  - Prioridad: p0
-  - Labels: ci
-  - Contexto: `pull-request.yml` solo corre en PRs y se esta commiteando directo a `main`, asi que ningun commit reciente ha pasado lint/tests/E2E.
-  - Criterios de aceptacion:
-    - Workflow de validacion con `on: push: branches: [main]` ademas de `pull_request` (commitlint solo en PR).
-    - Cache de Go modules y pnpm store.
-
-- [ ] CI: Release condicionada a tests y publicacion correcta
-  - Prioridad: p0
-  - Labels: ci
-  - Contexto: `release.yml` publica sin pasar tests; hace login en DockerHub pero `make publish` empuja a `ghcr.io/rasty94/goaway`; instala goreleaser con `curl https://git.io/goreleaser | bash` (git.io retirado y script remoto sin verificar).
-  - Criterios de aceptacion:
-    - Release depende del job de validacion (`needs:` o `workflow_run` con exito).
-    - `docker/login-action` con `registry: ghcr.io`, `GITHUB_TOKEN` y `permissions: packages: write`.
-    - `goreleaser/goreleaser-action` con version fijada.
-    - Chart `version`/`appVersion` sincronizados con el tag.
-
-- [ ] CI: Fijar versiones y endurecer workflows
-  - Prioridad: p1
-  - Labels: ci, security
-  - Criterios de aceptacion:
-    - Sin `latest`: pnpm (usar `packageManager` de `client/package.json`), `govulncheck`, goreleaser.
-    - Actions fijadas por SHA (o al menos major actual) y `permissions` minimas por job.
-    - `golangci-lint` sobre el modulo raiz (hoy `working-directory: ./backend` sin `go.mod` ni `.golangci.yml`); anadir `.golangci.yml` con los linters elegidos.
-    - `timeout-minutes` en todos los jobs (en upstream hubo runs colgados 720h).
-
-- [ ] CI: Cubrir Helm chart y Terraform provider
-  - Prioridad: p1
-  - Labels: ci
-  - Criterios de aceptacion:
-    - `helm lint` + `helm template` con `values.yaml` y `values-stateless.yaml`.
-    - Job para `terraform-provider-goaway/` (modulo Go propio): `go vet`, `go test`, build.
-
-- [ ] CI: Actualizaciones automaticas de dependencias
-  - Prioridad: p1
-  - Labels: ci
-  - Criterios de aceptacion:
-    - `.github/dependabot.yml` (o Renovate) para gomod (raiz y provider), npm (`client/`), docker y github-actions, agrupado semanalmente.
+    - Averiguado por que no se disparan los workflows (pestana Actions / billing) y un push a `main` genera run del workflow `CI`.
+    - Settings > Actions > Workflow permissions permite a `GITHUB_TOKEN` escribir packages (GHCR) y contents (GitHub Release).
+    - Branch protection en `main` con checks obligatorios: `frontend`, `backend`, `e2e`, `helm`, `terraform-provider`.
+    - Primer tag de prueba publica binarios y la imagen `ghcr.io/rasty94/goaway` (o se valida con el corte de v1.0.0).
+    - Borrar secrets obsoletos si existieran (`GH_TOKEN`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`).
 
 ---
 
@@ -103,10 +59,9 @@ Umbrales propuestos (revisar antes de empezar).
   - Labels: enhancement, security, breaking-change
   - Contexto: inventario a 2026-11-24 (`go list -m -u`, `pnpm outdated`).
   - Toolchain e imagenes:
-    - Go `1.26.5` -> `1.27.x` (`go.mod`, `Dockerfile.dev`, `Dockerfile.multi`, workflows).
-    - Node `22` -> LTS actual (`Dockerfile.multi`, workflows).
+    - Go `1.26.5` -> `1.27.x` (`go.mod`, `Dockerfile.dev`, `Dockerfile.multi`, `docker-compose.e2e.yml`; los workflows leen `go.mod`).
+    - Node `22` -> LTS actual (`Dockerfile.multi`, `ci.yml`, `release.yml`); pnpm `10.23.0` fijado en ambos workflows.
     - `alpine:3.23` -> ultima estable (`Dockerfile`, `Dockerfile.multi`).
-    - GitHub Actions a sus ultimas majors (`checkout`, `setup-node`, `setup-python`, `cache`, `pnpm/action-setup`, `docker/login-action`, `golangci-lint-action`).
   - Go (11 directas desactualizadas, todas minor/patch o pre-1.0):
     - `codeberg.org/miekg/dns` v0.6.85 -> v0.6.143 (pre-1.0, revisar API: es el nucleo del resolver).
     - `quic-go/quic-go` v0.59.1 -> v0.66.0 (pre-1.0, afecta DoQ/DoH3).
