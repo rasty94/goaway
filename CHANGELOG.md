@@ -1,3 +1,12 @@
+## [0.96.0] (2026-11-24)
+
+### Enterprise Auth (EPIC-07 Completed)
+* **Per-User TOTP 2FA (RFC 6238)**: added `/api/auth/2fa/{status,setup,enable,disable}` (with step-up verification to disable), automatic enforcement in `/api/login` (`requires2FA: true`), and a 6-digit 2FA prompt on the Login page.
+* **WebAuthn / Passkeys**: added `api.webauthn` and `/api/auth/webauthn/{status,credentials,register/begin,register/finish,login/begin,login/finish}` with credential listing/deletion and SQLite persistence (`WebAuthnCredential`, `UserTOTP`).
+
+### Ecosystem & IaC (EPIC-06 Completed)
+* **Official Terraform Provider**: added standalone Go module in `terraform-provider-goaway/` (Terraform Plugin Framework) with `goaway_upstream`, `goaway_resolution`, `goaway_whitelist_domain`, and `goaway_group` resources, typed API client, HCL examples, and unit tests.
+
 ## [0.95.0] (2026-11-24)
 
 ### Enterprise Auth (EPIC-07)
