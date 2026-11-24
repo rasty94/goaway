@@ -36,3 +36,26 @@ func TestSignRequestRoundTrip(t *testing.T) {
 		t.Fatal("empty secret accepted")
 	}
 }
+
+func TestNonceReplayRejectedWithinWindow(t *testing.T) {
+	body := []byte(`{"type":"blacklist.add"}`)
+	path := "/api/native/cluster/replicate"
+	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(string(body)))
+	SignRequest(req, "s3cret", body)
+
+	var cache NonceCache
+	now := time.Now()
+	if err := VerifyRequestWithReplay(req.Header, "s3cret", path, body, now, &cache); err != nil {
+		t.Fatalf("first valid request rejected: %v", err)
+	}
+	if err := VerifyRequestWithReplay(req.Header, "s3cret", path, body, now.Add(time.Second), &cache); err == nil {
+		t.Fatal("replayed request within window was accepted")
+	}
+
+	// Fresh request with a new nonce must still succeed.
+	req2 := httptest.NewRequest(http.MethodPost, path, strings.NewReader(string(body)))
+	SignRequest(req2, "s3cret", body)
+	if err := VerifyRequestWithReplay(req2.Header, "s3cret", path, body, now.Add(2*time.Second), &cache); err != nil {
+		t.Fatalf("fresh nonce rejected: %v", err)
+	}
+}

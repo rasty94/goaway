@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"goaway/backend/logging"
 	"goaway/backend/settings"
+	"io"
 	"net/http"
 	"sort"
 	"sync"
@@ -178,8 +179,20 @@ func (s *Service) pingNode(address string) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
+		respBody, readErr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+		if readErr != nil {
+			node.Status = StateOffline
+			node.Unreachable = true
+			return
+		}
+		if sigErr := VerifyRequest(resp.Header, s.config.HighAvailability.Secret, "/api/native/cluster/heartbeat", respBody, time.Now()); sigErr != nil {
+			log.Warning("[HA/Cluster] Rejected unsigned or invalid heartbeat response from %s: %v", address, sigErr)
+			node.Status = StateOffline
+			node.Unreachable = true
+			return
+		}
 		var hbResp HeartbeatResponse
-		if err := json.NewDecoder(resp.Body).Decode(&hbResp); err == nil {
+		if err := json.Unmarshal(respBody, &hbResp); err == nil {
 			node.Status = StateOnline
 			node.Role = hbResp.Role
 			node.ID = hbResp.ID

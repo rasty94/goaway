@@ -95,6 +95,7 @@ type API struct {
 	server           *http.Server
 	IsShuttingDown   bool
 	clusterAuthAudit auditThrottle
+	clusterNonces    cluster.NonceCache
 }
 
 func (api *API) Start(content embed.FS, errorChannel chan struct{}) {

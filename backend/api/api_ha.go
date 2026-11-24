@@ -65,7 +65,7 @@ func (api *API) clusterAuth() gin.HandlerFunc {
 		}
 		c.Request.Body = io.NopCloser(bytes.NewReader(body))
 
-		if err := cluster.VerifyRequest(c.Request.Header, api.Config.HighAvailability.Secret, c.Request.URL.Path, body, time.Now()); err != nil {
+		if err := cluster.VerifyRequestWithReplay(c.Request.Header, api.Config.HighAvailability.Secret, c.Request.URL.Path, body, time.Now(), &api.clusterNonces); err != nil {
 			msg := fmt.Sprintf("Rejected cluster request from %s to %s: %v", c.ClientIP(), c.Request.URL.Path, err)
 			log.Warning("[HA/Cluster] %s", msg)
 			// These routes are unauthenticated by definition, so one audit row per request
@@ -245,7 +245,13 @@ func (api *API) handleHeartbeat(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, resp)
+	payload, err := json.Marshal(resp)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to encode heartbeat response"})
+		return
+	}
+	cluster.SignHeaders(c.Writer.Header(), api.Config.HighAvailability.Secret, c.Request.URL.Path, payload)
+	c.Data(http.StatusOK, "application/json", payload)
 }
 
 func (api *API) getClusterStatus(c *gin.Context) {
