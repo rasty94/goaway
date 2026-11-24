@@ -58,6 +58,7 @@ export default function Login({ className, quote, ...props }: LoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [oidcEnabled, setOidcEnabled] = useState(false);
   const [responseData, setResponseData] = useState<Metrics>();
   const passwordRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -115,7 +116,15 @@ export default function Login({ className, quote, ...props }: LoginProps) {
         const [, data] = await GetRequest("server");
         setResponseData(data);
       } catch {
-        return;
+        // ignore server info errors on login screen
+      }
+      try {
+        const [oidcCode, oidcData] = await GetRequest("auth/oidc/status");
+        if (oidcCode === 200 && oidcData?.enabled) {
+          setOidcEnabled(true);
+        }
+      } catch {
+        // OIDC status check is optional
       }
     }
 
@@ -237,6 +246,28 @@ export default function Login({ className, quote, ...props }: LoginProps) {
                       "Sign In"
                     )}
                   </Button>
+
+                  {oidcEnabled && (
+                    <div className="space-y-3 pt-1">
+                      <div className="relative flex items-center">
+                        <div className="flex-grow border-t border-border" />
+                        <span className="mx-3 text-xs uppercase text-muted-foreground">
+                          or
+                        </span>
+                        <div className="flex-grow border-t border-border" />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          window.location.href = "/api/auth/oidc/login";
+                        }}
+                      >
+                        Sign in with SSO (OIDC)
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </form>
             </CardContent>

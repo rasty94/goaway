@@ -245,6 +245,10 @@ func (api *API) handleOIDCCallback(c *gin.Context) {
 		})
 	}
 
+	if strings.Contains(c.GetHeader("Accept"), "text/html") {
+		c.Redirect(http.StatusFound, "/")
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "OIDC login successful", "username": username, "role": role})
 }
 
