@@ -59,6 +59,7 @@ type DNSConfig struct {
 	Upstream              UpstreamConfig         `yaml:"upstream" json:"upstream"`
 	Ports                 PortsConfig            `yaml:"ports" json:"ports"`
 	ConditionalForwarders []ConditionalForwarder `yaml:"conditionalForwarders" json:"conditionalForwarders"`
+	BlockedQueryTypes     []string               `yaml:"blockedQueryTypes,omitempty" json:"blockedQueryTypes,omitempty"`
 	Resolutions           map[string]string      `yaml:"resolution,omitempty" json:"resolution,omitempty"`
 }
 
@@ -214,6 +215,9 @@ func (c *Config) DNSSnapshot() DNSConfig {
 	}
 	if len(c.DNS.ConditionalForwarders) > 0 {
 		snap.ConditionalForwarders = append([]ConditionalForwarder(nil), c.DNS.ConditionalForwarders...)
+	}
+	if len(c.DNS.BlockedQueryTypes) > 0 {
+		snap.BlockedQueryTypes = append([]string(nil), c.DNS.BlockedQueryTypes...)
 	}
 	return snap
 }

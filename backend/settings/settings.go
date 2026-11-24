@@ -98,6 +98,7 @@ func (config *Config) Update(updatedSettings Config) {
 	config.DNS.DNSSEC = updatedSettings.DNS.DNSSEC
 	config.DNS.TLS = updatedSettings.DNS.TLS
 	config.DNS.Upstream = updatedSettings.DNS.Upstream
+	config.DNS.BlockedQueryTypes = updatedSettings.DNS.BlockedQueryTypes
 	config.DHCP = updatedSettings.DHCP
 	config.DNS.Resolutions = updatedSettings.DNS.Resolutions
 

@@ -211,9 +211,10 @@ type Policy struct {
 	Enabled     bool      `gorm:"default:true" json:"enabled"`
 	IsDryRun    bool      `gorm:"default:false" json:"isDryRun"`
 	SafeSearch  bool      `gorm:"default:false" json:"safeSearch"`
-	Priority    int       `gorm:"default:0" json:"priority"`
-	Action      string    `gorm:"type:varchar(20);default:'block'" json:"action" validate:"required,oneof=allow block nxdomain null"`
-	ScheduleID  *uint     `json:"scheduleID"`
+	Priority          int       `gorm:"default:0" json:"priority"`
+	Action            string    `gorm:"type:varchar(20);default:'block'" json:"action" validate:"required,oneof=allow block nxdomain null"`
+	BlockedQueryTypes string    `gorm:"type:varchar(255)" json:"blockedQueryTypes"` // comma-separated, e.g. "AAAA,HTTPS,SVCB"
+	ScheduleID        *uint     `json:"scheduleID"`
 	Schedule    *Schedule `gorm:"foreignKey:ScheduleID" json:"schedule"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`

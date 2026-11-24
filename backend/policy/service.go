@@ -73,6 +73,48 @@ func (s *Service) ShouldBlock(clientIP, clientMAC string, clientGroupIDs []uint,
 	return blocked, action, policyName, isDryRun, safeSearch, category
 }
 
+// MatchesQueryType reports whether qtype (e.g. "AAAA", "HTTPS") appears in a comma-separated list.
+func MatchesQueryType(csvTypes, qtype string) bool {
+	qtype = strings.ToUpper(strings.TrimSpace(qtype))
+	if qtype == "" || strings.TrimSpace(csvTypes) == "" {
+		return false
+	}
+	for _, part := range strings.Split(csvTypes, ",") {
+		if strings.ToUpper(strings.TrimSpace(part)) == qtype {
+			return true
+		}
+	}
+	return false
+}
+
+// ShouldBlockQueryType checks whether any matching active policy blocks the given DNS query type.
+func (s *Service) ShouldBlockQueryType(clientIP, clientMAC string, clientGroupIDs []uint, qtype string) (bool, string, bool) {
+	if s == nil || strings.TrimSpace(qtype) == "" {
+		return false, "", false
+	}
+
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+
+	now := time.Now()
+	for _, p := range s.policies {
+		if !p.Enabled || p.BlockedQueryTypes == "" {
+			continue
+		}
+		if !s.appliesToClient(p.ID, clientIP, clientMAC, clientGroupIDs) {
+			continue
+		}
+		if !s.isScheduleActive(p.Schedule, now) {
+			continue
+		}
+		if MatchesQueryType(p.BlockedQueryTypes, qtype) {
+			return true, p.Name, p.IsDryRun
+		}
+	}
+
+	return false, "", false
+}
+
 func (s *Service) ShouldBlockDetailed(clientIP, clientMAC string, clientGroupIDs []uint, domainName string) (bool, string, string, string, bool, bool, string) {
 	s.cacheMu.RLock()
 	defer s.cacheMu.RUnlock()

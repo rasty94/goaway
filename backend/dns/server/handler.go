@@ -47,6 +47,10 @@ func (s *DNSServer) checkAndUpdatePauseStatus() {
 }
 
 func (s *DNSServer) Explain(domainName string, clientIP string) model.ExplainResult {
+	return s.ExplainWithType(domainName, clientIP, "")
+}
+
+func (s *DNSServer) ExplainWithType(domainName string, clientIP string, qtype string) model.ExplainResult {
 	domainName = trimDomainDot(domainName)
 	parsedIP, err := netip.ParseAddr(clientIP)
 	if err != nil {
@@ -66,10 +70,20 @@ func (s *DNSServer) Explain(domainName string, clientIP string) model.ExplainRes
 		return res
 	}
 
-	if s.Config.DNS.Status.Paused {
+	if s.Config.DNSSnapshot().Status.Paused {
 		res.Action = "allow"
 		res.Reason = "DNS blocking is paused globally"
 		return res
+	}
+
+	if qtype != "" {
+		if blocked, reason := s.isQueryTypeBlocked(client, qtype); blocked {
+			res.Blocked = true
+			res.Action = "nodata"
+			res.Reason = reason
+			res.Matching = []string{"qtype:" + strings.ToUpper(qtype)}
+			return res
+		}
 	}
 
 	clientIPStr := client.IP.String()
@@ -193,6 +207,15 @@ func (s *DNSServer) processQuery(request *Request) model.RequestLogEntry {
 	}
 
 	s.checkAndUpdatePauseStatus()
+
+	if qtypeBlocked, reason := s.isQueryTypeBlocked(request.Client, request.QTypeStr()); qtypeBlocked {
+		metrics.BlockedQueries.WithLabelValues(clientIP, domainName).Inc()
+		metrics.DNSLatency.WithLabelValues(clientIP, "blocked").Observe(time.Since(start).Seconds())
+		s.attachEDE(request.Msg, dns.ExtendedErrorFiltered, reason)
+		entry := s.respondWithNoData(request)
+		entry.Blocked = true
+		return s.finalizeDNSSECStatus(entry, clientIP)
+	}
 
 	blocked, safeSearch, category := s.checkPolicyDecision(request.Client, domainName, request.QName())
 
@@ -1062,6 +1085,36 @@ func (s *DNSServer) applySafeSearch(request *Request) (model.RequestLogEntry, bo
 		ClientInfo:        request.Client,
 		Protocol:          request.Protocol,
 	}, true
+}
+
+func (s *DNSServer) isQueryTypeBlocked(client *model.Client, qtype string) (bool, string) {
+	if client.Bypass || s.Config.DNSSnapshot().Status.Paused {
+		return false, ""
+	}
+	qtype = strings.ToUpper(strings.TrimSpace(qtype))
+	if qtype == "" {
+		return false, ""
+	}
+
+	if s.PolicyService != nil && s.GroupService != nil {
+		clientIPStr := client.IP.String()
+		effectivePolicy := s.GroupService.GetEffectivePolicy(clientIPStr, client.Mac)
+		if blocked, policyName, isDryRun := s.PolicyService.ShouldBlockQueryType(clientIPStr, client.Mac, effectivePolicy.GroupIDs, qtype); blocked {
+			if isDryRun {
+				log.Debug("[DRY RUN] Policy '%s' would block qtype %s for %s", policyName, qtype, client.IP)
+				return false, ""
+			}
+			return true, fmt.Sprintf("query type %s blocked by policy %s", qtype, policyName)
+		}
+	}
+
+	for _, blockedType := range s.Config.DNSSnapshot().BlockedQueryTypes {
+		if strings.ToUpper(strings.TrimSpace(blockedType)) == qtype {
+			return true, fmt.Sprintf("query type %s blocked globally", qtype)
+		}
+	}
+
+	return false, ""
 }
 
 func (s *DNSServer) respondWithNoData(request *Request) model.RequestLogEntry {
