@@ -29,21 +29,6 @@ const Changelog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const cachedData = sessionStorage.getItem("githubReleases");
-    const cachedTime = sessionStorage.getItem("githubReleasesTimestamp");
-
-    const now = Date.now();
-    const cacheExpiry = cachedTime ? parseInt(cachedTime, 10) : 0;
-
-    if (cachedData && now < cacheExpiry) {
-      setReleases(JSON.parse(cachedData));
-      setLoading(false);
-    } else {
-      fetchReleases();
-    }
-  }, []);
-
   const fetchReleases = async () => {
     const repoUrl = "https://api.github.com/repos/pommee/goaway/releases";
 
@@ -76,6 +61,21 @@ const Changelog = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const cachedData = sessionStorage.getItem("githubReleases");
+    const cachedTime = sessionStorage.getItem("githubReleasesTimestamp");
+
+    const now = Date.now();
+    const cacheExpiry = cachedTime ? parseInt(cachedTime, 10) : 0;
+
+    if (cachedData && now < cacheExpiry) {
+      setReleases(JSON.parse(cachedData));
+      setLoading(false);
+    } else {
+      fetchReleases();
+    }
+  }, []);
 
   const parseChangelogBody = (body: string): ChangelogSection[] => {
     if (!body) return [];
