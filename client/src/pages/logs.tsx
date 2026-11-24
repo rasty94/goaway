@@ -396,7 +396,6 @@ export function Logs() {
     });
   }, [showClientDetails]);
 
-  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useTable({
     features: logsTableFeatures,
     data: queries,
