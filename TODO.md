@@ -14,10 +14,9 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-12 CI/CD GitHub | Que el pipeline corra de verdad, valide `main` y publique releases | P0 | Codigo hecho; falta configuracion manual en GitHub |
 | EPIC-11 Paridad Final & v1.0.0 | Dependencias al dia, soak/benchmarks, cobertura Vitest y release v1.0.0 | P1 | En curso (tareas sin empezar) |
 
-Orden sugerido: EPIC-12 primero (sin CI no se valida nada de lo demas), luego actualizacion de dependencias, y despues soak/Vitest/release.
+Orden sugerido: actualizacion de dependencias, luego soak/Vitest, y por ultimo release.
 
 ---
 
@@ -30,21 +29,6 @@ Orden sugerido: EPIC-12 primero (sin CI no se valida nada de lo demas), luego ac
   - Criterios de aceptacion:
     - Nuevo `jwtSecret` generado en todos los despliegues; los tokens antiguos dejan de validar.
     - Decidido si se purga el historial (`git filter-repo`) o se asume el secreto como quemado.
-
-### EPIC-12 CI/CD GitHub
-
-Estado a 2026-11-24: `rasty94/goaway` tiene 0 runs y `main` sin proteccion. Los runs que aparecen en `gh run list` sin `-R` son del remote `upstream` (`pommee/goaway`); usar `gh ... -R rasty94/goaway`.
-
-- [ ] OPS (manual, en GitHub): Activar Actions y configurar el repo
-  - Prioridad: p0
-  - Labels: ci
-  - Contexto: el codigo de EPIC-12 esta hecho (ver DONE.md); falta la parte que solo se puede hacer en la web/admin de GitHub. Releases por tag usan `GITHUB_TOKEN`, no hacen falta secrets propios.
-  - Criterios de aceptacion:
-    - Averiguado por que no se disparan los workflows (pestana Actions / billing) y un push a `main` genera run del workflow `CI`.
-    - Settings > Actions > Workflow permissions permite a `GITHUB_TOKEN` escribir packages (GHCR) y contents (GitHub Release).
-    - Branch protection en `main` con checks obligatorios: `frontend`, `backend`, `e2e`, `helm`, `terraform-provider`.
-    - Primer tag de prueba publica binarios y la imagen `ghcr.io/rasty94/goaway` (o se valida con el corte de v1.0.0).
-    - Borrar secrets obsoletos si existieran (`GH_TOKEN`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`).
 
 ---
 
@@ -75,7 +59,6 @@ Umbrales propuestos (revisar antes de empezar).
     - Majors con notas de migracion revisadas (changelog upstream) y cambios de API aplicados.
     - `govulncheck` y `pnpm audit --prod` sin hallazgos high/critical.
     - Tests Go (`-race`), Vitest y E2E en verde tras el ultimo grupo.
-    - Hacer despues de EPIC-12 para que cada salto quede validado por CI.
 
 - [ ] TECH: Benchmarks y soak tests del resolver
   - Prioridad: p1
@@ -101,6 +84,7 @@ Umbrales propuestos (revisar antes de empezar).
   - Criterios de aceptacion:
     - Guia de migracion 0.9x -> 1.0.0 en `docs/` (cambios de config, `schemaVersion`, rollback).
     - CHANGELOG, tag y release `v1.0.0`.
+    - Primer release por tag con el workflow nuevo: binarios GoReleaser en GitHub Releases e imagen multi-arch en `ghcr.io/rasty94/goaway` (si falla, probar antes con un tag `v1.0.0-rc.1`).
 
 ---
 
