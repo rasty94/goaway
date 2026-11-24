@@ -84,7 +84,7 @@ func (api *API) markExisting(plan *pihole.Plan) {
 	}
 	for i := range plan.Clients {
 		ids, _ := api.GroupService.GetAssignmentsByIdentifier(plan.Clients[i].Identifier, plan.Clients[i].Type)
-		plan.Clients[i].Exists = len(ids) > 0
+		plan.Clients[i].Exists = sameGroupSet(ids, plan.Clients[i].Groups, groupIDs)
 	}
 	resolutions := map[string]bool{}
 	if rows, err := api.ResolutionService.GetResolutions(); err == nil {
@@ -110,6 +110,33 @@ func (api *API) markExisting(plan *pihole.Plan) {
 			}
 		}
 	}
+}
+
+func sameGroupSet(existingIDs []uint, targetNames []string, groupIDs map[string]uint) bool {
+	if len(targetNames) == 0 || len(existingIDs) == 0 {
+		return false
+	}
+	target := make(map[uint]struct{}, len(targetNames))
+	for _, name := range targetNames {
+		id, ok := groupIDs[name]
+		if !ok {
+			return false
+		}
+		target[id] = struct{}{}
+	}
+	existing := make(map[uint]struct{}, len(existingIDs))
+	for _, id := range existingIDs {
+		existing[id] = struct{}{}
+	}
+	if len(existing) != len(target) {
+		return false
+	}
+	for id := range target {
+		if _, ok := existing[id]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func (api *API) groupIDsByName() map[string]uint {
@@ -167,26 +194,29 @@ func (api *API) piholeImportApply(c *gin.Context) {
 
 	ctx := context.Background()
 	report := piholeImportReport{Created: map[string]int{}, Skipped: map[string]int{}, Errors: []string{}}
-	count := func(section string, exists bool, err error) {
-		switch {
-		case exists:
+	applyItem := func(section string, exists bool, fn func() error) {
+		if exists {
 			report.Skipped[section]++
-		case err != nil:
-			report.fail(section, err)
-		default:
-			report.Created[section]++
+			return
 		}
+		if err := fn(); err != nil {
+			report.fail(section, err)
+			return
+		}
+		report.Created[section]++
 	}
 
 	if on("adlists") {
 		for _, a := range plan.Adlists {
-			var err error
-			if !a.Exists {
-				if err = api.BlacklistService.AddSource(ctx, a.Name, a.URL); err == nil && !a.Enabled {
-					err = api.BlacklistService.ToggleBlocklistStatus(ctx, a.Name)
+			applyItem("adlists", a.Exists, func() error {
+				if err := api.BlacklistService.AddSource(ctx, a.Name, a.URL); err != nil {
+					return err
 				}
-			}
-			count("adlists", a.Exists, err)
+				if !a.Enabled {
+					return api.BlacklistService.ToggleBlocklistStatus(ctx, a.Name)
+				}
+				return nil
+			})
 		}
 	}
 	if on("blacklist") {
@@ -194,7 +224,7 @@ func (api *API) piholeImportApply(c *gin.Context) {
 		seen := map[string]bool{}
 		for _, d := range plan.Blacklist {
 			if d.Exists {
-				count("blacklist", true, nil)
+				report.Skipped["blacklist"]++
 				continue
 			}
 			if !seen[d.Pattern] {
@@ -211,33 +241,29 @@ func (api *API) piholeImportApply(c *gin.Context) {
 					if d.Exists {
 						continue
 					}
-					var err error
-					if strings.HasPrefix(d.Pattern, "*.") {
-						err = api.BlacklistService.AddWildcard(ctx, d.Pattern)
-					} else {
-						err = api.BlacklistService.AddBlacklistedDomain(ctx, d.Pattern)
-					}
-					count("blacklist", false, err)
+					applyItem("blacklist", false, func() error {
+						if strings.HasPrefix(d.Pattern, "*.") {
+							return api.BlacklistService.AddWildcard(ctx, d.Pattern)
+						}
+						return api.BlacklistService.AddBlacklistedDomain(ctx, d.Pattern)
+					})
 				}
 			}
 		}
 	}
 	if on("whitelist") {
 		for _, d := range plan.Whitelist {
-			var err error
-			if !d.Exists {
-				err = api.WhitelistService.AddDomain(d.Pattern)
-			}
-			count("whitelist", d.Exists, err)
+			applyItem("whitelist", d.Exists, func() error {
+				return api.WhitelistService.AddDomain(d.Pattern)
+			})
 		}
 	}
 	if on("groups") {
 		for _, g := range plan.Groups {
-			var err error
-			if !g.Exists {
-				_, err = api.GroupService.CreateGroup(g.Name, g.Description, true)
-			}
-			count("groups", g.Exists, err)
+			applyItem("groups", g.Exists, func() error {
+				_, err := api.GroupService.CreateGroup(g.Name, g.Description, true)
+				return err
+			})
 		}
 	}
 	groupIDs := api.groupIDsByName()
@@ -246,11 +272,11 @@ func (api *API) piholeImportApply(c *gin.Context) {
 		allowedByGroup := map[string][]string{}
 		for _, gd := range plan.GroupDomains {
 			if gd.Exists {
-				count("groupDomains", true, nil)
+				report.Skipped["groupDomains"]++
 				continue
 			}
 			if _, ok := groupIDs[gd.Group]; !ok {
-				count("groupDomains", false, fmt.Errorf("group %q does not exist; import groups first", gd.Group))
+				report.fail("groupDomains", fmt.Errorf("group %q does not exist; import groups first", gd.Group))
 				continue
 			}
 			if gd.Blocked {
@@ -276,8 +302,7 @@ func (api *API) piholeImportApply(c *gin.Context) {
 	}
 	if on("clients") {
 		for _, cl := range plan.Clients {
-			var err error
-			if !cl.Exists {
+			applyItem("clients", cl.Exists, func() error {
 				ids := make([]uint, 0, len(cl.Groups))
 				for _, name := range cl.Groups {
 					if id, ok := groupIDs[name]; ok {
@@ -285,36 +310,32 @@ func (api *API) piholeImportApply(c *gin.Context) {
 					}
 				}
 				if len(ids) == 0 {
-					err = fmt.Errorf("client %s: none of its groups exist; import groups first", cl.Identifier)
-				} else {
-					err = api.GroupService.ReplaceAssignments(cl.Identifier, cl.Type, ids)
+					return fmt.Errorf("client %s: none of its groups exist; import groups first", cl.Identifier)
 				}
-			}
-			count("clients", cl.Exists, err)
+				return api.GroupService.ReplaceAssignments(cl.Identifier, cl.Type, ids)
+			})
 		}
 	}
 	if on("resolutions") {
 		for _, r := range plan.Resolutions {
-			var err error
-			if !r.Exists {
-				err = api.ResolutionService.CreateResolution(r.Value, r.Domain, r.Type)
-			}
-			count("resolutions", r.Exists, err)
+			applyItem("resolutions", r.Exists, func() error {
+				return api.ResolutionService.CreateResolution(r.Value, r.Domain, r.Type)
+			})
 		}
 	}
 	if on("upstreams") {
 		changed := false
 		for _, u := range plan.Upstreams {
-			var err error
-			if !u.Exists {
-				if _, _, err = net.SplitHostPort(u.Address); err == nil {
-					api.Config.DNS.Upstream.Servers = append(api.Config.DNS.Upstream.Servers, settings.UpstreamServer{
-						Name: "Pi-hole " + u.Address, Address: u.Address, Protocol: "udp", Enabled: true,
-					})
-					changed = true
+			applyItem("upstreams", u.Exists, func() error {
+				if _, _, err := net.SplitHostPort(u.Address); err != nil {
+					return err
 				}
-			}
-			count("upstreams", u.Exists, err)
+				api.Config.DNS.Upstream.Servers = append(api.Config.DNS.Upstream.Servers, settings.UpstreamServer{
+					Name: "Pi-hole " + u.Address, Address: u.Address, Protocol: "udp", Enabled: true,
+				})
+				changed = true
+				return nil
+			})
 		}
 		if changed {
 			api.Config.Save()
@@ -322,11 +343,9 @@ func (api *API) piholeImportApply(c *gin.Context) {
 	}
 	if on("staticLeases") {
 		for _, l := range plan.StaticLeases {
-			var err error
-			if !l.Exists {
-				err = api.DHCPService.CreateStaticLease(&database.StaticDHCPLease{MAC: l.MAC, IP: l.IP, Hostname: l.Hostname, Enabled: true})
-			}
-			count("staticLeases", l.Exists, err)
+			applyItem("staticLeases", l.Exists, func() error {
+				return api.DHCPService.CreateStaticLease(&database.StaticDHCPLease{MAC: l.MAC, IP: l.IP, Hostname: l.Hostname, Enabled: true})
+			})
 		}
 	}
 
