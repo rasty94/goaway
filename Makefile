@@ -48,6 +48,7 @@ publish:
 	docker buildx build \
 	--platform linux/amd64,linux/arm64/v8 \
 	--file Dockerfile.multi \
+	--build-arg VERSION=${LATEST_VERSION} \
 	--tag ${GHCR_REPO}:${LATEST_VERSION} \
 	--tag ${GHCR_REPO}:latest \
 	--push \

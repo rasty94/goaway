@@ -18,7 +18,8 @@ RUN go mod download
 COPY . .
 # Copy compiled frontend from the previous stage
 COPY --from=frontend-builder /app/client/dist ./client/dist
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o goaway .
+ARG VERSION=dev
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X main.version=${VERSION}" -o goaway .
 
 # Final Stage
 FROM alpine:3.23
