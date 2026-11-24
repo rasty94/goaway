@@ -88,7 +88,7 @@ func execRedisCommand(cfg settings.RedisCacheConfig, args ...string) (string, bo
 	if err != nil {
 		return "", false, err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	_ = conn.SetDeadline(time.Now().Add(redisIOTimeout))
 
 	reader := bufio.NewReader(conn)

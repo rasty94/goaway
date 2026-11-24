@@ -160,10 +160,7 @@ func (rsm *ReplicaSyncManager) downloadFromS3() ([]byte, error) {
 		endpoint = "s3.amazonaws.com"
 	}
 
-	secure := true
-	if strings.HasPrefix(strings.ToLower(endpoint), "http://") {
-		secure = false
-	}
+	secure := !strings.HasPrefix(strings.ToLower(endpoint), "http://")
 	endpoint = strings.TrimPrefix(endpoint, "https://")
 	endpoint = strings.TrimPrefix(endpoint, "http://")
 
@@ -205,7 +202,7 @@ func (rsm *ReplicaSyncManager) downloadFromS3() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get s3 object: %w", err)
 	}
-	defer obj.Close()
+	defer func() { _ = obj.Close() }()
 
 	data, err := io.ReadAll(obj)
 	if err != nil {
@@ -254,7 +251,7 @@ func (rsm *ReplicaSyncManager) downloadFromWebDAV() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("webdav propfind failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusMultiStatus && resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("webdav propfind returned status %d", resp.StatusCode)
@@ -289,7 +286,7 @@ func (rsm *ReplicaSyncManager) downloadFromWebDAV() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("webdav get failed: %w", err)
 	}
-	defer getResp.Body.Close()
+	defer func() { _ = getResp.Body.Close() }()
 
 	if getResp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("webdav get returned status %d", getResp.StatusCode)

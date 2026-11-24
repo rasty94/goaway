@@ -58,7 +58,7 @@ func authenticateLDAP(cfg settings.LDAPConfig, username, password string) (authe
 	if err != nil {
 		return false, "", fmt.Errorf("LDAP dial failed: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	conn.SetTimeout(5 * time.Second)
 
 	if cfg.StartTLS {

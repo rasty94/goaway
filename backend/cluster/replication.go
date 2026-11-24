@@ -233,7 +233,7 @@ func (rm *ReplicationManager) pushToPeer(address string, payload []byte) (perman
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	switch {
 	case resp.StatusCode == http.StatusOK:
 		return false, nil

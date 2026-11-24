@@ -40,7 +40,7 @@ func (s *DNSServer) exchangeWithProtocolContext(ctx context.Context, msg *dns.Ms
 			addr = net.JoinHostPort(host, "853")
 		}
 		client := dns.NewClient()
-		client.Transport.TLSConfig = &tls.Config{
+		client.TLSConfig = &tls.Config{
 			InsecureSkipVerify: false,
 			ServerName:         host,
 		}
@@ -114,7 +114,7 @@ func (s *DNSServer) exchangeDoH(ctx context.Context, msg *dns.Msg, url string) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))

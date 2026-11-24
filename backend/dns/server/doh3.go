@@ -173,7 +173,7 @@ func (s *DNSServer) exchangeDoH3(ctx context.Context, msg *dns.Msg, targetURL st
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))

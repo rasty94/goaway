@@ -279,10 +279,7 @@ func (api *API) pushToS3(rb settings.RemoteBackupConfig, data []byte, filename s
 	if endpoint == "" {
 		endpoint = "s3.amazonaws.com"
 	}
-	secure := true
-	if strings.HasPrefix(strings.ToLower(endpoint), "http://") {
-		secure = false
-	}
+	secure := !strings.HasPrefix(strings.ToLower(endpoint), "http://")
 	endpoint = strings.TrimPrefix(endpoint, "https://")
 	endpoint = strings.TrimPrefix(endpoint, "http://")
 

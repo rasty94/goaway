@@ -67,7 +67,7 @@ func TestWriteQueryLogExportCSVWritesHeaderOnce(t *testing.T) {
 
 	f, err := os.Open(path)
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	rows, err := csv.NewReader(f).ReadAll()
 	require.NoError(t, err)

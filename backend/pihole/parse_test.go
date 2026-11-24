@@ -45,7 +45,7 @@ func buildArchive(t *testing.T) []byte {
 		}
 	}
 	sqlDB, _ := db.DB()
-	sqlDB.Close()
+	_ = sqlDB.Close()
 	dbBytes, err := os.ReadFile(dbPath)
 	if err != nil {
 		t.Fatal(err)
@@ -65,9 +65,9 @@ func buildArchive(t *testing.T) []byte {
 	zw := zip.NewWriter(&buf)
 	for name, content := range map[string][]byte{"etc/pihole/gravity.db": dbBytes, "etc/pihole/pihole.toml": tomlBytes} {
 		w, _ := zw.Create(name)
-		w.Write(content)
+		_, _ = w.Write(content)
 	}
-	zw.Close()
+	_ = zw.Close()
 	return buf.Bytes()
 }
 
@@ -128,8 +128,8 @@ func TestParseRejectsForeignZip(t *testing.T) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 	w, _ := zw.Create("settings.json")
-	w.Write([]byte("{}"))
-	zw.Close()
+	_, _ = w.Write([]byte("{}"))
+	_ = zw.Close()
 	data := buf.Bytes()
 	if _, err := Parse(bytes.NewReader(data), int64(len(data))); err == nil {
 		t.Fatal("expected error for a non Pi-hole archive")

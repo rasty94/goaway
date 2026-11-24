@@ -180,7 +180,7 @@ func (s *Service) pingNode(address string) {
 		log.Debug("[HA/Cluster] Peer %s unreachable: %v", address, err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusOK {
 		respBody, readErr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))

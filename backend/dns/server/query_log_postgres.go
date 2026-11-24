@@ -76,7 +76,7 @@ func insertQueryLogBatch(db *sql.DB, entries []model.RequestLogEntry) error {
 		_ = tx.Rollback()
 		return err
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	for _, e := range entries {
 		rec := toExportedQueryLog(e)

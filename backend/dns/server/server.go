@@ -174,7 +174,7 @@ type communicationMessage struct {
 func NewDNSServer(config *settings.Config, dbconn *gorm.DB, cert tls.Certificate) (*DNSServer, error) {
 	dnsClient := dns.NewClient()
 	if cert.Certificate != nil {
-		dnsClient.Transport.TLSConfig = &tls.Config{}
+		dnsClient.TLSConfig = &tls.Config{}
 	}
 
 	server := &DNSServer{

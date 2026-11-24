@@ -62,7 +62,7 @@ func writeQueryLogExport(cfg settings.QueryLogExportConfig, entries []model.Requ
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		if info, statErr := f.Stat(); statErr == nil && info.Size() == 0 {
 			needHeader = true
 		}

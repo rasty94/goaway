@@ -130,7 +130,7 @@ func readEntry(f *zip.File) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot open %s: %w", f.Name, err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	return io.ReadAll(io.LimitReader(rc, 256<<20))
 }
 
@@ -150,14 +150,14 @@ func (p *Plan) readGravityEntry(f *zip.File) error {
 	if err != nil {
 		return fmt.Errorf("cannot open %s: %w", f.Name, err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	tmp, err := os.CreateTemp("", "pihole-gravity-*.db")
 	if err != nil {
 		return err
 	}
 	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
+	defer func() { _ = os.Remove(tmpPath) }()
 
 	// ponytail: 256 MB cap; a gravity.db bigger than that is all downloaded list rows we do not read anyway
 	if _, err := io.Copy(tmp, io.LimitReader(rc, 256<<20)); err != nil {
@@ -176,7 +176,7 @@ func (p *Plan) readGravity(tmpPath string) error {
 		return fmt.Errorf("gravity.db is not a valid SQLite database: %w", err)
 	}
 	sqlDB, _ := db.DB()
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 
 	var groups []gravityGroup
 	if err := db.Raw(`SELECT id, name, enabled, description FROM "group"`).Scan(&groups).Error; err != nil {

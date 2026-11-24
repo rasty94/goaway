@@ -52,7 +52,7 @@ func (ra *RouterAdvertiser) Stop() {
 }
 
 func (ra *RouterAdvertiser) loop(pc *ipv6.PacketConn) {
-	defer pc.Close()
+	defer func() { _ = pc.Close() }()
 	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 

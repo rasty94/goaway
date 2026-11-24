@@ -44,7 +44,8 @@ func (v *VipManager) validate() bool {
 	}
 	// Strict alphanumeric check for interface to prevent injection
 	for _, r := range v.iface {
-		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '.') {
+		valid := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '.'
+		if !valid {
 			log.Error("[HA/VIP] Invalid interface name: %s", v.iface)
 			return false
 		}

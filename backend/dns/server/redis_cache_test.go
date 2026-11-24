@@ -34,7 +34,7 @@ func startMockRESPServer(t *testing.T, expectedPass string) string {
 				return
 			}
 			go func(c net.Conn) {
-				defer c.Close()
+				defer func() { _ = c.Close() }()
 				r := bufio.NewReader(c)
 				for {
 					line, err := r.ReadString('\n')

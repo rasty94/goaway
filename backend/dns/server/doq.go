@@ -106,7 +106,7 @@ func (d *DoQServer) serveConn(conn *quic.Conn) {
 }
 
 func (d *DoQServer) serveStream(conn *quic.Conn, stream *quic.Stream) {
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 
 	_ = stream.SetDeadline(time.Now().Add(10 * time.Second))
 

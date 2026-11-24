@@ -193,10 +193,8 @@ func (s *Service) handleIPv4(conn net.PacketConn, addr net.Addr, packet *dhcpv4.
 		reply, err = s.handleRequest(packet)
 	case dhcpv4.MessageTypeRelease:
 		err = s.handleRelease(packet)
-		return
 	case dhcpv4.MessageTypeDecline:
 		err = s.handleDecline(packet)
-		return
 	default:
 		log.Debug("Unsupported DHCPv4 message type: %s", msgType)
 		return

@@ -57,7 +57,7 @@ func fetchOIDCDiscovery(ctx context.Context, client *http.Client, issuer string)
 	if err != nil {
 		return oidcDiscovery{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return oidcDiscovery{}, fmt.Errorf("OIDC discovery returned status %d", resp.StatusCode)
@@ -181,7 +181,7 @@ func (api *API) handleOIDCCallback(c *gin.Context) {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "OIDC token exchange failed"})
 		return
 	}
-	defer tokenResp.Body.Close()
+	defer func() { _ = tokenResp.Body.Close() }()
 
 	if tokenResp.StatusCode != http.StatusOK {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "OIDC provider rejected authorization code"})
@@ -202,7 +202,7 @@ func (api *API) handleOIDCCallback(c *gin.Context) {
 		if err == nil {
 			uiReq.Header.Set("Authorization", "Bearer "+tokenPayload.AccessToken)
 			if uiResp, err := client.Do(uiReq); err == nil {
-				defer uiResp.Body.Close()
+				defer func() { _ = uiResp.Body.Close() }()
 				if uiResp.StatusCode == http.StatusOK {
 					_ = json.NewDecoder(io.LimitReader(uiResp.Body, 1<<20)).Decode(&claims)
 				}

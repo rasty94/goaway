@@ -36,7 +36,7 @@ func (api *API) piholeImportPreview(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "backup file is required"})
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	plan, err := pihole.Parse(file, header.Size)
 	if err != nil {
