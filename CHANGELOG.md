@@ -1,21 +1,28 @@
-## [Unreleased]
+## [0.94.0] (2026-11-24)
 
-### Ecosystem
-* **Pi-hole Import Wizard**: upload a Pi-hole v6 Teleporter zip under *Pi-hole Import*, review every adlist, domain, group, client assignment, local DNS record, upstream and static DHCP lease it contains (entries that already exist are flagged), pick the sections to apply and get a per-section report. Pi-hole wildcard regexes become GoAway wildcards; other regexes are kept for group lists and reported as unsupported for the global blacklist.
+### DNS Resolver & Protocol Parity
+* **DoQ (DNS over QUIC, RFC 9250)**: added DoQ upstream client with pooled QUIC sessions (`alpn=doq`, 2-byte framing, wire ID=0) and optional `DoQServer` listener configurable via `dns.ports.doq`.
+* **Upstream Selection Strategies**: added `dns.upstream.strategy` (`strict`, `parallel_best`, `random`) with loser cancellation, `SERVFAIL` fallback to healthy peers, and `goaway_dns_upstream_wins_total` / `goaway_dns_upstream_latency_seconds` Prometheus metrics.
+* **Extended DNS Errors (RFC 8914 / EDE)**: configurable via `dns.edeEnabled`; attaches EDNS0 EDE `Filtered` on blocked responses (including category), `DNSBogus` on strict DNSSEC failures, and `StaleAnswer` on serve-stale responses.
+* **DNS Query Type (`qtype`) Blocking**: block specific record types (e.g. `AAAA`, `HTTPS`, `SVCB`) per policy (`Policy.BlockedQueryTypes`) or globally (`dns.blockedQueryTypes`), returning NODATA + EDE `Filtered` and surfaced in `ExplainWithType`.
+* **DoH HTTP/2 Connection Pool**: replaced per-query `http.Client` allocation in `exchangeDoH` with a persistent HTTP/2 transport pool in `DNSServer`, drained cleanly on shutdown/restart.
 
-### Observability
-* **Replication backlog is visible**: the cluster dashboard shows the queued event count per node and marks a node **Out of sync** when events had to be dropped unsent, with an error log naming the count. `GET /api/ha/cluster` exposes `pendingEvents` and `needsResync` per node.
+### High Availability & Security
+* **Hot Logical Resync**: added HMAC-signed `GET /api/native/cluster/snapshot` and `POST /api/ha/resync` (plus a **Hot Resync** button in the Cluster UI) to reconcile whitelist, local DNS resolutions, and static DHCP leases in-place without restarting the replica.
+* **Anti-Replay Nonce Cache & Signed Heartbeats**: added `X-Cluster-Nonce` + 30s replay cache (`cluster.NonceCache`) and HMAC-signed heartbeat responses verified by peers before leader election.
+* **Cluster Authentication (HA Phase 4)**: `/api/native/cluster/heartbeat` and `/replicate` require HMAC-SHA256 signatures with `highAvailability.secret`, fail closed without a secret, and refuse replicated events on a Primary.
+* **Persistent Replication Outbox & Wider Coverage**: cluster events persist per peer in `replication_outbox` with ordered retries, backlog visibility (`pendingEvents`, `needsResync`), and coverage across groups, client assignments, local DNS resolutions, and DHCPv6 leases.
+* **Dependency & Static Analysis Hardening**: upgraded `golang.org/x/net`, `golang.org/x/crypto`, `github.com/gorilla/websocket`, and `codeberg.org/miekg/dns` (`v0.6.85`), reaching 0 `govulncheck` vulnerabilities and 0 `gosec` findings.
 
-### Fixes
-* **Cluster role is race-free**: the election goroutine wrote the node role while request goroutines read it unguarded, so a demoted node could still be seen as Primary and accept replicated events. The role now lives behind its own lock, and a two-node integration test covers election, signed replication, the split-brain refusal and outbox recovery.
-* **Upstream servers added from the UI now take effect**: the upstream API wrote the legacy `fallback`/`preferred` config fields, which the resolver never reads, so the Upstream page showed an empty list and additions were ignored. It now manages `dns.upstream.servers`; the preferred server is the first in the list.
+### Ecosystem, GitOps & UI
+* **Declarative GitOps Mode & SIGHUP Reload**: added `api.readOnly` (rejects mutating API calls with HTTP 403 while keeping dashboard login/read access, with a read-only banner in Settings) and atomic `SIGHUP` reload of `config/settings.yaml`.
+* **Official Helm Chart & Ansible Persistence**: added Kubernetes Helm chart under `charts/goaway/` and tracked `ansible/roles/goaway/` with persistent `./config` and `./data` volumes.
+* **Pi-hole Import Wizard**: upload a Pi-hole v6 Teleporter zip under *Pi-hole Import*, preview conflicts (comparing full client group sets), and apply per-section with reports.
+* **Settings & Cluster UI**: added controls for DoQ port, upstream strategy, EDE, global blocked query types, read-only GitOps mode, and HA Hot Resync; cleaned all client ESLint warnings.
 
-### High Availability
-* **Persistent Replication Outbox**: cluster events are now stored per peer in the `replication_outbox` table and pushed in order until the peer acknowledges them, so a replica that was offline catches up when it returns. Replaces the in-memory queue that dropped events when full. Rows older than 24h are discarded.
-* **Wider Replication Coverage**: group flags and per-group blocked/allowed domains, client group assignments, local DNS resolutions and DHCPv6 leases now replicate. Group and resolution replicators were not wired before.
-
-### Security
-* **Cluster Authentication (HA Phase 4)**: `/api/native/cluster/heartbeat` and `/replicate` now require an HMAC-SHA256 signature over timestamp, path and body using the new shared key `highAvailability.secret`. Unsigned, stale (>30s) or wrongly signed requests are rejected with 401 and recorded in the audit log. Nodes fail closed when the secret is empty and do not start their cluster loops. Nodes now identify themselves by hostname, heartbeats carry priority so election works, and a Primary refuses replicated events instead of echoing them.
+### Fixes & Testing
+* **Concurrency & DHCPv6**: guarded `settings.Config` reads/writes with `RWMutex` + `DNSSnapshot()`, guarded HA node role with its own mutex, fixed upstream API mutations to write `dns.upstream.servers`, and fixed DHCPv6 GORM column names (`du_id`/`ia_id`).
+* **Test Suites**: added Go unit/integration tests for `user`, `api/key`, `resolution`, `dhcp`, `audit`, `whitelist`, `prefetch`, `api/ratelimit`, DoH/DoQ, EDE, upstream strategies, and HA resync; added Vitest runner (`pnpm -C client test`) integrated into CI.
 
 ## [0.93.0] (2026-04-11)
 

@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/rasty94/goaway
   pullPolicy: IfNotPresent
-  tag: "v0.93.0"
+  tag: "v0.94.0"
 
 serviceAccount:
   create: false
