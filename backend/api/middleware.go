@@ -82,6 +82,39 @@ func (api *API) authMiddleware() gin.HandlerFunc {
 	}
 }
 
+func (api *API) readOnlyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if api.Config == nil {
+			c.Next()
+			return
+		}
+		api.Config.RLockConfig()
+		readOnly := api.Config.API.ReadOnly
+		api.Config.RUnlockConfig()
+		if !readOnly {
+			c.Next()
+			return
+		}
+
+		switch c.Request.Method {
+		case http.MethodGet, http.MethodHead, http.MethodOptions:
+			c.Next()
+			return
+		}
+
+		// Allow auth session endpoints even in read-only mode so operators can still view the dashboard.
+		path := c.Request.URL.Path
+		if path == "/api/login" || path == "/api/logout" {
+			c.Next()
+			return
+		}
+
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error": "instance is running in read-only GitOps mode",
+		})
+	}
+}
+
 func (api *API) auditMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == "GET" || c.Request.Method == "OPTIONS" || c.Request.Method == "HEAD" {

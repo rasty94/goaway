@@ -19,12 +19,14 @@ type Manager struct {
 	services       *services.ServiceRegistry
 	backgroundJobs *jobs.BackgroundJobs
 	signalChan     chan os.Signal
+	reloadChan     chan os.Signal
 }
 
 func NewManager(registry *services.ServiceRegistry) *Manager {
 	return &Manager{
 		services:   registry,
 		signalChan: make(chan os.Signal, 1),
+		reloadChan: make(chan os.Signal, 1),
 	}
 }
 
@@ -38,6 +40,7 @@ func (m *Manager) Run(restartCallback api.RestartApplicationCallback) error {
 	m.backgroundJobs = jobs.NewBackgroundJobs(m.services)
 
 	signal.Notify(m.signalChan, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(m.reloadChan, syscall.SIGHUP)
 
 	m.services.StartAll()
 	m.backgroundJobs.Start(m.services.ReadyChannel())
@@ -57,6 +60,16 @@ func (m *Manager) waitForTermination() error {
 		log.Error("%s server failed: %s", err.Service, err.Err)
 		log.Fatal("Server failure detected. Exiting.")
 		return err.Err
+	case <-m.reloadChan:
+		log.Info("Received SIGHUP. Reloading settings from disk...")
+		if m.services.Context != nil && m.services.Context.Config != nil {
+			if err := m.services.Context.Config.ReloadFromDisk(); err != nil {
+				log.Error("Failed to reload settings on SIGHUP: %v", err)
+			} else {
+				log.Info("Settings reloaded successfully")
+			}
+		}
+		return m.waitForTermination()
 	case <-m.signalChan:
 		log.Info("Received interrupt. Shutting down.")
 		m.shutdown()

@@ -85,6 +85,7 @@ func (config *Config) Update(updatedSettings Config) {
 	config.SchemaVersion = updatedSettings.SchemaVersion
 	config.API.Port = updatedSettings.API.Port
 	config.API.Authentication = updatedSettings.API.Authentication
+	config.API.ReadOnly = updatedSettings.API.ReadOnly
 	config.API.RateLimit = updatedSettings.API.RateLimit
 
 	config.DNS.Address = updatedSettings.DNS.Address
@@ -122,6 +123,58 @@ func (config *Config) Update(updatedSettings Config) {
 	log.SetLevel(logging.LogLevel(loggingLevel))
 
 	config.Save()
+}
+
+// ReloadFromDisk reloads config/settings.yaml in place (used by SIGHUP declarative GitOps reloads).
+func (config *Config) ReloadFromDisk() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("could not determine current directory: %w", err)
+	}
+	return config.ReloadFromFile(filepath.Join(wd, "config", "settings.yaml"))
+}
+
+// ReloadFromFile reads a YAML settings file and applies it atomically under LockConfig.
+func (config *Config) ReloadFromFile(path string) error {
+	cleanPath := filepath.Clean(path)
+	// #nosec G304 - caller passes a controlled configuration path
+	data, err := os.ReadFile(cleanPath)
+	if err != nil {
+		return fmt.Errorf("could not read settings file: %w", err)
+	}
+
+	var loaded Config
+	if err := yaml.Unmarshal(data, &loaded); err != nil {
+		return fmt.Errorf("invalid settings format: %w", err)
+	}
+
+	if _, err := loaded.ApplySchemaUpgrades(); err != nil {
+		return err
+	}
+
+	config.LockConfig()
+	if loaded.API.JWTSecret == "" {
+		loaded.API.JWTSecret = config.API.JWTSecret
+	}
+	if loaded.HighAvailability.Secret == "" {
+		loaded.HighAvailability.Secret = config.HighAvailability.Secret
+	}
+
+	config.SchemaVersion = loaded.SchemaVersion
+	config.DNS = loaded.DNS
+	config.DHCP = loaded.DHCP
+	config.API = loaded.API
+	config.Logging = loaded.Logging
+	config.Misc = loaded.Misc
+	config.RemoteBackup = loaded.RemoteBackup
+	config.HighAvailability = loaded.HighAvailability
+	loggingEnabled := config.Logging.Enabled
+	loggingLevel := config.Logging.Level
+	config.UnlockConfig()
+
+	log.ToggleLogging(loggingEnabled)
+	log.SetLevel(logging.LogLevel(loggingLevel))
+	return nil
 }
 
 func GenerateSecret() string {

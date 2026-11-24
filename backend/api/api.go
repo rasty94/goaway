@@ -230,6 +230,7 @@ func (api *API) setupRoutes() {
 }
 
 func (api *API) setupAuthAndMiddleware() {
+	api.routes.Use(api.readOnlyMiddleware())
 	if api.Authentication {
 		api.setupAuth()
 		api.routes.Use(api.authMiddleware())
