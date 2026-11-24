@@ -1,3 +1,19 @@
+## [0.95.0] (2026-11-24)
+
+### Enterprise Auth (EPIC-07)
+* **OIDC Single Sign-On**: added `api.oidc` with OpenID Connect discovery (`/.well-known/openid-configuration`), `oidc_state` CSRF cookie (`Secure`, `HttpOnly`, `SameSite=Lax`), authorization code exchange, claim/group-to-role mapping (`admin`/`viewer`), auto-provisioning, logout, and an SSO button on the Login page.
+* **LDAP / Active Directory**: added `api.ldap` supporting LDAPS and StartTLS, LDAP filter injection escaping, `memberOf` group mapping (full DN or CN) to `admin`/`viewer`, and automatic emergency local database fallback when LDAP is unreachable.
+
+### High Availability (EPIC-05 Completed)
+* **Lamport Logical Clock Versioning**: `ReplicatedEvent` now carries `version` and `originId`; replicas track per-entity high-water marks (`cluster.VersionTracker`) and discard stale events after leader failovers or split-brain.
+* **Stable Group-Name Replication**: group and client-assignment events now carry `name`/`groupName`/`groupNames` and resolve by name on replicas with fallback to ID.
+* **HTTPS & mTLS Peer Support**: added `highAvailability.tls` (`caCert`, `clientCert`, `clientKey`) used across heartbeats, outbox replication, and logical hot-resync snapshots.
+
+### Dual-Stack & Resolver (EPIC-08 & EPIC-09 Completed)
+* **Dual-Stack IPv4/IPv6 Policy Consistency**: `DualStackCorrelator` links sibling IPv4 and IPv6 addresses via shared MAC or hostname so dual-stack devices automatically inherit identical group and blocking policies.
+* **Redis Shared DNS Cache**: added optional write-through RESP2 shared cache (`dns.redisCache`) that hydrates local `DomainCache` on Redis hits across multi-instance deployments.
+* **External Query Log Exporter**: added non-blocking `logging.queryLogExport` supporting `json` (NDJSON), `csv`, `stdout`, `postgres`, and `timescaledb` (with automatic `goaway_query_logs` schema creation and transactional batch inserts).
+
 ## [0.94.0] (2026-11-24)
 
 ### DNS Resolver & Protocol Parity
