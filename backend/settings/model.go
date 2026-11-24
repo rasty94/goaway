@@ -89,9 +89,16 @@ type APIConfig struct {
 	RateLimit      RateLimitConfig `yaml:"rateLimit" json:"rateLimit"`
 }
 
+type QueryLogExportConfig struct {
+	Enabled bool   `yaml:"enabled" json:"enabled"`
+	Format  string `yaml:"format" json:"format"` // "json" (NDJSON) or "csv"
+	Target  string `yaml:"target" json:"target"` // file path or "stdout"
+}
+
 type LoggingConfig struct {
-	Enabled bool `yaml:"enabled" json:"enabled"`
-	Level   int  `yaml:"level" json:"level"`
+	Enabled        bool                 `yaml:"enabled" json:"enabled"`
+	Level          int                  `yaml:"level" json:"level"`
+	QueryLogExport QueryLogExportConfig `yaml:"queryLogExport,omitempty" json:"queryLogExport,omitempty"`
 }
 
 type MiscConfig struct {

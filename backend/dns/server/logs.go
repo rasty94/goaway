@@ -61,6 +61,7 @@ func (s *DNSServer) saveBatch(entries []model.RequestLogEntry) {
 	if err != nil {
 		log.Warning("Error while saving logs, reason: %v", err)
 	}
+	s.exportQueryLogs(entries)
 }
 
 // Removes old log entries based on the configured retention period.

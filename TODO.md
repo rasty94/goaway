@@ -14,11 +14,10 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-05 HA Active | Versionado para conflictos tras split-brain | P2 | Auth, outbox y cobertura hechos |
+| EPIC-05 HA Active | Grupos por UUID/nombre estable y TLS mutuo | P2 | Auth, outbox, resync y reloj logico hechos |
 | EPIC-06 Ecosystem | Provider Terraform oficial | P1 | API keys, Pi-hole import, GitOps y Helm hechos |
 | EPIC-07 Enterprise Auth | OIDC, LDAP/AD, passkeys, RBAC fino | P2 | Sin empezar |
-| EPIC-08 DHCPv6 y RA | Consistencia de politicas dual-stack | P2 | DHCPv6+RA hechos |
-| EPIC-09 Resolver Avanzado | Cache Redis y logs externos | P1 | DoQ, parallel_best, EDE y qtype hechos |
+| EPIC-09 Resolver Avanzado | Cache compartida Redis / sink SQL externo | P1 | DoQ, parallel_best, EDE, qtype y export JSON/CSV hechos |
 
 ---
 
@@ -44,14 +43,12 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 
 ### EPIC-05 HA Active
 
-- [ ] FEATURE: Resolucion de conflictos con versionado
+- [ ] FEATURE: Grupos referenciados por nombre o UUID estable en replicacion HA
   - Prioridad: p2
   - Labels: feature, ha
-  - Contexto: hoy el Primary es la unica fuente de escritura y el outbox entrega en orden, asi que no hay conflictos salvo split-brain. Los eventos de grupo viajan por ID autoincremental, por lo que ambos nodos deben partir del mismo snapshot (backup Fase 1).
+  - Contexto: el reloj logico Lamport (`cluster.VersionTracker`) ya descarta eventos obsoletos tras cambio de lider; queda desacoplar eventos de grupo del ID autoincremental.
   - Criterios de aceptacion:
-    - Version o reloj logico por entidad; el replica descarta eventos mas antiguos que su estado.
     - Grupos referenciados por nombre o UUID estable en vez de ID autoincremental.
-    - Test de reconciliacion tras un cambio de lider.
 
 ### EPIC-06 Ecosystem
 
@@ -64,13 +61,13 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 
 ### EPIC-09 Resolver Avanzado (Paridad DNS / Blocky)
 
-- [ ] FEATURE: Cache compartida opcional en Redis y exportacion externa de query logs
+- [ ] FEATURE: Cache compartida opcional en Redis y sink SQL externo (PostgreSQL/TimescaleDB)
   - Prioridad: p2
   - Labels: feature, ha, observability
-  - Contexto: permite escalar despliegues multi-instancia reduciendo carga sobre SQLite en redes grandes.
+  - Contexto: el exportador estructurado JSON/CSV/stdout sin bloqueo ya esta implementado; queda la capa opcional Redis (write-through) y sink SQL para despliegues multi-instancia de gran escala.
   - Criterios de aceptacion:
-    - Backend de cache opcional en Redis (write-through) compartiendo entradas y estado de pausa entre nodos.
-    - Exportador configurable de query logs a PostgreSQL/TimescaleDB o salida estructurada (JSON/CSV) sin bloquear el hot path DNS.
+    - Backend de cache opcional en Redis compartiendo entradas y estado de pausa entre nodos.
+    - Exportador opcional a PostgreSQL/TimescaleDB.
 
 ---
 
@@ -100,15 +97,6 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
     - Alta/baja de credenciales.
     - Step-up para acciones sensibles.
     - 2FA por usuario.
-
-### EPIC-08 DHCPv6 y Router Advertisements
-
-- [ ] FEATURE: Consistencia de politicas dual-stack
-  - Prioridad: p2
-  - Labels: feature, dhcp, dns
-  - Criterios de aceptacion:
-    - Misma politica para IPv4/IPv6 del mismo cliente.
-    - Correlacion automatica de identidad dual-stack.
 
 ---
 
