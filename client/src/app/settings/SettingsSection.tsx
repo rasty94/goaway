@@ -1,3 +1,4 @@
+import { Combobox } from "@/components/combobox";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -38,6 +39,14 @@ export const SETTINGS_SECTIONS = [
         explanation: "Require login credentials to access the dashboard.",
         options: [true, false],
         default: true,
+        widgetType: Switch
+      },
+      {
+        label: "Read-Only GitOps Mode",
+        key: "readOnly",
+        explanation:
+          "Block mutating API calls (HTTP 403) so configuration is managed declaratively via settings.yaml and SIGHUP.",
+        default: false,
         widgetType: Switch
       }
     ]
@@ -95,6 +104,38 @@ export const SETTINGS_SECTIONS = [
         key: "dohPort",
         explanation: "Port for DNS-over-HTTPS traffic.",
         default: 443,
+        widgetType: Input
+      },
+      {
+        label: "DoQ Port *",
+        key: "doqPort",
+        explanation: "Optional UDP port for DNS-over-QUIC (RFC 9250). Set 0 to disable.",
+        default: 0,
+        widgetType: Input
+      },
+      {
+        label: "Upstream Strategy",
+        key: "upstreamStrategy",
+        explanation:
+          "How upstream resolvers are queried: strict order, parallel_best (fastest wins), or random.",
+        options: ["strict", "parallel_best", "random"],
+        default: "strict",
+        widgetType: Combobox
+      },
+      {
+        label: "Extended DNS Errors (RFC 8914)",
+        key: "edeEnabled",
+        explanation:
+          "Attach EDNS0 EDE details to blocked, DNSSEC bogus, and stale cache responses.",
+        default: false,
+        widgetType: Switch
+      },
+      {
+        label: "Blocked Query Types",
+        key: "blockedQueryTypes",
+        explanation:
+          "Comma-separated DNS record types answered with NODATA globally (e.g. AAAA,HTTPS,SVCB).",
+        default: "",
         widgetType: Input
       },
       {

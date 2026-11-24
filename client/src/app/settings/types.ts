@@ -11,6 +11,8 @@ export interface Dns {
   address: string;
   gateway: string;
   cacheTTL: number;
+  edeEnabled?: boolean;
+  blockedQueryTypes?: string[];
   rateLimit: DnsRateLimit;
   udpSize: number;
   tls: Tls;
@@ -58,6 +60,7 @@ export interface Tls {
 }
 
 export interface Upstream {
+  strategy?: string;
   preferred: string;
   fallback: string[];
 }
@@ -66,11 +69,13 @@ export interface Ports {
   udptcp: number;
   dot: number;
   doh: number;
+  doq?: number;
 }
 
 export interface Api {
   port: number;
   authentication: boolean;
+  readOnly?: boolean;
   rateLimit: RateLimit;
 }
 

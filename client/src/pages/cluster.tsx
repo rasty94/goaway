@@ -1,4 +1,4 @@
-import { GetRequest } from "@/util";
+import { GetRequest, PostRequest } from "@/util";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { 
@@ -39,6 +39,27 @@ export type ClusterStatus = {
 export function Cluster() {
   const [status, setStatus] = useState<ClusterStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resyncing, setResyncing] = useState(false);
+
+  const triggerResync = async (peer?: string) => {
+    setResyncing(true);
+    const [code, response] = await PostRequest(
+      "ha/resync",
+      peer ? { peer } : {}
+    );
+    setResyncing(false);
+    if (code !== 200) {
+      toast.error(response?.error || "Hot resync failed");
+      return;
+    }
+    const applied = response?.applied;
+    toast.success("Logical hot resync completed", {
+      description: applied
+        ? `Whitelist +${applied.whitelistAdded}, Resolutions +${applied.resolutionsAdded}, Leases +${applied.staticLeasesAdded}`
+        : undefined
+    });
+    fetchStatus();
+  };
 
   const fetchStatus = async () => {
     const [code, response] = await GetRequest("ha/cluster");
@@ -59,9 +80,6 @@ export function Cluster() {
   };
 
   useEffect(() => {
-    // Every setState in fetchStatus runs after the await, so nothing is set
-    // synchronously here despite what the rule sees.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStatus();
     const interval = setInterval(fetchStatus, 10000); // Auto refresh every 10s
     return () => clearInterval(interval);
@@ -82,10 +100,22 @@ export function Cluster() {
           <h1 className="text-3xl font-bold tracking-tight">Cluster Management</h1>
           <p className="text-muted-foreground">Monitor and manage High Availability nodes.</p>
         </div>
-        <Button onClick={refresh} disabled={loading}>
-          <ArrowsClockwise className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          {status?.selfRole !== "primary" && (
+            <Button
+              variant="outline"
+              onClick={() => triggerResync()}
+              disabled={resyncing}
+            >
+              <ArrowsClockwise className={`w-4 h-4 mr-2 ${resyncing ? "animate-spin" : ""}`} />
+              Hot Resync
+            </Button>
+          )}
+          <Button onClick={refresh} disabled={loading}>
+            <ArrowsClockwise className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -166,12 +196,24 @@ export function Cluster() {
                     <td className="py-4 px-4 text-muted-foreground">{node.latencyMs}ms</td>
                     <td className="py-4 px-4">
                       {node.needsResync ? (
-                        <div
-                          className="flex items-center gap-2 text-red-500"
-                          title="Events were dropped unsent. Re-seed this node from a backup."
-                        >
-                          <WarningCircle className="w-4 h-4" />
-                          Out of sync
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="flex items-center gap-1.5 text-red-500"
+                            title="Events were dropped unsent. Run Hot Resync to pull a logical snapshot."
+                          >
+                            <WarningCircle className="w-4 h-4" />
+                            Out of sync
+                          </div>
+                          {status?.selfRole !== "primary" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={resyncing}
+                              onClick={() => triggerResync(node.address)}
+                            >
+                              Resync
+                            </Button>
+                          )}
                         </div>
                       ) : node.pendingEvents > 0 ? (
                         <span className="text-amber-500">{node.pendingEvents} queued</span>

@@ -123,6 +123,10 @@ export function Settings() {
           ...prev,
           api: { ...prev.api, authentication: Boolean(value) }
         }),
+        readOnly: () => ({
+          ...prev,
+          api: { ...prev.api, readOnly: Boolean(value) }
+        }),
         dnsAddress: () => ({
           ...prev,
           dns: { ...prev.dns, address: String(value) }
@@ -145,6 +149,31 @@ export function Settings() {
         dohPort: () => ({
           ...prev,
           dns: { ...prev.dns, ports: { ...prev.dns.ports, doh: Number(value) } }
+        }),
+        doqPort: () => ({
+          ...prev,
+          dns: { ...prev.dns, ports: { ...prev.dns.ports, doq: Number(value) } }
+        }),
+        upstreamStrategy: () => ({
+          ...prev,
+          dns: {
+            ...prev.dns,
+            upstream: { ...prev.dns.upstream, strategy: String(value) }
+          }
+        }),
+        edeEnabled: () => ({
+          ...prev,
+          dns: { ...prev.dns, edeEnabled: Boolean(value) }
+        }),
+        blockedQueryTypes: () => ({
+          ...prev,
+          dns: {
+            ...prev.dns,
+            blockedQueryTypes: String(value)
+              .split(",")
+              .map((s) => s.trim().toUpperCase())
+              .filter(Boolean)
+          }
         }),
         cacheTTL: () => ({
           ...prev,
@@ -238,11 +267,16 @@ export function Settings() {
     const valueMap: Record<string, number | string | boolean> = {
       apiPort: preferences.api.port,
       authentication: preferences.api.authentication,
+      readOnly: Boolean(preferences.api.readOnly),
       dnsAddress: preferences.dns.address,
       dnsGateway: preferences.dns.gateway,
       dnsPort: preferences.dns.ports.udptcp,
       dotPort: preferences.dns.ports.dot,
       dohPort: preferences.dns.ports.doh,
+      doqPort: preferences.dns.ports.doq ?? 0,
+      upstreamStrategy: preferences.dns.upstream?.strategy || "strict",
+      edeEnabled: Boolean(preferences.dns.edeEnabled),
+      blockedQueryTypes: (preferences.dns.blockedQueryTypes ?? []).join(", "),
       cacheTTL: preferences.dns.cacheTTL,
       udpSize: preferences.dns.udpSize,
       tlsCertFile: preferences.dns.tls.cert,
@@ -263,6 +297,11 @@ export function Settings() {
 
   return (
     <div className="container mx-auto space-y-4 xl:w-1/2">
+      {preferences.api.readOnly && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
+          Read-Only GitOps mode is active. Settings changes from the UI will be rejected (HTTP 403); edit <code className="font-mono">settings.yaml</code> and send <code className="font-mono">SIGHUP</code> to reload.
+        </div>
+      )}
       <p className="text-sm text-muted-foreground">
         {t("settings.restartRequired")}
       </p>
