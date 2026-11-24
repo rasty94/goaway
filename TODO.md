@@ -14,10 +14,9 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-05 HA Active | Grupos por UUID/nombre estable y TLS mutuo | P2 | Auth, outbox, resync y reloj logico hechos |
 | EPIC-06 Ecosystem | Provider Terraform oficial | P1 | API keys, Pi-hole import, GitOps y Helm hechos |
-| EPIC-07 Enterprise Auth | OIDC, LDAP/AD, passkeys, RBAC fino | P2 | Sin empezar |
-| EPIC-09 Resolver Avanzado | Cache compartida Redis / sink SQL externo | P1 | DoQ, parallel_best, EDE, qtype y export JSON/CSV hechos |
+| EPIC-07 Enterprise Auth | LDAP/AD, passkeys | P2 | OIDC hecho |
+| EPIC-09 Resolver Avanzado | Sink SQL externo (PostgreSQL/TimescaleDB) | P1 | DoQ, parallel_best, EDE, qtype, Redis y export JSON/CSV hechos |
 
 ---
 
@@ -35,20 +34,9 @@ Hallazgos resueltos (ver [DONE.md](DONE.md)).
 
 ## Seguimiento de la revision del 2026-09-07
 
-Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigieron en `3b10071`.
-
-- [ ] HA: peers por HTTPS (TLS mutuo/certificados entre nodos; la firma HMAC de la respuesta de heartbeat y el resync logico en caliente ya estan implementados).
+Hallazgos resueltos (ver [DONE.md](DONE.md)).
 
 ## P1 - Operacion, Resiliencia y Ecosistema
-
-### EPIC-05 HA Active
-
-- [ ] FEATURE: Grupos referenciados por nombre o UUID estable en replicacion HA
-  - Prioridad: p2
-  - Labels: feature, ha
-  - Contexto: el reloj logico Lamport (`cluster.VersionTracker`) ya descarta eventos obsoletos tras cambio de lider; queda desacoplar eventos de grupo del ID autoincremental.
-  - Criterios de aceptacion:
-    - Grupos referenciados por nombre o UUID estable en vez de ID autoincremental.
 
 ### EPIC-06 Ecosystem
 
@@ -61,12 +49,11 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 
 ### EPIC-09 Resolver Avanzado (Paridad DNS / Blocky)
 
-- [ ] FEATURE: Cache compartida opcional en Redis y sink SQL externo (PostgreSQL/TimescaleDB)
+- [ ] FEATURE: Sink SQL externo para query logs (PostgreSQL/TimescaleDB)
   - Prioridad: p2
-  - Labels: feature, ha, observability
-  - Contexto: el exportador estructurado JSON/CSV/stdout sin bloqueo ya esta implementado; queda la capa opcional Redis (write-through) y sink SQL para despliegues multi-instancia de gran escala.
+  - Labels: feature, observability
+  - Contexto: la cache compartida Redis y el exportador estructurado JSON/CSV/stdout ya estan implementados.
   - Criterios de aceptacion:
-    - Backend de cache opcional en Redis compartiendo entradas y estado de pausa entre nodos.
     - Exportador opcional a PostgreSQL/TimescaleDB.
 
 ---
@@ -74,14 +61,6 @@ Hallazgos verificados por las revisiones de codigo y seguridad que no se corrigi
 ## P2 - Enterprise y Dual Stack Completo
 
 ### EPIC-07 Enterprise Auth
-
-- [ ] FEATURE: Login OIDC
-  - Prioridad: p2
-  - Labels: feature, security, api
-  - Criterios de aceptacion:
-    - Login con proveedores OIDC comunes.
-    - Mapeo de claims a roles.
-    - Cierre de sesion y expiracion.
 
 - [ ] FEATURE: Integracion LDAP/AD
   - Prioridad: p2

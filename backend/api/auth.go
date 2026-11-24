@@ -17,6 +17,7 @@ import (
 func (api *API) registerAuthRoutes() {
 	api.router.POST("/api/login", api.handleLogin)
 	api.router.GET("/api/authentication", api.getAuthentication)
+	api.registerOIDCRoutes()
 	api.routes.PUT("/password", api.updatePassword)
 
 	api.routes.POST("/users", api.requireAdmin(), api.createUser)
