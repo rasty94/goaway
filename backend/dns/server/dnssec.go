@@ -18,11 +18,15 @@ const (
 )
 
 func (s *DNSServer) dnssecMode() string {
-	if !s.Config.DNS.DNSSEC.Enabled {
+	if s == nil || s.Config == nil {
+		return "off"
+	}
+	dnssecCfg := s.Config.DNSSnapshot().DNSSEC
+	if !dnssecCfg.Enabled {
 		return "off"
 	}
 
-	mode := strings.ToLower(strings.TrimSpace(s.Config.DNS.DNSSEC.Mode))
+	mode := strings.ToLower(strings.TrimSpace(dnssecCfg.Mode))
 	switch mode {
 	case "strict", "permissive":
 		return mode

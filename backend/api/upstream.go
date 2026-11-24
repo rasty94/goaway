@@ -70,9 +70,11 @@ func (api *API) createUpstream(c *gin.Context) {
 		upstream += ":53"
 	}
 
+	api.Config.LockConfig()
 	if slices.ContainsFunc(api.Config.DNS.Upstream.Servers, func(s settings.UpstreamServer) bool {
 		return s.Address == upstream
 	}) {
+		api.Config.UnlockConfig()
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Upstream already exists"})
 		return
 	}
@@ -83,7 +85,7 @@ func (api *API) createUpstream(c *gin.Context) {
 	}
 
 	cur := api.Config.DNS.Upstream.Servers
-	// copy-on-write: the resolver ranges over Servers concurrently
+	// copy-on-write under write lock
 	next := make([]settings.UpstreamServer, 0, len(cur)+1)
 	next = append(next, cur...)
 	next = append(next, settings.UpstreamServer{
@@ -93,6 +95,7 @@ func (api *API) createUpstream(c *gin.Context) {
 		Enabled:  true,
 	})
 	api.Config.DNS.Upstream.Servers = next
+	api.Config.UnlockConfig()
 	api.Config.Save()
 
 	log.Info("Added %s as a new upstream", upstream)
@@ -113,7 +116,7 @@ func (api *API) auditUpstream(message string) {
 
 func (api *API) getUpstreams(c *gin.Context) {
 	var (
-		servers           = api.Config.DNS.Upstream.Servers
+		servers           = api.Config.DNSSnapshot().Upstream.Servers
 		preferredUpstream = ""
 		upstreamsToCheck  = make([]string, 0, len(servers))
 		wg                sync.WaitGroup

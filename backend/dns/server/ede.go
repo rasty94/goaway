@@ -7,7 +7,10 @@ import (
 )
 
 func (s *DNSServer) edeEnabled() bool {
-	return s != nil && s.Config != nil && s.Config.DNS.EDEEnabled
+	if s == nil || s.Config == nil {
+		return false
+	}
+	return s.Config.DNSSnapshot().EDEEnabled
 }
 
 // attachEDE appends an RFC 8914 Extended DNS Error pseudo-RR to msg when EDE is enabled.

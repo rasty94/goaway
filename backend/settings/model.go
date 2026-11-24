@@ -1,6 +1,9 @@
 package settings
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 type Status struct {
 	PausedAt  time.Time `json:"pausedAt"`
@@ -170,6 +173,7 @@ type HighAvailabilityConfig struct {
 }
 
 type Config struct {
+	mu               *sync.RWMutex          `yaml:"-" json:"-"`
 	SchemaVersion    int                    `yaml:"schemaVersion" json:"schemaVersion"`
 	BinaryPath       string                 `yaml:"-" json:"-"`
 	DNS              DNSConfig              `yaml:"dns" json:"dns"`
@@ -179,4 +183,37 @@ type Config struct {
 	Misc             MiscConfig             `yaml:"misc" json:"misc"`
 	RemoteBackup     RemoteBackupConfig     `yaml:"remoteBackup" json:"remoteBackup"`
 	HighAvailability HighAvailabilityConfig `yaml:"highAvailability" json:"highAvailability"`
+}
+
+var fallbackConfigMu sync.RWMutex
+
+func (c *Config) rwMu() *sync.RWMutex {
+	if c != nil && c.mu != nil {
+		return c.mu
+	}
+	return &fallbackConfigMu
+}
+
+func (c *Config) RLockConfig()   { c.rwMu().RLock() }
+func (c *Config) RUnlockConfig() { c.rwMu().RUnlock() }
+func (c *Config) LockConfig()    { c.rwMu().Lock() }
+func (c *Config) UnlockConfig()  { c.rwMu().Unlock() }
+
+// DNSSnapshot returns a concurrency-safe copy of DNS settings with cloned slices
+// for hot-path readers in the DNS resolver.
+func (c *Config) DNSSnapshot() DNSConfig {
+	if c == nil {
+		return DNSConfig{}
+	}
+	c.RLockConfig()
+	defer c.RUnlockConfig()
+
+	snap := c.DNS
+	if len(c.DNS.Upstream.Servers) > 0 {
+		snap.Upstream.Servers = append([]UpstreamServer(nil), c.DNS.Upstream.Servers...)
+	}
+	if len(c.DNS.ConditionalForwarders) > 0 {
+		snap.ConditionalForwarders = append([]ConditionalForwarder(nil), c.DNS.ConditionalForwarders...)
+	}
+	return snap
 }

@@ -330,9 +330,11 @@ func (api *API) piholeImportApply(c *gin.Context) {
 				if _, _, err := net.SplitHostPort(u.Address); err != nil {
 					return err
 				}
+				api.Config.LockConfig()
 				api.Config.DNS.Upstream.Servers = append(api.Config.DNS.Upstream.Servers, settings.UpstreamServer{
 					Name: "Pi-hole " + u.Address, Address: u.Address, Protocol: "udp", Enabled: true,
 				})
+				api.Config.UnlockConfig()
 				changed = true
 				return nil
 			})

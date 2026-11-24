@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
@@ -31,6 +32,7 @@ func LoadSettings() (Config, error) {
 		if err != nil {
 			return Config{}, err
 		}
+		config.mu = &sync.RWMutex{}
 		return config, nil
 	}
 
@@ -55,6 +57,7 @@ func LoadSettings() (Config, error) {
 		log.Warning("Unable to find installed binary path, err: %v", err)
 	}
 	config.BinaryPath = binaryPath
+	config.mu = &sync.RWMutex{}
 
 	if changed {
 		config.Save()
@@ -64,7 +67,9 @@ func LoadSettings() (Config, error) {
 }
 
 func (config *Config) Save() {
+	config.RLockConfig()
 	data, err := yaml.Marshal(config)
+	config.RUnlockConfig()
 	if err != nil {
 		log.Error("Could not parse settings %v", err)
 		return
@@ -76,6 +81,7 @@ func (config *Config) Save() {
 }
 
 func (config *Config) Update(updatedSettings Config) {
+	config.LockConfig()
 	config.SchemaVersion = updatedSettings.SchemaVersion
 	config.API.Port = updatedSettings.API.Port
 	config.API.Authentication = updatedSettings.API.Authentication
@@ -107,8 +113,12 @@ func (config *Config) Update(updatedSettings Config) {
 		log.Error("Could not apply settings schema upgrades: %v", err)
 	}
 
-	log.ToggleLogging(config.Logging.Enabled)
-	log.SetLevel(logging.LogLevel(config.Logging.Level))
+	loggingEnabled := config.Logging.Enabled
+	loggingLevel := config.Logging.Level
+	config.UnlockConfig()
+
+	log.ToggleLogging(loggingEnabled)
+	log.SetLevel(logging.LogLevel(loggingLevel))
 
 	config.Save()
 }

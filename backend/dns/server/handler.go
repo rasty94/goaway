@@ -38,6 +38,8 @@ func isPTRQuery(req *Request, domainName string) bool {
 }
 
 func (s *DNSServer) checkAndUpdatePauseStatus() {
+	s.Config.LockConfig()
+	defer s.Config.UnlockConfig()
 	if s.Config.DNS.Status.Paused &&
 		s.Config.DNS.Status.PausedAt.After(s.Config.DNS.Status.PauseTime) {
 		s.Config.DNS.Status.Paused = false
@@ -640,7 +642,7 @@ func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, bool, bool, string, s
 	var staleSource string
 	var hasStaleCandidate bool
 
-	if s.Config.DNS.CacheEnabled {
+	if s.Config.DNSSnapshot().CacheEnabled {
 		if cached, found := s.DomainCache.Load(cacheKey); found {
 			if ipAddresses, dnssecStatus, source, valid := s.getCachedRecord(cached); valid {
 				if dnssecStatus == "" {
@@ -789,7 +791,7 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string, strin
 		// Check conditional forwarders first
 		queryDomain := strings.TrimSuffix(req.QName(), ".")
 		isForwarded := false
-		for _, cf := range s.Config.DNS.ConditionalForwarders {
+		for _, cf := range s.Config.DNSSnapshot().ConditionalForwarders {
 			cfDomain := strings.TrimSuffix(cf.Domain, ".")
 			if queryDomain == cfDomain || strings.HasSuffix(queryDomain, "."+cfDomain) {
 				log.Debug("Conditional forwarding %s -> %s", queryDomain, cf.Upstream)

@@ -26,7 +26,8 @@ func (s *DNSServer) upstreamStrategy() string {
 	if s == nil || s.Config == nil {
 		return UpstreamStrategyStrict
 	}
-	switch strings.ToLower(strings.TrimSpace(s.Config.DNS.Upstream.Strategy)) {
+	dnsCfg := s.Config.DNSSnapshot()
+	switch strings.ToLower(strings.TrimSpace(dnsCfg.Upstream.Strategy)) {
 	case UpstreamStrategyParallelBest:
 		return UpstreamStrategyParallelBest
 	case UpstreamStrategyRandom:
@@ -40,7 +41,7 @@ func (s *DNSServer) enabledUpstreams() []settings.UpstreamServer {
 	if s == nil || s.Config == nil {
 		return nil
 	}
-	servers := s.Config.DNS.Upstream.Servers
+	servers := s.Config.DNSSnapshot().Upstream.Servers
 	enabled := make([]settings.UpstreamServer, 0, len(servers))
 	for _, u := range servers {
 		if u.Enabled {
