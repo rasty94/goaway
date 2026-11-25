@@ -22,6 +22,8 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 - [x] Escaneo de dependencias y vulnerabilidades en el workflow de PR.
 - [x] Contenedor ejecutando como usuario no root con file capabilities.
 - [x] settings.yaml fuera del repo (contenia un jwtSecret real).
+- [x] `jwtSecret` filtrado dado por quemado: no se purga el historial (romperia clones y forks); las instancias que arrancan con el se rotan solas.
+- [x] Referencias al upstream (`pommee/goaway`) pasadas al fork: installer/updater, comprobacion de version (ahora via `releases/latest`, ignora prereleases), changelog de la UI, docs y README. GoReleaser marca los tags `-rc` como prerelease.
 
 ## Frontend y UX
 - [x] Localizacion completa (EN/ES).

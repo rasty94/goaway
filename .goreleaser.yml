@@ -69,3 +69,7 @@ changelog:
 checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
+
+release:
+  # v1.0.0-rc.1 etc. are marked as prereleases, so /releases/latest skips them.
+  prerelease: auto

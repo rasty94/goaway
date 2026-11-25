@@ -19,7 +19,7 @@ func SelfUpdate(sse sendSSE, binaryPath string) error {
 	_, err := os.Stat(scriptPath)
 	if os.IsNotExist(err) {
 		sse("[info] Script not found locally, downloading from GitHub")
-		scriptURL := "https://raw.githubusercontent.com/pommee/goaway/refs/heads/main/updater.sh"
+		scriptURL := "https://raw.githubusercontent.com/rasty94/goaway/refs/heads/main/updater.sh"
 
 		resp, err := http.Get(scriptURL)
 		if err != nil {

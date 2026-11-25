@@ -114,7 +114,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     navSecondary: [
       {
         title: t("sidebar.website"),
-        url: "https://pommee.github.io/goaway",
+        url: "https://rasty94.github.io/goaway",
         icon: BrowserIcon,
         blank: "_blank"
       },

@@ -26,7 +26,7 @@ get_os() {
 }
 
 get_latest_release() {
-    curl --silent "https://api.github.com/repos/pommee/goaway/releases/latest" |
+    curl --silent "https://api.github.com/repos/rasty94/goaway/releases/latest" |
     grep '"tag_name":' |
     sed -E 's/.*"v([^"]+)".*/\1/'
 }

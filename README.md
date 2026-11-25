@@ -10,7 +10,7 @@ A lightweight DNS sinkhole for blocking unwanted domains at the network level. B
 
 ## Getting started
 
-Instructions for installation, configuration and more can be found on the homepage: https://pommee.github.io/goaway
+Instructions for installation, configuration and more can be found on the homepage: https://rasty94.github.io/goaway
 
 > [!WARNING]
 > GoAway is still in version 0.x.x and is subject to major changes from version to version.  

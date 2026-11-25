@@ -30,7 +30,7 @@ const Changelog = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchReleases = async () => {
-    const repoUrl = "https://api.github.com/repos/pommee/goaway/releases";
+    const repoUrl = "https://api.github.com/repos/rasty94/goaway/releases";
 
     try {
       const response = await fetch(repoUrl);

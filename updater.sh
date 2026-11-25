@@ -5,7 +5,7 @@ BINARY_NAME=$(basename "$BINARY_PATH")
 TMP_DIR=$(mktemp -d)
 ORIGINAL_CMD=$(ps -o args= -C "$BINARY_NAME" | head -n 1)
 
-LATEST_RELEASE=$(curl -s "https://api.github.com/repos/pommee/goaway/releases/latest")
+LATEST_RELEASE=$(curl -s "https://api.github.com/repos/rasty94/goaway/releases/latest")
 if [[ $? -ne 0 ]] || [[ -z "$LATEST_RELEASE" ]]; then
     echo "[error] Failed to fetch release information."
     rm -rf "$TMP_DIR"

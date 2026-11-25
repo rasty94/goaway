@@ -205,7 +205,7 @@ See [docker-compose.yml](../docker-compose.yml) for basic Primary setup, and cre
 
 ```yaml
 goaway-replica:
-  image: pommee/goaway:latest
+  image: ghcr.io/rasty94/goaway:latest
   environment:
     - DNS_PORT=53
     - WEBSITE_PORT=8080

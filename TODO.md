@@ -22,12 +22,7 @@ Solo queda el corte de la release.
 
 ## P0 - Deuda que bloquea lo demas
 
-- [ ] SECURITY: Decidir si se purga del historial el `jwtSecret` filtrado
-  - Prioridad: p0
-  - Labels: security
-  - Contexto: la rotacion ya es automatica (ver DONE.md): una instancia que arranca con el secreto filtrado genera uno nuevo. Queda decidir que hacer con el historial de git.
-  - Criterios de aceptacion:
-    - Decidido si se purga el historial (`git filter-repo` + force-push, rompe clones y forks) o se asume el secreto como quemado (recomendado: ya no da acceso a ninguna instancia actualizada).
+_(sin tareas)_
 
 ---
 
@@ -48,9 +43,8 @@ Umbrales propuestos (revisar antes de empezar).
 - [ ] RELEASE: Corte de v1.0.0
   - Prioridad: p1
   - Labels: migration
-  - Contexto: guia de migracion (`docs/docs/migration-1.0.md`), entrada de CHANGELOG y versiones a 1.0.0 ya hechas (ver DONE.md).
+  - Contexto: guia de migracion, CHANGELOG, versiones a 1.0.0 y URLs del fork ya hechas (ver DONE.md).
   - Criterios de aceptacion:
-    - Decidido si las referencias al upstream (`pommee/goaway`) pasan al fork: updater/installer (`backend/updater/updater.go`, `installer.sh`, `updater.sh`), comprobacion de version (`server-statistics.tsx`, `nav-actions.tsx`), changelog en la UI (`changelog.tsx`), `docs/docs/install.md` y README.
     - Tag `v1.0.0` (o antes `v1.0.0-rc.1`): binarios GoReleaser en GitHub Releases e imagen multi-arch en `ghcr.io/rasty94/goaway:1.0.0`.
 
 ---

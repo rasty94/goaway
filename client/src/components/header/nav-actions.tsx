@@ -133,10 +133,10 @@ function CheckForUpdate() {
       try {
         localStorage.setItem("lastUpdateCheck", Date.now().toString());
         const response = await fetch(
-          "https://api.github.com/repos/pommee/goaway/tags"
+          "https://api.github.com/repos/rasty94/goaway/releases/latest"
         );
         const data = await response.json();
-        const latestVersion = data[0].name.replace("v", "");
+        const latestVersion = data.tag_name.replace(/^v/, "");
         localStorage.setItem("latestVersion", latestVersion);
 
         if (compare(latestVersion, installedVersion, "<=")) {

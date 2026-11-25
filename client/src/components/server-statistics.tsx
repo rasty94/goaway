@@ -47,10 +47,10 @@ async function checkForUpdate() {
   try {
     localStorage.setItem("lastUpdateCheck", Date.now().toString());
     const response = await fetch(
-      "https://api.github.com/repos/pommee/goaway/tags"
+      "https://api.github.com/repos/rasty94/goaway/releases/latest"
     );
     const data = await response.json();
-    const latestVersion = data[0].name.replace("v", "");
+    const latestVersion = data.tag_name.replace(/^v/, "");
     localStorage.setItem("latestVersion", latestVersion);
     return latestVersion;
   } catch (error) {
@@ -268,7 +268,7 @@ docker stop container-name
 docker rm container-name
 
 # Pull and run the new version
-docker pull pommee/goaway:version`;
+docker pull ghcr.io/rasty94/goaway:version`;
 
   const handleCopy = async () => {
     try {
@@ -448,7 +448,7 @@ docker pull pommee/goaway:version`;
                           # Pull and run the new version
                         </div>
                         <div className="text-green-400">
-                          docker pull pommee/goaway:version
+                          docker pull ghcr.io/rasty94/goaway:version
                         </div>
                       </div>
                     </div>
@@ -497,7 +497,7 @@ docker pull pommee/goaway:version`;
                       </div>
                       <div className="text-green-400">
                         curl
-                        https://raw.githubusercontent.com/pommee/goaway/main/installer.sh
+                        https://raw.githubusercontent.com/rasty94/goaway/main/installer.sh
                         | sh
                       </div>
                       <div className="text-muted-foreground">
@@ -505,7 +505,7 @@ docker pull pommee/goaway:version`;
                       </div>
                       <div className="text-green-400">
                         curl
-                        https://raw.githubusercontent.com/pommee/goaway/main/installer.sh
+                        https://raw.githubusercontent.com/rasty94/goaway/main/installer.sh
                         | sh /dev/stdin 0.40.4
                       </div>
                       <br />
@@ -514,7 +514,7 @@ docker pull pommee/goaway:version`;
                         directory with the latest version
                       </div>
                       <div className="text-green-400">
-                        https://raw.githubusercontent.com/pommee/goaway/refs/heads/main/updater.sh
+                        https://raw.githubusercontent.com/rasty94/goaway/refs/heads/main/updater.sh
                         | bash
                       </div>
                     </div>

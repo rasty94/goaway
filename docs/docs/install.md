@@ -7,7 +7,7 @@ docker run -d --name goaway \
     -p 53:53/udp \
     -p 53:53/tcp \
     -p 8080:8080 \
-    pommee/goaway:latest
+    ghcr.io/rasty94/goaway:latest
 ```
 
 **Using Docker Compose (Recommended for production):**
@@ -21,7 +21,7 @@ Data will **not persist** unless volumes are used!
 ```yml
 services:
   goaway:
-    image: pommee/goaway:latest
+    image: ghcr.io/rasty94/goaway:latest
     container_name: goaway
     restart: unless-stopped
     # volumes:
@@ -49,10 +49,10 @@ services:
 
 ```bash
 # Install latest version
-curl https://raw.githubusercontent.com/pommee/goaway/main/installer.sh | sh
+curl https://raw.githubusercontent.com/rasty94/goaway/main/installer.sh | sh
 
 # Install specific version
-curl https://raw.githubusercontent.com/pommee/goaway/main/installer.sh | sh /dev/stdin 0.40.4
+curl https://raw.githubusercontent.com/rasty94/goaway/main/installer.sh | sh /dev/stdin 1.0.0
 ```
 
 The installer will:
