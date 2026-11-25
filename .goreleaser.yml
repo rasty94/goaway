@@ -17,8 +17,6 @@ builds:
       - amd64
       - arm64
       - arm
-      - ppc64le
-      - s390x
     goarm:
       - 7
     flags:
@@ -40,7 +38,6 @@ builds:
       - windows
     goarch:
       - amd64
-      - arm64
     flags:
       - -trimpath
     ldflags: -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
@@ -73,3 +70,5 @@ checksum:
 release:
   # v1.0.0-rc.1 etc. are marked as prereleases, so /releases/latest skips them.
   prerelease: auto
+  # Lets a failed release job be re-run without tripping over assets it already uploaded.
+  replace_existing_artifacts: true
