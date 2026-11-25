@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func generateSelfSignedCert(t *testing.T) (tls.Certificate, *x509.CertPool) {
+func generateSelfSignedCert(t testing.TB) (tls.Certificate, *x509.CertPool) {
 	t.Helper()
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestDoQServerAndUpstreamRoundTripAndSessionReuse(t *testing.T) {
 		if err := resp.Pack(); err != nil {
 			return
 		}
-		_, _ = w.Write(resp.Data)
+		_, _ = resp.WriteTo(w) // production path (Request.Respond uses io.Copy -> WriteTo)
 	})
 
 	srv := &DNSServer{

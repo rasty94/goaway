@@ -148,15 +148,12 @@ type doqResponseWriter struct {
 	remote net.Addr
 }
 
+// Write receives the stream framing produced by dns.Msg.WriteTo (Conn() is nil,
+// so it is treated as a stream): a 2-byte length prefix plus the message, which
+// is exactly the RFC 9250 DoQ framing, so it goes to the stream as-is.
 func (w *doqResponseWriter) Write(b []byte) (int, error) {
-	if len(b) > doqMaxMsgSize {
-		return 0, fmt.Errorf("DoQ response too large: %d bytes", len(b))
-	}
-	var lenBuf [2]byte
-	// #nosec G115 - length is explicitly bounded to doqMaxMsgSize (65535)
-	binary.BigEndian.PutUint16(lenBuf[:], uint16(len(b)))
-	if _, err := w.stream.Write(lenBuf[:]); err != nil {
-		return 0, err
+	if len(b) < 2 || int(binary.BigEndian.Uint16(b)) != len(b)-2 {
+		return 0, fmt.Errorf("DoQ response is not length-framed (%d bytes)", len(b))
 	}
 	return w.stream.Write(b)
 }
