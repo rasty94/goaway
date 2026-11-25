@@ -9,7 +9,7 @@ import (
 	"github.com/rasty94/terraform-provider-goaway/internal/provider"
 )
 
-var version = "0.96.0"
+var version = "1.0.0"
 
 func main() {
 	var debug bool

@@ -1,3 +1,32 @@
+## [1.0.0] (2026-11-25)
+
+First stable release. Upgrading from 0.9x: read the [migration guide](docs/docs/migration-1.0.md).
+
+### Deployment & Observability (EPIC-11)
+* **Stateless profile**: `misc.stateless: true` (or `--stateless`, `GOAWAY_STATELESS=true`) runs with in-memory SQLite, a read-only API and no dashboard, for multi-replica GitOps deployments (`charts/goaway/values-stateless.yaml`).
+* **DoH3 (RFC 9114)**: HTTP/3 upstream client and optional HTTP/3 server.
+* **Grafana dashboard and Helm ServiceMonitor**: official dashboard in `docs/grafana/`, with optional Prometheus Operator scraping.
+
+### CI/CD & Releases (EPIC-12)
+* CI runs on every push to `main` and on every PR: ESLint, Vitest with a 60% line-coverage floor, the frontend build, `pnpm audit`, golangci-lint v2, govulncheck, `go test -race`, e2e smoke tests, Helm lint/template, and the Terraform provider.
+* Releases are manual: pushing a `vX.Y.Z` tag re-runs CI, checks that the Chart version matches the tag, publishes GoReleaser binaries to GitHub Releases and pushes a multi-arch image to `ghcr.io/rasty94/goaway`.
+* Dependabot is configured for Go, npm, Docker and GitHub Actions; `main` is branch-protected.
+
+### Dependencies
+* Go 1.27.4, Node 26 LTS, Alpine 3.24, pnpm 10.23.0 (pinned).
+* All Go modules and frontend packages are on their latest releases. Major upgrades: @tanstack/react-table 9, i18next 27 / react-i18next 18, motion 14, tsparticles 4, commitlint 21. TypeScript stays on 6.x until typescript-eslint supports 7.
+
+### Fixes
+* **Docker image version**: the published image now embeds its release version, so `/api/server` no longer reports an empty one.
+* **Helm image tag**: `image.tag` now defaults to the chart `appVersion`. The old `v`-prefixed default pointed at an image tag that was never published.
+* **Rate-limited replies**: the `REFUSED` reply no longer mutates the original request, which is still needed for query logging.
+* **Stateless DB size**: `/api/server` reports the size of the in-memory database instead of logging a missing-file error.
+* **DHCP**: lease release and decline errors are now logged instead of silently aborting the handler.
+* **golangci-lint v2**: fixed all findings, including unchecked `Close` errors and deprecated TLS options.
+
+### Testing
+* Frontend component tests in jsdom cover login (2FA/OIDC), settings (save, password, DB export, DHCP), block and allow lists, the query log and client details, Pi-hole import, resolutions, prefetch and the header actions, plus a render of every route.
+
 ## [0.96.0] (2026-11-24)
 
 ### Enterprise Auth (EPIC-07 Completed)

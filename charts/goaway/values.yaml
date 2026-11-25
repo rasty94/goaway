@@ -3,7 +3,8 @@ replicaCount: 1
 image:
   repository: ghcr.io/rasty94/goaway
   pullPolicy: IfNotPresent
-  tag: "v0.96.0"
+  # Defaults to the chart appVersion; published image tags have no "v" prefix.
+  tag: ""
 
 serviceAccount:
   create: false

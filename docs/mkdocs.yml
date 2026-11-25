@@ -28,6 +28,7 @@ nav:
   - Install: install.md
   - Getting Started: getting-started.md
   - Configuration: configuration.md
+  - Migrating to 1.0: migration-1.0.md
   - Blog:
       - blog/index.md
       - blog/posts/1.md
