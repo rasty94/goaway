@@ -1,6 +1,6 @@
 # GoAway - Tareas Completadas
 
-Ultima actualizacion: 2026-11-24
+Ultima actualizacion: 2026-11-25
 
 Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, se mueve aqui con sus criterios de aceptacion.
 
@@ -242,6 +242,10 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 - [x] FEATURE (EPIC-11): Soporte DoH3 (DNS over HTTP/3, RFC 9114 + RFC 8484) en cliente upstream (`doh3://` / `h3://` con `quic-go/http3`, transporte compartido, ID=0 en wire y restauracion de ID en respuesta) y listener servidor opcional (`dns.ports.doh3`), cabecera `Alt-Svc` en DoH, integracion en ciclo de vida (`ServiceRegistry`, `lifecycle.Manager`, `Application`) y tests E2E en `backend/dns/server/doh3_test.go`.
 - [x] FEATURE (EPIC-11): Dashboard oficial de Grafana (`docs/grafana/goaway-dashboard.json` + `docs/grafana/README.md`) cubriendo las 13 metricas Prometheus de GoAway (QPS, bloqueo, cache/stale/prefetch, DNSSEC, percentiles P50/P95/P99, victorias y latencia por upstream) + plantilla opcional `ServiceMonitor` (`charts/goaway/templates/servicemonitor.yaml`) y puerto `doh3` en el Helm chart.
 - [x] FEATURE (EPIC-11): Perfil ligero `stateless` (`misc.stateless: true`, flag `--stateless`, env `GOAWAY_STATELESS=true`) con SQLite en memoria (`database.InitializeWithOptions(true)`, sin crear archivos en disco), `misc.dashboard: false`, `api.readOnly: true`, `misc.inAppUpdate: false`, tests en `backend/database/stateless_test.go` y `backend/setup/stateless_test.go`, y perfil Helm multi-replica `charts/goaway/values-stateless.yaml`.
+- [x] TECH (EPIC-11): Cobertura Vitest de componentes clave. jsdom + Testing Library con mock de `fetch` sobre fixtures de la API (`client/src/test/`); tests de login (2FA/OIDC), settings (guardado, password, export BD, DHCP), blacklist/whitelist y detalle de listas, query log y detalle de cliente, importador Pi-hole, resoluciones, prefetch, acciones de cabecera, `util.ts` y render de todas las rutas dentro del shell. 60.4% de lineas en `client/src/`; CI ejecuta `pnpm test --coverage` con umbral de 60%.
+- [x] RELEASE (EPIC-11): Preparacion de v1.0.0. Guia de migracion 0.9x -> 1.0.0 (`docs/docs/migration-1.0.md`: `schemaVersion`, migraciones de BD, distribucion, rollback), entrada 1.0.0 en CHANGELOG y versiones a 1.0.0 (chart, client, compose, provider Terraform). Corregido el tag de imagen del chart (`v0.96.0` no existia; ahora por defecto `appVersion`).
+- [x] SECURITY: Rotacion automatica del `jwtSecret` filtrado. Al arrancar se compara el SHA-256 del secreto con el filtrado en `settings.yaml` (6d91f07); si coincide se genera uno nuevo y se avisa en el log (`backend/setup/setup.go`). Para rotar a mano basta con dejar `api.jwtSecret` vacio.
+- [x] BUG: Tamano de BD en modo stateless. `getDBSizeMB` usa `page_count * page_size` de SQLite con `misc.stateless: true`; corregida tambien la comprobacion del fichero principal, que nunca coincidia.
 
 ## EPIC-12 CI/CD GitHub (completada 2026-11-25)
 - [x] DECISION: releases manuales por tag `v*` (proceso documentado en `CONTRIBUTING.md`); eliminados semantic-release y `.releaserc.json`.

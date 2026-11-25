@@ -1,6 +1,6 @@
 # GoAway - Hoja de Ruta y TODO
 
-Ultima actualizacion: 2026-11-24
+Ultima actualizacion: 2026-11-25
 
 Este archivo solo contiene trabajo pendiente. Lo completado esta en [DONE.md](DONE.md).
 
@@ -14,21 +14,20 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-11 Paridad Final & v1.0.0 | Soak/benchmarks, cobertura Vitest y release v1.0.0 | P1 | En curso (dependencias hechas salvo TS 7) |
+| EPIC-11 Paridad Final & v1.0.0 | Soak/benchmarks y release v1.0.0 | P1 | En curso (falta soak y el tag) |
 
-Orden sugerido: soak/Vitest y por ultimo release.
+Orden sugerido: soak y por ultimo release.
 
 ---
 
 ## P0 - Deuda que bloquea lo demas
 
-- [ ] SECURITY: Rotar el `jwtSecret` filtrado
+- [ ] SECURITY: Decidir si se purga del historial el `jwtSecret` filtrado
   - Prioridad: p0
   - Labels: security
-  - Contexto: `settings.yaml` ya esta fuera del repo (ver DONE.md), pero el secreto que contenia sigue en el historial de git y no se ha rotado.
+  - Contexto: la rotacion ya es automatica (ver DONE.md): una instancia que arranca con el secreto filtrado genera uno nuevo. Queda decidir que hacer con el historial de git.
   - Criterios de aceptacion:
-    - Nuevo `jwtSecret` generado en todos los despliegues; los tokens antiguos dejan de validar.
-    - Decidido si se purga el historial (`git filter-repo`) o se asume el secreto como quemado.
+    - Decidido si se purga el historial (`git filter-repo` + force-push, rompe clones y forks) o se asume el secreto como quemado (recomendado: ya no da acceso a ninguna instancia actualizada).
 
 ---
 
@@ -56,32 +55,19 @@ Umbrales propuestos (revisar antes de empezar).
     - Soak de 10 min a 1000 QPS por protocolo: RSS estable (crecimiento < 10% tras 2 min de calentamiento) y numero de goroutines estable.
     - Resultados documentados como baseline en `docs/`.
 
-- [ ] TECH: Cobertura Vitest de componentes clave
-  - Prioridad: p1
-  - Labels: frontend
-  - Contexto: hoy solo hay `client/src/lib/utils.test.ts` y `client/src/pages/validation.test.ts`, sin tests de componentes.
-  - Criterios de aceptacion:
-    - Tests de login (incl. OIDC/2FA), settings, listas (blacklist/whitelist) y query log.
-    - Cobertura >= 60% de lineas en `client/src/` y `npm test` en CI.
-
-- [ ] RELEASE: Guia de migracion y corte de v1.0.0
+- [ ] RELEASE: Corte de v1.0.0
   - Prioridad: p1
   - Labels: migration
+  - Contexto: guia de migracion (`docs/docs/migration-1.0.md`), entrada de CHANGELOG y versiones a 1.0.0 ya hechas (ver DONE.md).
   - Criterios de aceptacion:
-    - Guia de migracion 0.9x -> 1.0.0 en `docs/` (cambios de config, `schemaVersion`, rollback).
-    - CHANGELOG, tag y release `v1.0.0`.
-    - Primer release por tag con el workflow nuevo: binarios GoReleaser en GitHub Releases e imagen multi-arch en `ghcr.io/rasty94/goaway` (si falla, probar antes con un tag `v1.0.0-rc.1`).
+    - Decidido si las referencias al upstream (`pommee/goaway`) pasan al fork: updater/installer (`backend/updater/updater.go`, `installer.sh`, `updater.sh`), comprobacion de version (`server-statistics.tsx`, `nav-actions.tsx`), changelog en la UI (`changelog.tsx`), `docs/docs/install.md` y README.
+    - Tag `v1.0.0` (o antes `v1.0.0-rc.1`): binarios GoReleaser en GitHub Releases e imagen multi-arch en `ghcr.io/rasty94/goaway:1.0.0`.
 
 ---
 
 ## P2 - Mejoras menores
 
-- [ ] BUG: Tamano de BD en modo stateless
-  - Prioridad: p2
-  - Labels: api
-  - Contexto: `getDBSizeMB` (`backend/api/server.go`) lee `data/database.db`, que no existe con `misc.stateless: true`.
-  - Criterios de aceptacion:
-    - En stateless devuelve el tamano de la BD en memoria (`PRAGMA page_count * page_size`) o 0 sin error.
+_(sin tareas)_
 
 ---
 
