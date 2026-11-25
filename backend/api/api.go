@@ -156,8 +156,10 @@ func (api *API) initializeRouter() {
 	// CORS MUST be the very first middleware to handle preflights correctly
 	api.configureCORS()
 
-	// Ignore compression on this route as otherwise it has problems with exposing the Content-Length header
-	ignoreCompression := gzip.WithExcludedPaths([]string{"/api/exportDatabase"})
+	// /api/exportDatabase: compression breaks exposing the Content-Length header.
+	// /metrics: promhttp negotiates its own gzip; compressing again sends Prometheus
+	// a double-gzipped body it cannot parse.
+	ignoreCompression := gzip.WithExcludedPaths([]string{"/api/exportDatabase", "/metrics"})
 	api.router.Use(gzip.Gzip(gzip.DefaultCompression, ignoreCompression))
 }
 
