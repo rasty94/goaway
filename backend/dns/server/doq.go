@@ -20,6 +20,7 @@ const (
 	doqALPN        = "doq"
 	doqDefaultPort = "853"
 	doqMaxMsgSize  = 65535
+	doqNoError     = 0x0 // DOQ_NO_ERROR, RFC 9250 Section 4.3
 )
 
 // DoQServer serves DNS-over-QUIC (RFC 9250) requests using a QUIC listener.
@@ -106,7 +107,13 @@ func (d *DoQServer) serveConn(conn *quic.Conn) {
 }
 
 func (d *DoQServer) serveStream(conn *quic.Conn, stream *quic.Stream) {
-	defer func() { _ = stream.Close() }()
+	defer func() {
+		// quic-go only retires a stream (and returns stream credit to the
+		// client) once its read side hit EOF or was cancelled; we read exactly
+		// one length-framed query and never wait for FIN, so cancel instead.
+		stream.CancelRead(doqNoError)
+		_ = stream.Close()
+	}()
 
 	_ = stream.SetDeadline(time.Now().Add(10 * time.Second))
 
@@ -216,8 +223,12 @@ func (s *DNSServer) getDoQConn(ctx context.Context, addr string) (*quic.Conn, er
 	if s.doqConns == nil {
 		s.doqConns = make(map[string]*quic.Conn)
 	}
-	if old, ok := s.doqConns[targetAddr]; ok && old != conn {
-		_ = old.CloseWithError(0, "replaced")
+	if old, ok := s.doqConns[targetAddr]; ok && old.Context().Err() == nil {
+		// A concurrent caller dialed first; closing its live connection would
+		// abort its in-flight streams, so drop ours and share that one.
+		s.doqMu.Unlock()
+		_ = conn.CloseWithError(0, "duplicate")
+		return old, nil
 	}
 	s.doqConns[targetAddr] = conn
 	s.doqMu.Unlock()
@@ -289,6 +300,9 @@ func doqStreamExchange(ctx context.Context, conn *quic.Conn, payload []byte) (*d
 	if err != nil {
 		return nil, err
 	}
+	// Release the stream even though we stop reading at the framed length
+	// (see serveStream); otherwise its state lives as long as the connection.
+	defer stream.CancelRead(doqNoError)
 
 	if deadline, ok := ctx.Deadline(); ok {
 		_ = stream.SetDeadline(deadline)
