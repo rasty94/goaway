@@ -1,4 +1,4 @@
-.PHONY: publish build lint example-queries dev format test bench docs-serve docs-build e2e audit audit-backend audit-docker audit-secrets install-tools sonar
+.PHONY: publish build lint example-queries dev format test bench bench-transport soak docs-serve docs-build e2e audit audit-backend audit-docker audit-secrets install-tools sonar
 
 DNS_PORT ?= 53
 WEBSITE_PORT ?= 8080
@@ -81,6 +81,17 @@ e2e:			; ./test/e2e/run.sh
 
 bench: 		   ; go run test/benchmark.go -test.bench=.
 bench-profile: ; go run test/benchmark.go -test.bench=. & go tool pprof http://localhost:6060/debug/pprof/profile\?seconds\=5
+
+# In-process transport benchmarks (UDP, TCP, DoT, DoH, DoQ, DoH3), see docs/SOAK.md.
+bench-transport: ; go test -run '^$$' -bench BenchmarkTransport -benchtime 2s ./backend/dns/server/
+
+# Opt-in soak, not run in CI: about 1h with the defaults (10 min per protocol).
+# Shorter: make soak SOAK_ARGS="-duration 3m -warmup 1m -proto udp,doq"
+SOAK_ARGS ?=
+soak:
+	mkdir -p client/dist && touch client/dist/.fake
+	go build -o tmp/goaway-soak .
+	go run ./test/soak -bin tmp/goaway-soak $(SOAK_ARGS)
 
 docs-serve: ; make -C docs serve
 docs-build: ; make -C docs build
