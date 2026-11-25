@@ -125,7 +125,7 @@ func (api *API) handleServer(c *gin.Context) {
 		log.Error("%s", err)
 	}
 
-	dbSize, err := getDBSizeMB()
+	dbSize, err := api.getDBSizeMB()
 	if err != nil {
 		log.Error("%s", err)
 	}
@@ -167,24 +167,23 @@ func getCPUTemperature() (float64, error) {
 	return temp / 1000, nil
 }
 
-func getDBSizeMB() (float64, error) {
-	var totalSize int64
-
-	basePath := "data"
-	files := []string{
-		filepath.Join(basePath, "database.db"),
-		filepath.Join(basePath, "database.db-wal"),
-		filepath.Join(basePath, "database.db-shm"),
+func (api *API) getDBSizeMB() (float64, error) {
+	if api.Config != nil && api.Config.Misc.Stateless {
+		// In-memory DB: no files on disk, ask SQLite directly.
+		var size int64
+		err := api.DBConn.Raw("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()").Scan(&size).Error
+		return float64(size) / (1024 * 1024), err
 	}
 
-	for _, filename := range files {
+	var totalSize int64
+	mainDB := filepath.Join("data", "database.db")
+	for _, filename := range []string{mainDB, mainDB + "-wal", mainDB + "-shm"} {
 		info, err := os.Stat(filename)
 		if err != nil {
-			// Only return error if the main DB file is missing.
-			if filename == "database.db" {
+			// WAL/SHM files may not exist temporarily; only the main DB is required.
+			if filename == mainDB {
 				return 0, err
 			}
-			// WAL/SHM files may not exist temporarily — that's fine.
 			continue
 		}
 		totalSize += info.Size()
