@@ -16,6 +16,9 @@ First stable release. Upgrading from 0.9x: read the [migration guide](docs/docs/
 * Go 1.27.4, Node 26 LTS, Alpine 3.24, pnpm 10.23.0 (pinned).
 * All Go modules and frontend packages are on their latest releases. Major upgrades: @tanstack/react-table 9, i18next 27 / react-i18next 18, motion 14, tsparticles 4, commitlint 21. TypeScript stays on 6.x until typescript-eslint supports 7.
 
+### Security
+* **Leaked `jwtSecret` rotation**: an instance that starts with the `jwtSecret` once committed to this repository gets a new random secret and a warning in the log. Only a SHA-256 hash of the leaked value is kept in the code.
+
 ### Fixes
 * **Docker image version**: the published image now embeds its release version, so `/api/server` no longer reports an empty one.
 * **Helm image tag**: `image.tag` now defaults to the chart `appVersion`. The old `v`-prefixed default pointed at an image tag that was never published.

@@ -1,7 +1,9 @@
 package setup
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -151,9 +153,23 @@ func InitializeSettings(flags *SetFlags) *settings.Config {
 	secret, err := base64.RawURLEncoding.DecodeString(config.API.JWTSecret)
 	if err != nil || len(secret) == 0 {
 		config.API.JWTSecret = settings.GenerateSecret()
+	} else if isCompromisedSecret(config.API.JWTSecret) {
+		log.Warning("api.jwtSecret is a value leaked in this repository's git history; generating a new one (existing sessions are invalidated)")
+		config.API.JWTSecret = settings.GenerateSecret()
 	}
 
 	config.Save()
 
 	return &config
+}
+
+// SHA-256 of jwtSecret values that were committed to this repository and must be
+// treated as public. Hashes only, so the secrets are not republished.
+var compromisedSecretHashes = map[string]bool{
+	"eb22cebadad7f7e71d7433c8fa1d6cd84b3733980a7d4614af3726c9ca83fddf": true, // settings.yaml @ 6d91f07
+}
+
+func isCompromisedSecret(secret string) bool {
+	sum := sha256.Sum256([]byte(secret))
+	return compromisedSecretHashes[hex.EncodeToString(sum[:])]
 }

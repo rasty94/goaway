@@ -8,7 +8,7 @@ This guide covers upgrading an existing 0.9x installation (0.9.0 – 0.96.0) to 
 2. Back up both directories:
     - `config/` (holds `settings.yaml`)
     - `data/` (holds `database.db`, plus `database.db-wal` / `-shm` if present)
-3. If you deployed a `settings.yaml` that was copied from this repository, generate a new `jwtSecret` (see [Security](#security)).
+3. Read [Security](#security) if your `settings.yaml` was ever copied from this repository.
 
 A backup is the only supported rollback path, so do not skip step 2.
 
@@ -46,13 +46,9 @@ GoAway creates any missing tables and columns on startup. Existing data is kept.
 
 ## Security
 
-`settings.yaml` is no longer tracked in git. Earlier revisions of the repository contained a real `jwtSecret`. If your deployment ever used that file, set a new random secret:
+`settings.yaml` is no longer tracked in git. Earlier revisions of the repository contained a real `jwtSecret`. If an instance starts with that leaked value, 1.0.0 replaces it with a new random secret, saves it and logs a warning. Existing sessions are invalidated and users must log in again.
 
-```sh
-openssl rand -hex 32
-```
-
-Put the value in `api.jwtSecret` and restart. Existing sessions are invalidated and users must log in again.
+To rotate the secret yourself at any time, clear `api.jwtSecret` (set it to `""`) and restart; GoAway generates a new one on startup.
 
 ## Stateless profile (new, optional)
 
