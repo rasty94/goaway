@@ -105,7 +105,7 @@ func (s *DNSServer) writeRateLimitedResponse(req *Request, _ int) model.RequestL
 
 	return model.RequestLogEntry{
 		Domain:            req.QName(),
-		Status:            dnsutil.CodeToString(dns.RcodeRefused),
+		Status:            dnsutil.RcodeToString(dns.RcodeRefused),
 		QueryType:         req.QTypeStr(),
 		IP:                nil,
 		ResponseSizeBytes: msg.Len(),

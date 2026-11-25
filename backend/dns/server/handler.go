@@ -354,7 +354,7 @@ func (s *DNSServer) respondWithLocalhost(request *Request) model.RequestLogEntry
 	return model.RequestLogEntry{
 		Timestamp: request.Sent,
 		Domain:    request.QName(),
-		Status:    dnsutil.CodeToString(dns.RcodeSuccess),
+		Status:    dnsutil.RcodeToString(dns.RcodeSuccess),
 		IP: []model.ResolvedIP{
 			{
 				IP:    IPv4Loopback,
@@ -418,7 +418,7 @@ func (s *DNSServer) respondWithHostnamePTR(request *Request, hostname string) mo
 		return model.RequestLogEntry{
 			Timestamp:         request.Sent,
 			Domain:            request.QName(),
-			Status:            dnsutil.CodeToString(dns.RcodeSuccess),
+			Status:            dnsutil.RcodeToString(dns.RcodeSuccess),
 			IP:                []model.ResolvedIP{},
 			Blocked:           false,
 			Cached:            false,
@@ -435,7 +435,7 @@ func (s *DNSServer) respondWithHostnamePTR(request *Request, hostname string) mo
 func (s *DNSServer) respondWithType(request *Request, rType uint16, ip netip.Addr) model.RequestLogEntry {
 	return model.RequestLogEntry{
 		Domain:    request.QName(),
-		Status:    dnsutil.CodeToString(dns.RcodeSuccess),
+		Status:    dnsutil.RcodeToString(dns.RcodeSuccess),
 		QueryType: request.QTypeStr(),
 		IP: []model.ResolvedIP{
 			{
@@ -671,7 +671,7 @@ func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, bool, bool, string, s
 				if dnssecStatus == "" {
 					dnssecStatus = s.defaultDNSSECStatus()
 				}
-				return ipAddresses, true, false, source == "prefetch", dnsutil.CodeToString(dns.RcodeSuccess), dnssecStatus
+				return ipAddresses, true, false, source == "prefetch", dnsutil.RcodeToString(dns.RcodeSuccess), dnssecStatus
 			}
 
 			if staleRecords, dnssecStatus, source, staleValid := s.getStaleRecord(cached); staleValid {
@@ -684,7 +684,7 @@ func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, bool, bool, string, s
 			if dnssecStatus == "" {
 				dnssecStatus = s.defaultDNSSECStatus()
 			}
-			return redisRecords, true, false, source == "prefetch", dnsutil.CodeToString(dns.RcodeSuccess), dnssecStatus
+			return redisRecords, true, false, source == "prefetch", dnsutil.RcodeToString(dns.RcodeSuccess), dnssecStatus
 		}
 	}
 
@@ -699,7 +699,7 @@ func (s *DNSServer) Resolve(req *Request) ([]dns.RR, bool, bool, bool, string, s
 		return answers, false, false, false, status, dnssecStatus
 	}
 
-	if hasStaleCandidate && status == dnsutil.CodeToString(dns.RcodeServerFailure) {
+	if hasStaleCandidate && status == dnsutil.RcodeToString(dns.RcodeServerFailure) {
 		if staleDNSSECStatus == "" {
 			staleDNSSECStatus = s.defaultDNSSECStatus()
 		}
@@ -714,18 +714,18 @@ func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string, 
 		records []dns.RR
 		// #nosec G115 - CacheTTL is validated
 		ttl          = uint32(s.Config.DNS.CacheTTL)
-		status       = dnsutil.CodeToString(dns.RcodeSuccess)
+		status       = dnsutil.RcodeToString(dns.RcodeSuccess)
 		dnssecStatus = s.defaultDNSSECStatus()
 	)
 
 	res, err := s.ResolutionService.GetResolution(domain)
 	if err != nil {
 		log.Error("Database lookup error for domain (%s): %v", domain, err)
-		return nil, 0, dnsutil.CodeToString(dns.RcodeServerFailure), dnssecStatus
+		return nil, 0, dnsutil.RcodeToString(dns.RcodeServerFailure), dnssecStatus
 	}
 
 	if res.Value == "" {
-		return nil, 0, dnsutil.CodeToString(dns.RcodeNameError), dnssecStatus
+		return nil, 0, dnsutil.RcodeToString(dns.RcodeNameError), dnssecStatus
 	}
 
 	switch strings.ToUpper(res.Type) {
@@ -766,7 +766,7 @@ func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string, 
 	}
 
 	if len(records) == 0 {
-		status = dnsutil.CodeToString(dns.RcodeNameError)
+		status = dnsutil.RcodeToString(dns.RcodeNameError)
 	}
 
 	return records, ttl, status, dnssecStatus
@@ -774,7 +774,7 @@ func (s *DNSServer) resolveResolution(domain string) ([]dns.RR, uint32, string, 
 
 func (s *DNSServer) resolveCNAMEChain(req *Request, visited map[string]bool) ([]dns.RR, uint32, string, string) {
 	if visited[req.QName()] {
-		return nil, 0, dnsutil.CodeToString(dns.RcodeServerFailure), s.defaultDNSSECStatus()
+		return nil, 0, dnsutil.RcodeToString(dns.RcodeServerFailure), s.defaultDNSSECStatus()
 	}
 	visited[req.QName()] = true
 
@@ -857,7 +857,7 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string, strin
 			return nil, 0, dns.RcodeToString[dns.RcodeServerFailure], dnssecStatus
 		}
 
-		status := dnsutil.CodeToString(dns.RcodeServerFailure)
+		status := dnsutil.RcodeToString(dns.RcodeServerFailure)
 		if statusStr, ok := dns.RcodeToString[in.Rcode]; ok {
 			status = statusStr
 		}
@@ -895,12 +895,12 @@ func (s *DNSServer) QueryUpstream(req *Request) ([]dns.RR, uint32, string, strin
 			notification.CategoryDNS,
 			fmt.Sprintf("Upstream resolution error for domain (%s)", req.QName()),
 		)
-		return nil, 0, dnsutil.CodeToString(dns.RcodeServerFailure), dnssecStatus
+		return nil, 0, dnsutil.RcodeToString(dns.RcodeServerFailure), dnssecStatus
 
 	case <-time.After(5 * time.Second):
 		dnssecStatus := s.classifyDNSSECResponse(nil, fmt.Errorf("timeout"))
 		log.Warning("Upstream lookup for %s timed out", req.QName())
-		return nil, 0, dnsutil.CodeToString(dns.RcodeServerFailure), dnssecStatus
+		return nil, 0, dnsutil.RcodeToString(dns.RcodeServerFailure), dnssecStatus
 	}
 }
 
@@ -931,7 +931,7 @@ func (s *DNSServer) LocalForwardLookup(req *Request) (model.RequestLogEntry, err
 	}
 
 	if in.Rcode != dns.RcodeSuccess {
-		status := dnsutil.CodeToString(in.Rcode)
+		status := dnsutil.RcodeToString(in.Rcode)
 		log.Info("DNS query for %s returned status %s", hostname, status)
 		return model.RequestLogEntry{}, fmt.Errorf("forward lookup failed with status: %s", status)
 	}
@@ -953,7 +953,7 @@ func (s *DNSServer) LocalForwardLookup(req *Request) (model.RequestLogEntry, err
 	req.Respond(s.NotificationService)
 	entry := model.RequestLogEntry{
 		Domain:            req.Question.Header().Name,
-		Status:            dnsutil.CodeToString(in.Rcode),
+		Status:            dnsutil.RcodeToString(in.Rcode),
 		QueryType:         dnsutil.TypeToString(queryType),
 		IP:                ips,
 		ResponseSizeBytes: in.Len(),
@@ -1018,7 +1018,7 @@ func (s *DNSServer) handleBlacklisted(req *Request) model.RequestLogEntry {
 	req.Respond(s.NotificationService)
 	return model.RequestLogEntry{
 		Domain:            req.Question.Header().Name,
-		Status:            dnsutil.CodeToString(req.Msg.Rcode),
+		Status:            dnsutil.RcodeToString(req.Msg.Rcode),
 		QueryType:         req.QTypeStr(),
 		IP:                resolved,
 		ResponseSizeBytes: req.Msg.Len(),
@@ -1080,7 +1080,7 @@ func (s *DNSServer) applySafeSearch(request *Request) (model.RequestLogEntry, bo
 
 	return model.RequestLogEntry{
 		Domain:            request.QName(),
-		Status:            dnsutil.CodeToString(dns.RcodeSuccess),
+		Status:            dnsutil.RcodeToString(dns.RcodeSuccess),
 		QueryType:         request.QTypeStr(),
 		IP:                []model.ResolvedIP{{IP: ip, RType: request.QTypeStr()}},
 		ResponseSizeBytes: request.Msg.Len(),
@@ -1128,7 +1128,7 @@ func (s *DNSServer) respondWithNoData(request *Request) model.RequestLogEntry {
 	request.Respond(s.NotificationService)
 	return model.RequestLogEntry{
 		Domain:     request.QName(),
-		Status:     dnsutil.CodeToString(dns.RcodeSuccess),
+		Status:     dnsutil.RcodeToString(dns.RcodeSuccess),
 		QueryType:  request.QTypeStr(),
 		Timestamp:  request.Sent,
 		ClientInfo: request.Client,
