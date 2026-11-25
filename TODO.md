@@ -14,9 +14,9 @@ Labels base: epic, feature, enhancement, security, dns, dhcp, ha, frontend, api,
 
 | Epic | Objetivo | Prioridad | Estado |
 | --- | --- | ---: | --- |
-| EPIC-11 Paridad Final & v1.0.0 | Soak/benchmarks y release v1.0.0 | P1 | En curso (falta soak y el tag) |
+| EPIC-11 Paridad Final & v1.0.0 | Release v1.0.0 | P1 | En curso (falta el tag) |
 
-Orden sugerido: soak y por ultimo release.
+Solo queda el corte de la release.
 
 ---
 
@@ -44,16 +44,6 @@ Umbrales propuestos (revisar antes de empezar).
   - Criterios de aceptacion:
     - Actualizar cuando `typescript-eslint` publique soporte para TS 7; `pnpm -C client exec eslint`, build y Vitest en verde.
     - Opcional: `tsc -b` tiene ~36 errores de tipos preexistentes (CI no lo ejecuta); limpiarlos y anadir `tsc -b` al job `frontend`.
-
-- [ ] TECH: Benchmarks y soak tests del resolver
-  - Prioridad: p1
-  - Labels: enhancement, dns
-  - Contexto: no existe ningun `Benchmark*` ni test de fugas en el repo.
-  - Criterios de aceptacion:
-    - `Benchmark*` para UDP, TCP, DoT, DoH y DoQ (y DoH3 si esta habilitado).
-    - `goleak.VerifyNone` en los tests de arranque/parada de cada servidor.
-    - Soak de 10 min a 1000 QPS por protocolo: RSS estable (crecimiento < 10% tras 2 min de calentamiento) y numero de goroutines estable.
-    - Resultados documentados como baseline en `docs/`.
 
 - [ ] RELEASE: Corte de v1.0.0
   - Prioridad: p1

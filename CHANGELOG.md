@@ -20,6 +20,9 @@ First stable release. Upgrading from 0.9x: read the [migration guide](docs/docs/
 * **Leaked `jwtSecret` rotation**: an instance that starts with the `jwtSecret` once committed to this repository gets a new random secret and a warning in the log. Only a SHA-256 hash of the leaked value is kept in the code.
 
 ### Fixes
+* **DNS cache hits answered `SERVFAIL`**: response status was built with `dnsutil.CodeToString`, which names EDNS0 option codes ("CODE0"), not rcodes, so every cache hit returned SERVFAIL while still carrying the records, and query logs showed `CODE0`/`CODE3` instead of `NOERROR`/`NXDOMAIN`.
+* **DoQ server**: responses carried a double length prefix and were unreadable by any DoQ client. Under concurrency, connections also stalled after ~100 queries (stream FIN never consumed), and parallel upstream dials closed each other's live connections.
+* **Prometheus `/metrics`**: no longer gzipped twice when the scraper sends `Accept-Encoding: gzip`.
 * **Docker image version**: the published image now embeds its release version, so `/api/server` no longer reports an empty one.
 * **Helm image tag**: `image.tag` now defaults to the chart `appVersion`. The old `v`-prefixed default pointed at an image tag that was never published.
 * **Rate-limited replies**: the `REFUSED` reply no longer mutates the original request, which is still needed for query logging.
@@ -28,6 +31,7 @@ First stable release. Upgrading from 0.9x: read the [migration guide](docs/docs/
 * **golangci-lint v2**: fixed all findings, including unchecked `Close` errors and deprecated TLS options.
 
 ### Testing
+* **Resolver benchmarks and soak**: `make bench-transport` (UDP, TCP, DoT, DoH, DoQ, DoH3), `goleak` start/stop checks for every listener in CI, and an opt-in `make soak`. Baseline in `docs/SOAK.md`: 1000 QPS for 10 min per protocol with 0 errors and RSS growth of at most 0.5% after warm-up.
 * Frontend component tests in jsdom cover login (2FA/OIDC), settings (save, password, DB export, DHCP), block and allow lists, the query log and client details, Pi-hole import, resolutions, prefetch and the header actions, plus a render of every route.
 
 ## [0.96.0] (2026-11-24)
