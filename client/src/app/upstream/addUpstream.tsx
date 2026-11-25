@@ -67,6 +67,7 @@ export function AddUpstream({ onAdd }: AddUpstreamProps) {
           dnsPing: t("upstream.reloadToPing"),
           icmpPing: t("upstream.reloadToPing"),
           name: newUpstreamIP.trim(),
+          upstreamName: "",
           preferred: false,
           upstream: newUpstreamIP.trim()
         });

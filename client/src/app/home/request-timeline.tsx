@@ -42,7 +42,7 @@ interface Query {
 }
 
 // Recharts hands the mouse handlers the active category on the x-axis.
-type ChartMouseEvent = { activeLabel?: string } | null;
+type ChartMouseEvent = { activeLabel?: string | number } | null;
 
 interface ChartEntry {
   interval: number;

@@ -35,7 +35,7 @@ import {
   WarningIcon
 } from "@phosphor-icons/react";
 import { compare } from "compare-versions";
-import { JSX, useEffect, useState } from "react";
+import { type ComponentType, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Metrics } from "../server-statistics";
 import { Input } from "../ui/input";
@@ -139,7 +139,7 @@ function CheckForUpdate() {
         const latestVersion = data.tag_name.replace(/^v/, "");
         localStorage.setItem("latestVersion", latestVersion);
 
-        if (compare(latestVersion, installedVersion, "<=")) {
+        if (installedVersion && compare(latestVersion, installedVersion, "<=")) {
           toast.info("No new version found!");
         }
       } catch (error) {
@@ -150,6 +150,7 @@ function CheckForUpdate() {
 
     lookForUpdate();
   });
+  return null;
 }
 
 function Restart({ onClose }: { onClose: () => void }) {
@@ -276,7 +277,7 @@ export default function PauseBlockingDialog({
 
       if (status === 200) {
         toast.success("Blocking resumed");
-        setPauseStatus((prev) => ({ ...prev, paused: false }));
+        setPauseStatus({ paused: false, timeLeft: 0 });
         setRemainingTime(0);
       } else {
         console.error("Failed to resume blocking");
@@ -388,9 +389,9 @@ export default function PauseBlockingDialog({
 
 export function NavActions() {
   const [isOpen, setIsOpen] = useState(false);
-  const [DialogComponent, setDialogComponent] = useState<
-    null | ((props: { onClose: () => void }) => JSX.Element)
-  >(null);
+  const [DialogComponent, setDialogComponent] = useState<ComponentType<{
+    onClose: () => void;
+  }> | null>(null);
 
   const closeDialog = () => {
     setDialogComponent(null);

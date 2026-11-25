@@ -5,13 +5,18 @@ import { Slider } from "@/components/ui/slider";
 import { GetRequest, timeAgo } from "@/util";
 import { XIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
+import ForceGraph2D, {
+  type ForceGraphMethods,
+  type LinkObject,
+  type NodeObject
+} from "react-force-graph-2d";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { ClientDetails } from "./details";
 import { ClientEntry } from "./types";
 
-interface NetworkNode {
+// type aliases (not interfaces) so they satisfy force-graph's index-signature node/link types.
+type NetworkNode = {
   id: string;
   name: string;
   type: "server" | "client" | "cluster";
@@ -24,14 +29,14 @@ interface NetworkNode {
   clients?: ClientEntry[];
   subnet?: string;
   isActive?: boolean;
-}
+};
 
-interface NetworkLink {
+type NetworkLink = {
   source: string;
   target: string;
   color?: string;
   width?: number;
-}
+};
 
 interface NetworkData {
   nodes: NetworkNode[];
@@ -123,9 +128,10 @@ export default function DNSServerVisualizer() {
     height: 600
   });
   // ForceGraph2D types its own ref as MutableRefObject<... | undefined>.
-  const fgRef = useRef<ForceGraphMethods<NetworkNode, NetworkLink> | undefined>(
-    undefined
-  );
+  const fgRef = useRef<
+    | ForceGraphMethods<NodeObject<NetworkNode>, LinkObject<NetworkNode, NetworkLink>>
+    | undefined
+  >(undefined);
   const wsRef = useRef<WebSocket | null>(null);
 
   const createPulse = useCallback(
@@ -412,13 +418,13 @@ export default function DNSServerVisualizer() {
   };
 
   const renderCustomLink = (
-    link: NetworkLink & {
-      source: NetworkNode & { x: number; y: number };
-      target: NetworkNode & { x: number; y: number };
-    },
+    link: LinkObject<NetworkNode, NetworkLink>,
     ctx: CanvasRenderingContext2D
   ) => {
-    const { source, target } = link;
+    // force-graph replaces the source/target ids with positioned node objects once the simulation runs.
+    type Placed = NetworkNode & { x: number; y: number };
+    const source = link.source as unknown as Placed;
+    const target = link.target as unknown as Placed;
 
     ctx.strokeStyle = link.color || "#313131";
     ctx.lineWidth = link.width || 0.5;
@@ -617,9 +623,9 @@ export default function DNSServerVisualizer() {
               nodeCanvasObject={
                 viewSettings.showLabels
                   ? (
-                      node: NetworkNode & { x: number; y: number },
-                      ctx,
-                      globalScale
+                      node: NodeObject<NetworkNode>,
+                      ctx: CanvasRenderingContext2D,
+                      globalScale: number
                     ) => {
                       const label =
                         node.type === "cluster"
@@ -632,8 +638,8 @@ export default function DNSServerVisualizer() {
                       ctx.fillStyle = node.isActive === false ? "#9ca3af" : "";
                       ctx.fillText(
                         label,
-                        node.x,
-                        node.y + 2 + ((node.size || 5) + fontSize)
+                        node.x ?? 0,
+                        (node.y ?? 0) + 2 + ((node.size || 5) + fontSize)
                       );
                     }
                   : undefined

@@ -50,7 +50,7 @@ interface ChartEntry {
 }
 
 // Recharts hands the mouse handlers the active category on the x-axis.
-type ChartMouseEvent = { activeLabel?: string } | null;
+type ChartMouseEvent = { activeLabel?: string | number } | null;
 
 export default function ResponseSizeTimeline() {
   const { t } = useTranslation();
@@ -76,8 +76,8 @@ export default function ResponseSizeTimeline() {
   const [chartData, setChartData] = useState<ChartEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refAreaLeft, setRefAreaLeft] = useState("");
-  const [refAreaRight, setRefAreaRight] = useState("");
+  const [refAreaLeft, setRefAreaLeft] = useState<number | string>("");
+  const [refAreaRight, setRefAreaRight] = useState<number | string>("");
   const [zoomedData, setZoomedData] = useState<ChartEntry[]>([]);
   const [isZoomed, setIsZoomed] = useState(false);
   const [timelineInterval, setTimelineInterval] = useState("2");
@@ -408,11 +408,11 @@ export default function ResponseSizeTimeline() {
                                         string,
                                         { label: string; color: string }
                                       >
-                                    )[entry.dataKey]?.label || entry.dataKey}
+                                    )[String(entry.dataKey)]?.label || String(entry.dataKey)}
                                   </span>
                                 </div>
                                 <span className="font-medium text-right text-xs">
-                                  {formatBytes(entry.value)}
+                                  {formatBytes(Number(entry.value))}
                                 </span>
                               </div>
                             ))}

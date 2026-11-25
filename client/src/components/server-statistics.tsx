@@ -252,11 +252,7 @@ export function ServerStatistics() {
     };
 
     eventSource.onerror = (e) => {
-      const errorMsg =
-        e.data ||
-        e.message ||
-        `EventSource error: ${e.type}` ||
-        "Unknown EventSource error";
+      const errorMsg = `EventSource error: ${e.type}`;
       setUpdateLogs((logs) => [...logs, `[error] ${errorMsg}`]);
       setUpdateLogs((logs) => [...logs, "[info] Closing event stream..."]);
       eventSource.close();

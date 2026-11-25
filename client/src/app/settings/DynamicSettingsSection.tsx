@@ -8,7 +8,7 @@ interface SettingsSectionProps {
   key: string;
   explanation: string;
   default: number | string | boolean;
-  options?: string[];
+  options?: (string | boolean)[];
   // Input, Switch or Combobox; the branch below picks the props for each.
   widgetType: ElementType;
 }

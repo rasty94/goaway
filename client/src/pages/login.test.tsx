@@ -56,7 +56,7 @@ describe("Login", () => {
 
   it("asks for a TOTP code when 2FA is required and sends it on retry", async () => {
     const { calls } = mockApi({
-      "POST login": (body) =>
+      "POST login": (body: unknown) =>
         (body as { totpCode?: string }).totpCode === "123456"
           ? [200, { role: "viewer" }]
           : [401, { requires2FA: true }]

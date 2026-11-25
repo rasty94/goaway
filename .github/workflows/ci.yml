@@ -43,6 +43,9 @@ jobs:
       - name: ESLint
         run: pnpm -C ./client exec eslint
 
+      - name: Type check
+        run: pnpm -C ./client exec tsc -b
+
       - name: Unit tests
         run: pnpm -C ./client test --coverage
 

@@ -28,7 +28,7 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
   );
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     if (deleteState === "confirm") {
       timeoutId = setTimeout(() => {
@@ -66,7 +66,8 @@ export function UpstreamCard({ upstream, onRemove }: UpstreamCardProps) {
 
     try {
       const [status, response] = await DeleteRequest(
-        `upstream?upstream=${currentUpstream.upstream}`
+        `upstream?upstream=${currentUpstream.upstream}`,
+        null
       );
 
       if (status === 200) {
