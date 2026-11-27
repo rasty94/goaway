@@ -1,3 +1,14 @@
+## [1.0.1] (2026-11-27)
+
+### Fixes
+* **React Compiler was not applied in 1.0.0**: `@vitejs/plugin-react` 6 dropped its `babel` option, so the compiler silently stopped running. It now runs through `@rolldown/plugin-babel`.
+* Type fixes in the dashboard with no visible change: upstream entries, pause state, updater error messages, chart tooltips and the network map.
+
+### CI/CD & Releases
+* The frontend CI job runs `tsc -b`; the 31 type errors it reported are fixed.
+* The multi-arch image cross-compiles Go instead of building arm64 under QEMU.
+* Release binaries no longer include `linux/ppc64le`, `linux/s390x` or `windows/arm64`.
+
 ## [1.0.0] (2026-11-25)
 
 First stable release. Upgrading from 0.9x: read the [migration guide](docs/docs/migration-1.0.md).

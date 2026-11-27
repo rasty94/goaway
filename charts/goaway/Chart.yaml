@@ -2,8 +2,8 @@ apiVersion: v2
 name: goaway
 description: Lightweight DNS sinkhole, policy engine, and DHCP server with native HA
 type: application
-version: 1.0.0
-appVersion: "1.0.0"
+version: 1.0.1
+appVersion: "1.0.1"
 keywords:
   - dns
   - adblock
