@@ -1,4 +1,5 @@
 import { mockApi } from "@/test/api";
+import { stubWebAuthn } from "@/test/webauthn";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -86,5 +87,36 @@ describe("Login", () => {
     renderLogin();
     expect(screen.getByLabelText("Username")).toHaveValue("alice");
     expect(screen.getByRole("checkbox")).toBeChecked();
+  });
+
+  it("hides the passkey button when WebAuthn is disabled", async () => {
+    stubWebAuthn();
+    mockApi({ "auth/webauthn/status": { enabled: false } });
+    renderLogin();
+    expect(await screen.findByText(/Version/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign in with passkey" })).not.toBeInTheDocument();
+  });
+
+  it("signs in with a passkey for the typed username", async () => {
+    const credentials = stubWebAuthn({ id: "cred-1", type: "public-key" });
+    const { calls } = mockApi({
+      "auth/webauthn/status": { enabled: true },
+      "POST auth/webauthn/login/begin": { sessionId: "s9", options: { publicKey: { challenge: "xyz" } } },
+      "POST auth/webauthn/login/finish": { username: "admin", role: "admin" }
+    });
+    const user = userEvent.setup();
+    renderLogin();
+
+    const button = await screen.findByRole("button", { name: "Sign in with passkey" });
+    await user.click(button);
+    expect(calls.some((c) => c.path === "auth/webauthn/login/begin")).toBe(false);
+
+    await user.type(screen.getByLabelText("Username"), "admin");
+    await user.click(button);
+    expect(await screen.findByText("home page")).toBeInTheDocument();
+    expect(credentials.get).toHaveBeenCalledWith({ publicKey: { challenge: "xyz" } });
+    expect(calls.find((c) => c.path === "auth/webauthn/login/begin")?.body).toEqual({ username: "admin" });
+    expect(calls.find((c) => c.path.startsWith("auth/webauthn/login/finish"))?.path).toBe("auth/webauthn/login/finish?sessionId=s9");
+    expect(localStorage.getItem("userRole")).toBe("admin");
   });
 });

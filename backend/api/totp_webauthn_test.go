@@ -78,6 +78,11 @@ func TestTOTPGenerateVerifyAndLoginEnforcement(t *testing.T) {
 	a.router.ServeHTTP(wEnable, reqEnable)
 	require.Equal(t, http.StatusOK, wEnable.Code)
 
+	// Setup must not reset an enabled 2FA (that would bypass the /disable step-up code)
+	wResetup := httptest.NewRecorder()
+	a.router.ServeHTTP(wResetup, httptest.NewRequest(http.MethodPost, "/api/auth/2fa/setup", nil))
+	require.Equal(t, http.StatusConflict, wResetup.Code)
+
 	// Login without 2FA code must return 401 with requires2FA=true
 	no2faBody, _ := json.Marshal(map[string]string{"username": "admin", "password": "pass1234"})
 	wNo2FA := httptest.NewRecorder()
@@ -103,4 +108,19 @@ func TestTOTPGenerateVerifyAndLoginEnforcement(t *testing.T) {
 	require.Equal(t, http.StatusOK, wReg.Code)
 	assert.Contains(t, wReg.Body.String(), `"sessionId"`)
 	assert.Contains(t, wReg.Body.String(), `"challenge"`)
+
+	// The client feeds options.publicKey to PublicKeyCredential.parseCreationOptionsFromJSON.
+	var regResp struct {
+		Options struct {
+			PublicKey struct {
+				Challenge string `json:"challenge"`
+				User      struct {
+					Name string `json:"name"`
+				} `json:"user"`
+			} `json:"publicKey"`
+		} `json:"options"`
+	}
+	require.NoError(t, json.Unmarshal(wReg.Body.Bytes(), &regResp))
+	assert.NotEmpty(t, regResp.Options.PublicKey.Challenge)
+	assert.Equal(t, "admin", regResp.Options.PublicKey.User.Name)
 }

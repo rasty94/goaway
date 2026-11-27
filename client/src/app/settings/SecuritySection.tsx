@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { PasskeysRow, TwoFactorRow } from "./AccountSecurity";
 import { SettingRow } from "./SettingsRow";
 
 export const SecuritySection = ({
@@ -27,5 +28,7 @@ export const SecuritySection = ({
         </Button>
       }
     />
+    <TwoFactorRow />
+    <PasskeysRow />
   </>
 );

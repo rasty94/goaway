@@ -129,6 +129,12 @@ func (api *API) handleTOTPSetup(c *gin.Context) {
 			return
 		}
 	} else {
+		// Re-running setup resets the secret and Enabled; once 2FA is on that would
+		// let any session turn it off without the step-up code /disable requires.
+		if rec.Enabled {
+			c.JSON(http.StatusConflict, gin.H{"error": "2FA is already enabled; disable it first"})
+			return
+		}
 		rec.Secret = secret
 		rec.Enabled = false
 		if err := api.DBConn.Save(&rec).Error; err != nil {

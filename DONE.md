@@ -28,6 +28,7 @@ Las tareas pendientes viven en [TODO.md](TODO.md). Cuando una tarea se termina, 
 - [x] Referencias al upstream (`pommee/goaway`) pasadas al fork: installer/updater, comprobacion de version (ahora via `releases/latest`, ignora prereleases), changelog de la UI, docs y README. GoReleaser marca los tags `-rc` como prerelease.
 
 ## Frontend y UX
+- [x] UI de 2FA (TOTP) y passkeys (WebAuthn): en Ajustes > Seguridad se activa/desactiva el 2FA (QR + clave + codigo) y se registran/borran passkeys; el login ofrece "Sign in with passkey". WebAuthn usa la API nativa del navegador (`parseCreationOptionsFromJSON`/`toJSON`). Corregido de paso: `POST /auth/2fa/setup` reseteaba un 2FA ya activo, saltandose el codigo que exige `/disable` (ahora 409). Documentado en `docs/docs/configuration.md`.
 - [x] `tsc -b` sin errores (31 preexistentes) y anadido al job `frontend` de CI. De paso se recupero el React Compiler, que dejo de aplicarse al pasar a `@vitejs/plugin-react` v6 (ahora via `@rolldown/plugin-babel` + `reactCompilerPreset`).
 - [x] Localizacion completa (EN/ES).
 - [x] Cola de consultas en vivo (WebSocket multi-cliente).

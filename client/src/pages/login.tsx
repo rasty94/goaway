@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { loginWithPasskey, passkeysSupported } from "@/lib/passkeys";
 import { GetRequest, PostRequest } from "@/util";
 import {
   EyeClosedIcon,
@@ -52,9 +53,33 @@ export default function Login({ className, quote, ...props }: LoginProps) {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [oidcEnabled, setOidcEnabled] = useState(false);
+  const [passkeyEnabled, setPasskeyEnabled] = useState(false);
   const [responseData, setResponseData] = useState<Metrics>();
   const passwordRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  const finishLogin = (role: string | undefined) => {
+    if (rememberMe) {
+      localStorage.setItem("loginUsername", username);
+    }
+    localStorage.setItem("userRole", role || "viewer");
+    localStorage.setItem("username", username);
+    navigate("/");
+  };
+
+  const handlePasskey = async () => {
+    if (!username) {
+      toast.error("Enter your username first.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const result = await loginWithPasskey(username);
+      if (result) finishLogin(result.role);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,15 +104,7 @@ export default function Login({ className, quote, ...props }: LoginProps) {
       );
 
       if (statusCode === 200) {
-        if (rememberMe) {
-          localStorage.setItem("loginUsername", username);
-        }
-        if (response) {
-          localStorage.setItem("userRole", response.role || "viewer");
-        }
-        localStorage.setItem("username", username);
-
-        navigate("/");
+        finishLogin(response?.role);
       } else if (statusCode === 401 && response?.requires2FA) {
         setRequires2FA(true);
         toast.info("Two-factor authentication required", {
@@ -125,6 +142,12 @@ export default function Login({ className, quote, ...props }: LoginProps) {
         }
       } catch {
         // OIDC status check is optional
+      }
+      try {
+        const [passkeyCode, passkeyData] = await GetRequest("auth/webauthn/status", true);
+        setPasskeyEnabled(passkeyCode === 200 && Boolean(passkeyData?.enabled) && passkeysSupported());
+      } catch {
+        // passkey status check is optional
       }
     }
 
@@ -268,6 +291,18 @@ export default function Login({ className, quote, ...props }: LoginProps) {
                       "Sign In"
                     )}
                   </Button>
+
+                  {passkeyEnabled && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={isLoading}
+                      onClick={handlePasskey}
+                    >
+                      Sign in with passkey
+                    </Button>
+                  )}
 
                   {oidcEnabled && (
                     <div className="space-y-3 pt-1">

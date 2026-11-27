@@ -186,6 +186,30 @@ Controls whether login is required to access the dashboard.
 
     An admin account is created automatically on first startup. **Check the logs for the generated password.**
 
+#### Two-factor authentication (TOTP)
+
+Each user can turn on 2FA from **Settings → Security → Two-factor authentication**: generate a setup key, scan the QR code with an authenticator app (or type the key), and confirm with a 6-digit code. From then on, logging in with a password also asks for a code. Turning 2FA off requires a current code. No configuration is needed.
+
+#### Passkeys (WebAuthn)
+
+`api.webauthn`
+
+Lets users sign in with Touch ID, Windows Hello or a security key. Once enabled, users register passkeys from **Settings → Security → Passkeys**, and the login page shows **Sign in with passkey** (type the username first).
+
+```yaml
+api:
+  webauthn:
+    enabled: true
+    rpDisplayName: GoAway DNS
+    rpId: goaway.example.lan          # the hostname you open the dashboard on
+    rpOrigins:
+      - https://goaway.example.lan:8080
+```
+
+`rpId` must be the dashboard's hostname and `rpOrigins` the exact URL(s) users open, or the browser rejects the passkey. Browsers only allow passkeys on HTTPS origins and on `localhost`. Defaults: `rpId: localhost`, origins `http(s)://localhost:8080`.
+
+**Default:** disabled
+
 ---
 
 ### JWT Secret
