@@ -1,3 +1,15 @@
+## [1.1.0] (2026-11-27)
+
+### Features
+* **Two-factor authentication UI**: Settings > Security turns TOTP 2FA on (setup key, QR code, verification code) and off (requires a current code). Until now 2FA could only be set up through the API.
+* **Passkeys UI**: Settings > Security lists, registers and removes passkeys, and the login page offers *Sign in with passkey*. Requires `api.webauthn.enabled` and a browser with the WebAuthn JSON helpers (Chrome 129+, Firefox 119+, Safari 18.4+). See the [configuration guide](docs/docs/configuration.md#passkeys-webauthn) for `rpId`/`rpOrigins`.
+
+### Security
+* `POST /api/auth/2fa/setup` reset an already enabled 2FA, so any logged-in session could turn 2FA off without the code `/disable` requires. It now answers `409 Conflict`; disable 2FA first.
+
+### Testing
+* Component tests for the HA cluster page, upstreams, query log actions, 2FA and passkeys. Line coverage 60% -> 71%; the CI floor rises to 68%.
+
 ## [1.0.1] (2026-11-27)
 
 ### Fixes
