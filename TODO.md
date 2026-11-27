@@ -44,7 +44,14 @@ Umbrales propuestos (revisar antes de empezar).
 
 ## P2 - Mejoras menores
 
-_(sin tareas)_
+- [ ] FRONTEND: UI para dar de alta 2FA (TOTP) y gestionar passkeys (WebAuthn)
+  - Prioridad: p2
+  - Labels: frontend, security
+  - Contexto: el backend expone TOTP y WebAuthn (`/api/auth/webauthn/register/*`, `/api/auth/webauthn/credentials`), pero el cliente solo pide el codigo TOTP en el login; no hay pantalla para activar 2FA, registrar passkeys ni iniciar sesion con ellas.
+  - Criterios de aceptacion:
+    - Seccion en ajustes para activar/desactivar TOTP (QR + codigo de verificacion) y listar, registrar y borrar passkeys.
+    - Boton de login con passkey cuando `auth/webauthn/status` lo indique.
+    - Tests de componente con el mock de `navigator.credentials`.
 
 ---
 

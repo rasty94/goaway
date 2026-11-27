@@ -25,7 +25,7 @@ export default defineConfig({
       exclude: ["src/**/*.test.{ts,tsx}", "src/test/**", "src/main.tsx", "src/vite-env.d.ts"],
       reporter: ["text-summary"],
       // ponytail: floor, not target; raise it as component tests grow.
-      thresholds: { lines: 60 }
+      thresholds: { lines: 68 }
     }
   },
   build: {

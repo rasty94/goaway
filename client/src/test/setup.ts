@@ -47,4 +47,5 @@ Element.prototype.setPointerCapture ??= function () {};
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
